@@ -14,7 +14,6 @@ with open("./indexstocks.json", "r") as json_file:
 def sendWhatsappMessage(receiver_number, message):
     try:
         # Schedule the message to be sent at a specific time (24-hour format)
-
         now = datetime.now()
         hour = now.hour
         minute = now.minute
@@ -31,12 +30,15 @@ def sendWhatsappMessage(receiver_number, message):
 def stockDetails(response, base):
     global baseline
     global result
+    global stockFlag
+    global fyers
 
     message = ""
     summary = ""
     receiver_number = "+919182004425"
     green_move = ["Green Stocks"]
     red_move = ["Red Stocks"]
+
     neutral_move = ["Neutral Stocks"]
 
     for i in range(10 * base, 10 * (base + 1)):
@@ -47,34 +49,37 @@ def stockDetails(response, base):
             if baseline[i][-1] < baseline[i][-2]:
                 result[i].append("Red")
                 result[i][0] = 1
+                stockFlag[i] = "Red"
             elif baseline[i][-1] > baseline[i][-2]:
+                stockFlag[i] = "Green"
                 result[i].append("Green")
                 result[i][0] = 1
             else:
-                result[i].append("Neutral")
+                result[i].append(result[i][-1])
                 result[i][0] += 1
         if result[i][0] > 2:
             if result[i][-1] == "Red":
                 red_move.append(response["d"][i % 10]["n"])
                 if response["d"][i % 10]["n"] in green_move:
                     green_move.remove(response["d"][i % 10]["n"])
-                if response["d"][i % 10]["n"] in neutral_move:
-                    neutral_move.remove(response["d"][i % 10]["n"])
+                # if response["d"][i % 10]["n"] in neutral_move:
+                #     neutral_move.remove(response["d"][i % 10]["n"])
             elif result[i][-1] == "Green":
                 green_move.append(response["d"][i % 10]["n"])
                 if response["d"][i % 10]["n"] in red_move:
                     red_move.remove(response["d"][i % 10]["n"])
-                if response["d"][i % 10]["n"] in neutral_move:
-                    neutral_move.remove(response["d"][i % 10]["n"])
-            else:
-                neutral_move.append(response["d"][i % 10]["n"])
-                if response["d"][i % 10]["n"] in green_move:
-                    green_move.remove(response["d"][i % 10]["n"])
-                if response["d"][i % 10]["n"] in red_move:
-                    red_move.remove(response["d"][i % 10]["n"])
+                # if response["d"][i % 10]["n"] in neutral_move:
+                #     neutral_move.remove(response["d"][i % 10]["n"])
+            # else:
+            #     neutral_move.append(response["d"][i % 10]["n"])
+            #     if response["d"][i % 10]["n"] in green_move:
+            #         green_move.remove(response["d"][i % 10]["n"])
+            #     if response["d"][i % 10]["n"] in red_move:
+            #        red_move.remove(response["d"][i % 10]["n"])
             message += """  
     ====================
-    = Stock Name: {0}                        
+    = Stock Name: {0}
+    = Stock Link: https://www.google.com/finance/quote/{17}:NSE?hl=en                        
     = Day Change: {1}%                      
     = Value Change: {2}                   
     = Open Price: {3}
@@ -107,8 +112,9 @@ def stockDetails(response, base):
                 response["d"][i % 10]["v"]["spread"],
                 result[i][0],
                 baseline[i][:-1] if len(baseline[i]) < 6 else baseline[i][-5:],
-                result[i][1:][:-1] if len(result[i][1:]) < 21 else baseline[i][-20:],
+                result[i][1:][:-1] if len(result[i][1:]) < 21 else result[i][-20:],
                 result[i][-1],
+                response["d"][i % 10]["n"][4:-3],
             )
     summary += "\n".join(red_move)
     summary += "\n\n"
@@ -121,7 +127,7 @@ def stockDetails(response, base):
 
 
 client_id = "6JO4FX24PZ-100"
-access_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJhcGkuZnllcnMuaW4iLCJpYXQiOjE3MDIzNTI1OTIsImV4cCI6MTcwMjQyNzQxMiwibmJmIjoxNzAyMzUyNTkyLCJhdWQiOlsieDowIiwieDoxIiwieDoyIiwiZDoxIiwiZDoyIiwieDoxIiwieDowIl0sInN1YiI6ImFjY2Vzc190b2tlbiIsImF0X2hhc2giOiJnQUFBQUFCbGQ5YlFJNVBRWE9tV1RQcTQwclNOSlp6dWRUenZQSGNSMm1ONTY2NGtwRDdkcklmTDlKT2lEQmdGNEkwVWo0bDA5dVl4S0NTQUk4VzdvMTBtYzc2Z1pkUk1CeldWbWNwRzk1QzU5dk1LZFpVMDI4RT0iLCJkaXNwbGF5X25hbWUiOiJKRUVWQU4gU0FJIEtBTkFQQVJUSEkiLCJvbXMiOiJLMSIsImhzbV9rZXkiOiJiZGU4MzRmNzMwMmM0OTNkNGFmNTc5OTk5ZjkxYzhiYzg1ZjNkMzZhYmM3NTRiOWE5YTlhNDYxYyIsImZ5X2lkIjoiWUowMDI5MSIsImFwcFR5cGUiOjEwMCwicG9hX2ZsYWciOiJOIn0.9uAylLyGGFx_WacZV4kWvZjNt7HDedMJPfoD6s3eJJM"
+access_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJhcGkuZnllcnMuaW4iLCJpYXQiOjE3MDI0Mzk0MjIsImV4cCI6MTcwMjUxMzgyMiwibmJmIjoxNzAyNDM5NDIyLCJhdWQiOlsieDowIiwieDoxIiwieDoyIiwiZDoxIiwiZDoyIiwieDoxIiwieDowIl0sInN1YiI6ImFjY2Vzc190b2tlbiIsImF0X2hhc2giOiJnQUFBQUFCbGVTbi0xZlQtZEk2TDh1WU4xbU1XaEZvUDVqTFloMVhQU0x5NEFybmkxNDhzQWF5OFdnR1lLX0tGSVotRHJsRWRBNDgxOFJKRU1vRjVWQTM0SkFBeDQ4X2ViSjV6aHUtMndCNGtqNmZnM2h6NFBmcz0iLCJkaXNwbGF5X25hbWUiOiJKRUVWQU4gU0FJIEtBTkFQQVJUSEkiLCJvbXMiOiJLMSIsImhzbV9rZXkiOiJiZGU4MzRmNzMwMmM0OTNkNGFmNTc5OTk5ZjkxYzhiYzg1ZjNkMzZhYmM3NTRiOWE5YTlhNDYxYyIsImZ5X2lkIjoiWUowMDI5MSIsImFwcFR5cGUiOjEwMCwicG9hX2ZsYWciOiJOIn0.E4LGqfMXSV64jzgCXZrhfWG1xdNzP-DYuzNbTXtfFAQ"
 # Initialize the FyersModel instance with your client_id, access_token, and enable async mode
 fyers = fyersModel.FyersModel(
     client_id=client_id, token=access_token, is_async=False, log_path=""
@@ -129,12 +135,14 @@ fyers = fyersModel.FyersModel(
 
 baseline = [[] for i in range(len(data["NIFTY_50"]))]
 result = [[1] for i in range(len(data["NIFTY_50"]))]
+stockFlag = [["Green"] for i in range(len(data["NIFTY_50"]))]
 while True:
     for i in range(0, 5):
-        watch_Stocks = ""
+        watch_Stocks = """"""
         for stockSymbol in data["NIFTY_50"][10 * i : 10 * (i + 1)]:
-            watch_Stocks += "NSE:{0}-EQ,".format(stockSymbol)
+            watch_Stocks += """NSE:{0}-EQ,""".format(stockSymbol)
         watch_Stocks = watch_Stocks[:-1]
+
         sub_data = {
             # "symbols":"""NSE:SIEMENS-EQ,NSE:BAJAJELEC-EQ,NSE:JIOFIN-EQ,NSE:MAZDOCK-EQ,NSE:SUNPHARMA-EQ,NSE:DIXON-EQ,NSE:RVNL-EQ,NSE:ASTERDM-EQ,NSE:SWSOLAR-EQ,NSE:J&KBANK-EQ,NSE:BLS-EQ"""
             "symbols": watch_Stocks
