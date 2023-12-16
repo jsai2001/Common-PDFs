@@ -81,8 +81,8 @@ def stockDetails(response):
             key=lambda x: (float(x[6].split(":")[-1]), x[4][:-1]), reverse=True
         )
         for i in summary[:200]:
-            message += "".join(i)
-            message += "\n"
+            message = "".join(i) + message
+            message = "\n" + message
         # Define the maximum length of a message
         MAX_MESSAGE_LENGTH = 4096
         message = message.splitlines()
