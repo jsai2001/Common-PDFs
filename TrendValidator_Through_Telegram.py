@@ -60,32 +60,32 @@ def stockDetails(response):
                 stockFlag[i] = "Green"
                 result[i].append("Green")
                 result[i][0] += 1
-        # if result[i][0] > 2 and baseline[i][-1] >= 0.5:
-        if result[i][-1] == "Red":
-            red_move.append(response["d"][i]["n"])
-        elif result[i][-1] == "Green":
-            green_move.append(response["d"][i]["n"])
-            summary.append(
-                [
-                    stockFlag[i],
-                    " || ",
-                    response["d"][i]["n"],
-                    " || ",
-                    str(response["d"][i]["v"]["chp"]) + "%",
-                    " || ",
-                    "{} Streak:{}".format(stockFlag[i], result[i][0]),
-                    " || ",
-                    "LP: {} || HP: {} || PCP: {} || OP: {} || ".format(
-                        response["d"][i]["v"]["low_price"],
-                        response["d"][i]["v"]["high_price"],
-                        response["d"][i]["v"]["prev_close_price"],
-                        response["d"][i]["v"]["open_price"],
-                    ),
-                    "https://www.google.com/finance/quote/{0}:NSE?hl=en".format(
-                        response["d"][i]["n"][4:-3]
-                    ),
-                ]
-            )
+        if result[i][0] > 2 and baseline[i][-1] >= 0.5:
+            if result[i][-1] == "Red":
+                red_move.append(response["d"][i]["n"])
+            elif result[i][-1] == "Green":
+                green_move.append(response["d"][i]["n"])
+                summary.append(
+                    [
+                        stockFlag[i],
+                        " || ",
+                        response["d"][i]["n"],
+                        " || ",
+                        str(response["d"][i]["v"]["chp"]) + "%",
+                        " || ",
+                        "{} Streak:{}".format(stockFlag[i], result[i][0]),
+                        " || ",
+                        "LP: {} || HP: {} || PCP: {} || OP: {} || ".format(
+                            response["d"][i]["v"]["low_price"],
+                            response["d"][i]["v"]["high_price"],
+                            response["d"][i]["v"]["prev_close_price"],
+                            response["d"][i]["v"]["open_price"],
+                        ),
+                        "https://www.google.com/finance/quote/{0}:NSE?hl=en".format(
+                            response["d"][i]["n"][4:-3]
+                        ),
+                    ]
+                )
     message = ""
     if len(summary):
         summary.sort(
