@@ -49,67 +49,46 @@ def file_delete_if_exists_and_create(directory):
 #----------------------------------------------------------------------------
 
 #----------------------------------------------------------------------------
-# folder_1 = "D:\\Education\\Psychology_Chapter_1"
-# folder_2 = "D:\\Education\\Psychology_Chapter_2"
-# folders = [folder_1,folder_2]
-# dest_folder = "D:\\Education\\Psychology"
-# file_delete_if_exists_and_create(dest_folder)
-# for folder in folders:
-#     files = os.listdir(folder)
-#     for file in files:
-#         shutil.move(os.path.join(folder, file), dest_folder)
+folder_1 = "D:\\Education\\Chemistry_1"
+folder_2 = "D:\\Education\\Chemistry_2"
+folders = [folder_1,folder_2]
 
-# # Specify the path of the folder containing the images
-# root_folder = "D:\\Education\\Psychology"
-# nfolders=len(os.listdir(root_folder))
+dest_folder = "D:\\Education\\Chemistry"
+file_delete_if_exists_and_create(dest_folder)
+def get_all_file_paths(directory):
+    # Initialize an empty list to store the file paths
+    file_paths = []
 
-# file_num = 1
-# for fold_num in range(1,nfolders+1):
-#     folder = f"D:\\Education\\Psychology\\Folder_{fold_num}"
-#     #os.mkdir(folder)    
-#     # Get the list of all the files in the folder
-#     files = os.listdir(folder)
-#     # Loop through each file
-#     for i, file in enumerate(files):
-#         #temp = i + 1
-#         # Get the old file name
-#         old_name = os.path.join(folder, file)
-#         # Create the new file name with serial order
-#         new_name = os.path.join(folder, f"image_{file_num}.png")
-#         # Rename the file
-#         os.rename(old_name, new_name)
-#         file_num+=1
+    # Use os.walk to iterate over all subdirectories and files in the directory
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if(file.endswith('.mp4') or file.endswith('.png') or file.endswith('.jpg')):
+                # Use os.path.join to construct the full path to the file
+                file_path = os.path.join(root, file)
+                # Add the file path to the list
+                file_paths.append(file_path)
 
-# glob = 1
-# root_folder = "D:\\Education\\Psychology"
-# dest = 'D:\\Education\\TimePass'
-# file_delete_if_exists_and_create(dest)
-# nfolders=len(os.listdir(root_folder))
-# for i in range(1, nfolders+1):
-#     source = 'D:\\Education\\Psychology\\Folder_'+str(i)
-#     dest = 'D:\\Education\\TimePass'
-#     for file in os.listdir(source):
-#         src_file = os.path.join(source, file)
-#         if os.path.isfile(src_file):
-#             dst_file = os.path.join(dest, file)
-#             glob += 1
-#             shutil.copy(src_file, dst_file)
+    return file_paths
+for folder in folders:
+    files = get_all_file_paths(folder)
+    for file in files:
+        shutil.move(os.path.join(folder, file), dest_folder)
 
-# def select_random_files(source_dir, dest_dir, sample_size):
-#     files = os.listdir(source_dir)
-#     random_files = random.sample(files, sample_size)
+def select_random_files(source_dir, dest_dir, sample_size):
+    files = os.listdir(source_dir)
+    random_files = random.sample(files, sample_size)
 
-#     file_delete_if_exists_and_create(dest_dir)
+    file_delete_if_exists_and_create(dest_dir)
 
-#     for file in random_files:
-#         shutil.copy(os.path.join(source_dir, file), dest_dir)
+    for file in random_files:
+        shutil.move(os.path.join(source_dir, file), dest_dir)
 
-# source_dir = 'D:\\Education\\TimePass'
-# n_samples = int(input("Number of modules needed: "))
-# sample_size = int(input("Sample Size: "))
-# for sample_no in range(1,n_samples+1):
-#     dest_dir = f"D:\\Education\\Sample_{sample_no}"
-#     select_random_files(source_dir, dest_dir, sample_size)
+source_dir = 'D:\\Education\\Chemistry'
+n_samples = int(input("Number of modules needed: "))
+sample_size = int(input("Sample Size: "))
+for sample_no in range(1,n_samples+1):
+    dest_dir = f"D:\\Education\\Chemistry_Sample_{sample_no}"
+    select_random_files(source_dir, dest_dir, sample_size)
 #--------------------------------------------------------------------
 # def get_all_file_paths(directory):
 #     # Initialize an empty list to store the file paths
@@ -118,7 +97,7 @@ def file_delete_if_exists_and_create(directory):
 #     # Use os.walk to iterate over all subdirectories and files in the directory
 #     for root, dirs, files in os.walk(directory):
 #         for file in files:
-#             if(file.endswith('.mp4')):
+#             if(file.endswith('.mp4') or file.endswith('.png') or file.endswith('.jpg')):
 #                 # Use os.path.join to construct the full path to the file
 #                 file_path = os.path.join(root, file)
 #                 # Add the file path to the list
@@ -154,4 +133,29 @@ def file_delete_if_exists_and_create(directory):
 #     random_files = random.sample(file_paths, n_samples)
 #     for file in random_files:
 #        shutil.copy(file, dest_dir)
+# #--------------------------------------------------------------------
+# def get_all_file_paths(directory):
+#     # Initialize an empty list to store the file paths
+#     file_paths = []
+
+#     # Use os.walk to iterate over all subdirectories and files in the directory
+#     for root, dirs, files in os.walk(directory):
+#         for file in files:
+#             if(file.endswith('.mp4') or file.endswith('.png') or file.endswith('.jpg')):
+#                 # Use os.path.join to construct the full path to the file
+#                 file_path = os.path.join(root, file)
+#                 # Add the file path to the list
+#                 file_paths.append(file_path)
+#     return file_paths
+# iter = 202401090000
+# def move_folder_to_another(scr_dir,dest_dir):
+#     global iter
+#     os.mkdir(dest_dir)
+#     for file in get_all_file_paths(scr_dir):
+#         directory, filename = os.path.split(file)
+#         os.rename(file,f"{directory}\\{iter}.png")
+#         shutil.copy(f"{directory}\\{iter}.png",dest_dir)
+#         iter+=1
+# move_folder_to_another("D:\Education\Psychology_Chapter_1","D:\Education\Chemistry_1")
+# move_folder_to_another("D:\Education\Psychology_Chapter_2","D:\Education\Chemistry_2")
 #--------------------------------------------------------------------
