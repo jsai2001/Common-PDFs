@@ -3373,3 +3373,2665 @@ When specifying tools in the Jenkins pipeline, ensure that they are consistent w
 - Proper tool configuration in Jenkins is essential for successful pipeline execution.
 
 By defining the pipeline in code, DevOps teams can ensure that CI/CD processes are automated, repeatable, and version-controlled.
+
+# DevOps Notes: Continuous Integration with Jenkins
+
+## Pipeline as Code
+- **Jenkinsfile**: Automates pipeline setup with stages defined for CI/CD processes.
+  - Written in **Pipeline DSL Syntax**, similar to Groovy language.
+  - Supports two types of pipelines:
+    - **Scripted Pipeline**
+    - **Declarative Pipeline** (used here).
+
+## Pipeline Concepts
+- **Pipeline**: The main block where all tasks are executed.
+- **Node/Agent**: Specifies where the pipeline should run (master, slave, etc.).
+- **Stages**: Sections of the pipeline where tasks are performed (e.g., build, test, deploy).
+- **Steps**: Commands executed within a stage (e.g., `mvn install`, `git pull`).
+
+## Pipeline Structure Example
+```groovy
+pipeline {
+    agent {
+        label "master"
+    }
+    tools {
+        maven "Maven"
+    }
+    environment {
+        NEXUS_VERSION= "nexus3"
+        NEXUS_PROTOCOL = "http"
+        NEXUS_URL = "your-ip-address:8081"
+        NEXUS_REPOSITORY = "maven-nexus-repo"
+        NEXUS_CREDENTIAL_ID = "nexus-user-credentials"
+        ARTVERSION = "${env.BUILD_ID}"
+    }
+    stages {
+        stage('Clone code from VCS') {
+            steps {
+                git branch: 'master', url: 'https://github.com/repo.git'
+            }
+        }
+        stage('Maven Build') {
+            steps {
+                sh 'mvn install -DskipTests'
+            }
+        }
+        stage('Publish to Nexus Repository Manager') {
+            steps {
+                // Add your publishing steps here
+            }
+        }
+    }
+}
+```
+
+## Detailed Explanation of the Pipeline
+- **Agent Block**: Defines the node where the pipeline will run (e.g., `master`).
+- **Tools Block**: Defines the tools (e.g., Maven, JDK) from global tool configuration.
+- **Environment Block**: Sets environment variables (e.g., Nexus configuration).
+- **Stages**: Consists of different phases like:
+  - Cloning code from VCS.
+  - Building with Maven.
+  - Publishing artifacts to Nexus.
+
+## Example: Build and Test Stage
+```groovy
+pipeline {
+    stage('BuildAndTest') {
+        steps {
+            sh 'mvn install'
+        }
+        post {
+            success {
+                echo 'Now Archiving...'
+                archiveArtifacts artifacts: '**/target/*.war'
+            }
+        }
+    }
+}
+```
+- **Post Section**: Defines actions after a successful build (e.g., archiving artifacts).
+
+## Example: Unit Testing and Code Analysis
+```groovy
+pipeline {
+    stages {
+        stage('UNIT TEST') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+        stage('Checkstyle Analysis') {
+            steps {
+                sh 'mvn checkstyle:checkstyle'
+            }
+        }
+    }
+}
+```
+- **Unit Test Stage**: Executes Maven tests.
+- **Checkstyle Analysis Stage**: Runs a code quality check using Checkstyle.
+
+## Jenkins Pipeline Setup Options
+1. **Pipeline Script**: Directly paste the pipeline code.
+2. **Pipeline Script from SCM**: Link to a repository containing the `Jenkinsfile`.
+
+## Running the Pipeline
+1. Navigate to the created pipeline.
+2. Click **Build Now** to execute the pipeline.
+3. Check build history and workspace under specific build IDs.
+
+### Additional Links
+- [Jenkins Pipeline Documentation](https://www.jenkins.io/doc/book/pipeline/)
+
+These notes cover essential Jenkins pipeline concepts, including pipeline structure, stages, and example code snippets for build, test, and deployment stages.
+
+# DevOps Notes: Continuous Integration with Jenkins - Code Analysis
+
+## Introduction
+In a continuous integration (CI) pipeline, the goal is to:
+1. Fetch code from the repository.
+2. Build the code.
+3. Run unit tests.
+4. Perform code analysis.
+5. Upload the final artifact.
+
+Code analysis helps detect vulnerabilities and functional errors early, improving code quality before deployment.
+
+---
+
+## Code Analysis Overview
+- **Purpose**: To check the code against best practices in the programming language, and detect vulnerabilities like memory leaks or other weak spots that could expose the software to risks.
+- **Functional Errors**: Detected before deployment, ensuring that these don’t weaken the software even if they don’t cause immediate issues.
+- **Tools**: There are several tools available for code analysis. Popular ones include:
+  - Checkstyle
+  - Cobertura
+  - MSTest
+  - OWASP
+  - **SonarQube** (used for this demonstration)
+
+---
+
+## Integrating SonarQube with Jenkins
+
+### Steps:
+1. **Install SonarQube Scanner**: Ensure SonarQube is installed and integrated with Jenkins.
+2. **Set Up SonarQube in Jenkins**:
+   - Navigate to Jenkins **Global Tool Configuration**.
+   - Add SonarQube instance with the proper URL and port (from your SonarQube AWS instance).
+   - Generate and add the SonarQube authentication token (Profile → Settings → Tokens → Generate Token).
+   
+### Jenkins Global Tool Configuration
+- After installing the SonarQube plugin, go to the **Global Tool Configuration** in Jenkins.
+- Add SonarQube as a new tool and ensure it’s accessible through the **SonarQube server URL**.
+  
+---
+
+## SonarQube Code Analysis in Jenkins Pipeline
+
+### Pipeline Stages for Code Analysis
+
+```groovy
+pipeline {
+    agent any
+
+    stages {
+        stage('Build & SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('My SonarQube Server') {
+                    sh 'mvn clean package sonar:sonar'
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+    }
+}
+```
+
+- **SonarQube Analysis Stage**: Scans the code and generates a report on the SonarQube server.
+- **Quality Gate**: A stage added to ensure the code meets certain quality metrics before proceeding. If the code fails the quality gate, the pipeline will be aborted.
+
+---
+
+## Example: SonarQube Analysis with Environment Variables
+
+```groovy
+pipeline {
+    agent any
+
+    environment {
+        scannerHome = tool 'sonar4.7'
+    }
+
+    stages {
+        stage('Sonar Analysis') {
+            steps {
+                withSonarQubeEnv('sonar') {
+                    sh '''${scannerHome}/bin/sonar-scanner \
+                    -Dsonar.projectKey=myproject \
+                    -Dsonar.projectName=myproject \
+                    -Dsonar.projectVersion=1.0 \
+                    -Dsonar.sources=src/ \
+                    -Dsonar.java.binaries=target/test-classes/ \
+                    -Dsonar.junit.reportsPath=target/surefire-reports/ \
+                    -Dsonar.jacoco.reportsPath=target/jacoco.exec \
+                    -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml'''
+                }
+            }
+        }
+    }
+}
+```
+
+- **Environment Variable**: `scannerHome` points to the SonarQube scanner's home directory.
+- **SonarQube Scanner**: Scans the project code, uploads reports to the SonarQube server, and checks the following:
+  - **sonar.projectKey**: The unique key for the project in SonarQube.
+  - **sonar.sources**: The directory containing the source code.
+  - **sonar.java.binaries**: The path to the Java binaries generated during the build.
+  - **sonar.junit.reportsPath**: The location of unit test reports.
+  - **sonar.jacoco.reportsPath**: The path to the JaCoCo code coverage report.
+  - **sonar.checkstyle.reportPaths**: The location where Checkstyle results are stored.
+
+---
+
+## Quality Gate in SonarQube
+- **Quality Gate**: A set of conditions a project must meet to ensure code quality.
+  - SonarQube provides default quality gates.
+  - If the pipeline passes the quality gate, the build proceeds; otherwise, it fails.
+
+---
+
+## Summary
+- **Code Analysis** in Jenkins CI pipelines is crucial for detecting vulnerabilities and functional issues before deployment.
+- Tools like **SonarQube** are integrated to provide insights into code quality and ensure compliance with coding standards.
+- With **SonarQube**, the pipeline not only scans the code but also evaluates it against a **quality gate** to ensure it meets defined quality standards before proceeding.
+
+### Additional Reference:
+- [Jenkins SonarQube Documentation](https://www.jenkins.io/doc/pipeline/steps/sonar/) for further details on integrating SonarQube with Jenkins.
+
+# Continuous Integration with Jenkins
+
+### Automating Build and Notification with Jenkins
+In our current CI pipeline, we aim to automate two essential tasks:
+1. **Auto-building the project** without manual intervention.
+2. **Sending build result notifications** automatically via Slack.
+
+#### Jenkins Slack Notification Setup
+
+1. **Slack Plugin Setup**:
+   Jenkins has an extensive range of plugins. To send notifications after build completion, we use the **Slack Notification Plugin**. Slack is a widely-used collaboration tool for real-time communication.
+   
+2. **Slack Account Setup**:
+   - Create a Slack account or log in.
+   - Set up a dedicated Slack channel for build notifications.
+   - Authenticate Jenkins with Slack by obtaining a **token**:
+     - In Slack, go to **Add Apps for Slack**, search for **JenkinsCI**, and click **Add to Slack**.
+     - Select a Slack channel to post build notifications and click **Add Jenkins CI Integration**.
+     - **Save the token** for future use.
+
+3. **Integrate Slack with Jenkins**:
+   - In Jenkins, navigate to **Dashboard > Configuration** and locate the Slack section.
+   - Enter the Slack workspace name, token, and Slack channel.
+   - Click **Test Connection** to verify successful integration.
+   - Once successful, save the configuration.
+
+#### Slack Notification in Jenkins Pipeline
+
+To send notifications in Jenkins after the build, we need to add Slack notification steps to the Jenkinsfile.
+
+##### Color Mapping for Slack Notification:
+Slack recognizes the status of the build as either **good** or **danger**. We map Jenkins' build results to these statuses:
+
+```groovy
+def COLOR_MAP = [
+    'SUCCESS':'good',
+    'FAILURE':'danger',
+]
+```
+
+##### Post Installation Step for Slack Notification:
+The notification is sent after the build completes by adding a **post** block in the Jenkinsfile:
+
+```groovy
+post {
+    always {
+        echo 'Slack Notifications.'
+        slackSend channel: '#jenkinscicd',
+                  color: COLOR_MAP[currentBuild.currentResult],
+                  message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} \n More info at: ${env.BUILD_URL}"
+    }
+}
+```
+This sends a notification to the Slack channel `#jenkinscicd`, highlighting the build result (success or failure) and providing the job name, build number, and build URL.
+
+---
+
+### Continuous Integration for Docker with Jenkins
+
+#### Pipeline Overview for Docker
+In the Docker integration, we automate the following process:
+1. **Code Push to GitHub**: Developers push their code to GitHub after local testing.
+2. **Jenkins Polls GitHub**: Jenkins continuously monitors the GitHub repository for changes.
+3. **Build & Unit Testing**:
+   - Jenkins fetches the updated code.
+   - Unit tests are executed using **Maven**.
+4. **Code Analysis**:
+   - Checkstyle and SonarQube perform code quality checks.
+   - If all quality gates are passed, the artifacts (WAR files and reports) are generated.
+5. **Docker Build**:
+   - The application is containerized using Docker.
+6. **Artifact Push**:
+   - Docker images are pushed to cloud registries such as **Amazon ECR**, **Google Cloud Registry**, or **Azure Cloud Registry**.
+
+By integrating Docker into the pipeline, we ensure seamless deployment of applications, making the CI/CD process efficient and robust.
+
+# Python Notes for DevOps
+
+### 1. Print Format in Python
+The new and more efficient way to format strings using variables in Python is through **f-strings**:
+
+```python
+name = "COVID-19"
+disease = "Respiratory issues"
+print(f"The name of the virus is {name} and it causes {disease}")
+```
+
+### 2. Built-in Functions or Methods
+Python offers a wide range of built-in functions for various operations. Here are some helpful references for exploring these functions:
+
+- [Python Built-in Functions](https://docs.python.org/3/library/functions.html)
+- [W3Schools Python Functions Reference](https://www.w3schools.com/python/python_ref_functions.asp)
+- [W3Schools Python String Methods](https://www.w3schools.com/python/python_ref_string.asp)
+- [W3Schools Python List Methods](https://www.w3schools.com/python/python_ref_list.asp)
+- [W3Schools Python Dictionary Methods](https://www.w3schools.com/python/python_ref_dictionary.asp)
+- [W3Schools Python Tuple Methods](https://www.w3schools.com/python/python_ref_tuple.asp)
+- [W3Schools Python Set Methods](https://www.w3schools.com/python/python_ref_set.asp)
+- [W3Schools Python File Methods](https://www.w3schools.com/python/python_ref_file.asp)
+
+#### Immutability of Strings
+Strings in Python are **immutable**, meaning that any modification returns a new string rather than altering the original one.
+
+```python
+original = "hello"
+modified = original.upper()  # returns 'HELLO' but original remains 'hello'
+```
+
+### 3. `dir()` Function
+The `dir()` function provides a list of attributes and methods available for an object.
+
+```python
+dir(str)  # Lists all methods for a string object
+```
+
+### 4. Variable Arguments in Functions
+Python allows for variable numbers of arguments in functions using `*args` for positional arguments and `**kwargs` for keyword arguments.
+
+```python
+def time_activity(*args, **kwargs):
+    print(args)  # Outputs tuple of arguments
+    print(kwargs)  # Outputs dictionary of keyword arguments
+
+time_activity(10, 20, sport="Boxing", work="DevOps")
+```
+
+### 5. Modules in Python
+Modules are reusable pieces of code in Python that can be imported into other scripts.
+
+```python
+# Import all functions from a module
+from admin import *
+
+# Import a specific function from a module
+from admin import headmaster
+
+# Import the entire module
+import admin
+```
+
+### 6. OS Tasks in Python
+Python’s `os` module is useful for performing operating system-related tasks such as checking files or directories and managing system users and groups.
+
+```python
+import os
+path = '/tmp/testfile.txt'
+
+if os.path.isdir(path):
+    print("It is a directory")
+elif os.path.isfile(path):
+    print("It is a file.")
+else:
+    print("File or directory doesn't exist")
+```
+
+#### Example: Adding Users and Groups
+```python
+#!/usr/bin/python3
+import os
+
+userlist = ["alpha", "beta", "gamma"]
+print("Adding Users to system")
+for user in userlist:
+    exitcode = os.system(f"id {user}")
+    if exitcode != 0:
+        print(f"User {user} doesn't exist. Adding it.")
+        os.system(f"useradd {user}")
+    else:
+        print("User already exists, skipping it.")
+
+# Adding users to a group
+exitcode = os.system("grep science /etc/group")
+if exitcode != 0:
+    print("Group 'science' doesn't exist, creating one.")
+    os.system("groupadd science")
+else:
+    print("Group already exists, skipping it.")
+
+for user in userlist:
+    print(f"Adding user {user} to 'science' group")
+    os.system(f"usermod -G science {user}")
+
+# Managing directory
+if not os.path.isdir("/opt/science_dir"):
+    os.mkdir("/opt/science_dir")
+    print("Created directory '/opt/science_dir'")
+os.system("chown :science /opt/science_dir")
+os.system("chmod 770 /opt/science_dir")
+```
+
+### 7. Python Fabric for Automation
+Fabric is a Python library used for automating application development and system administration tasks over SSH. To install:
+
+```bash
+pip install fabric<2.0
+```
+
+Fabric simplifies repetitive tasks by allowing developers to script workflows.
+
+### 8. Python-Jenkins Integration
+The `python-jenkins` module allows for automating Jenkins server tasks through Python code. Installation is done via pip:
+
+```bash
+pip install python-jenkins -y
+```
+
+Common tasks that can be automated using `python-jenkins` include:
+- Creating, copying, deleting, and updating Jenkins jobs.
+- Retrieving job information, build status, and plugin details.
+- Managing Jenkins nodes and views.
+
+For more details, refer to the [Python Jenkins Documentation](https://python-jenkins.readthedocs.io/en/latest/examples.html).
+
+### 9. Boto3 for AWS
+Boto3 is the AWS SDK for Python, which allows developers to interact with AWS services such as EC2, S3, and more.
+
+```bash
+pip install boto3
+```
+
+Documentation: [Boto3 Documentation](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
+
+### Conclusion
+This guide covers essential Python concepts, built-in functions, OS-level operations, module management, Jenkins automation with Python, and AWS integration with Boto3.
+
+### DevOps Notes: Python Fabric
+
+#### 1. Introduction to Python Fabric
+Fabric is a Python module designed to automate administration tasks using SSH. It simplifies running command-line tasks both locally and remotely.
+
+#### 2. Setting Up Fabric
+To begin using Fabric:
+1. Install Fabric:
+   ```bash
+   pip install fabric<2.0
+   ```
+2. Create a directory for your Fabric script:
+   ```bash
+   mkdir fabric
+   cd fabric/
+   vim fabfile.py
+   ```
+3. To see available Fabric commands:
+   ```bash
+   fab -l
+   ```
+
+#### 3. Basic Fabric Functions
+
+- **Greeting Function**: Simple function to print a greeting message.
+   ```python
+   from fabric.api import *
+   
+   def greeting(msg):
+       print("Good %s" % msg)
+   ```
+
+- **System Information Function**: Prints system disk space, RAM size, and uptime.
+   ```python
+   def system_info():
+       print("Disk Space")
+       local("df -h")
+       print("RAM size")
+       local("free -m")
+       print("System uptime.")
+       local("uptime")
+   ```
+
+- **Remote Execution Function**: Runs commands on a remote server using SSH.
+   ```python
+   def remote_exec():
+       print("Get System info")
+       run("hostname")
+       run("uptime")
+       run("df -h")
+       run("free -m")
+       sudo("yum install mariadb-server")
+       sudo("systemctl start mariadb")
+       sudo("systemctl enable mariadb")
+   ```
+
+#### 4. Website Setup Using Fabric
+
+Fabric can automate setting up a web server:
+```python
+def web_setup(WEBURL, DIRNAME):
+    local("apt install zip unzip -y")
+    sudo("yum install httpd wget unzip -y")
+    sudo("systemctl start httpd")
+    sudo("systemctl enable httpd")
+    local("wget -o website.zip %s" % WEBURL)
+    local("unzip -o website.zip")
+    with lcd(DIRNAME):
+        local("zip -r tooplate.zip *")
+    put("tooplate.zip", "/var/www/html/", use_sudo=True)
+    with cd("/var/www/html/"):
+        sudo("unzip tooplate.zip")
+    sudo("systemctl restart httpd")
+    print("Website setup is done")
+```
+
+#### 5. Executing Fabric Functions
+To execute functions in the `fabfile.py` script, use the following commands:
+
+- To execute the greeting function:
+   ```bash
+   fab greeting:Evening
+   ```
+- To execute system information:
+   ```bash
+   fab system_info
+   ```
+
+#### 6. Running Fabric Commands on Remote Server
+- To run the `remote_exec` function on a remote server:
+   ```bash
+   fab remote_exec
+   ```
+
+**Note:** You need to set up user credentials and ensure the user has `sudo` privileges. Use the `visudo` command to grant root access:
+```bash
+devops ALL=(ALL) NOPASSWD:ALL
+```
+
+Enable password authentication in `/etc/ssh/sshd_config`:
+```bash
+PasswordAuthentication yes
+```
+
+#### 7. Passwordless SSH Login
+
+To set up passwordless login:
+1. Generate an SSH key:
+   ```bash
+   ssh-keygen
+   ```
+2. Copy the SSH key to the remote server:
+   ```bash
+   ssh-copy-id devops@192.168.10.3
+   ```
+After this, you can log in without a password.
+
+#### 8. Running Fabric Commands on Remote Server with Passwordless SSH
+To run Fabric functions on a remote server using passwordless login:
+```bash
+fab -H <ip-address> -u <user-name> <function-to-exec>
+```
+
+#### 9. Example: Remote Web Setup
+Using Fabric, you can run commands both locally and remotely with root privileges. For example, to set up a website remotely:
+```bash
+fab web_setup:http://example.com,website_directory
+```
+
+#### 10. Virtual Environment in Python
+
+To create and use a Python virtual environment:
+1. Install virtualenv:
+   ```bash
+   pip install virtualenv
+   ```
+2. Create a virtual environment:
+   ```bash
+   virtualenv <virtual-env-name>
+   ```
+3. Activate the virtual environment:
+   ```bash
+   source ./<virtual-env-name>/bin/activate
+   ```
+4. Deactivate the virtual environment:
+   ```bash
+   deactivate
+   ```
+
+---
+
+These notes summarize essential Python Fabric tasks, allowing you to automate command-line tasks locally or remotely in a structured and reusable way.
+
+### DevOps Notes: Continuous Integration with Jenkins and Docker
+
+#### 1. Prerequisites for Connecting Jenkins to AWS ECR
+
+To integrate Jenkins with AWS Elastic Container Registry (ECR), the following steps and resources are required:
+
+1. **IAM User with ECR Permissions**:
+   - Create an IAM user with permissions to access ECR.
+   
+2. **Store AWS Credentials in Jenkins**:
+   - Store the AWS credentials (access key and secret key) in Jenkins using Jenkins' credentials store.
+
+3. **Create ECR Repository**:
+   - In AWS, create a repository where Docker images will be stored.
+
+4. **Environment Variables**:
+   - Set the following environment variables in the Jenkins pipeline:
+     ```groovy
+     environment {
+         registryCredential = 'ecr:us-east-2:awscreds' // AWS credentials for ECR
+         appRegistry = "951401132355.dkr.ecr.us-east-2.amazonaws.com/vprofileappimg" // Docker image location
+         vprofileRegistry = "https://951401132355.dkr.ecr.us-east-2.amazonaws.com" // Home of all Docker images
+     }
+     ```
+
+#### 2. Jenkins Setup for Docker CI
+
+To set up Docker on Jenkins, follow these steps:
+
+1. **Install Docker Pipeline Plugin**:
+   - Jenkins requires the Docker Pipeline plugin to manage Docker containers in the pipeline.
+
+2. **Install Docker Engine**:
+   - Install Docker on the Jenkins server and add the Jenkins user to the Docker group. Then reboot the server.
+   ```bash
+   sudo usermod -aG docker jenkins
+   sudo systemctl reboot
+   ```
+
+3. **Install AWS CLI**:
+   - AWS CLI is used to interact with AWS services like ECR.
+
+4. **Create ECR Repository**:
+   - Create an ECR repository in AWS where Docker images will be stored.
+
+5. **Install Required Plugins**:
+   - Install plugins such as **ECR**, **Docker Pipeline**, and **AWS SDK** in Jenkins to handle AWS credentials and Docker images.
+
+6. **Store AWS Credentials in Jenkins**:
+   - Add AWS access credentials in Jenkins under **Credentials** and reference them in the pipeline.
+
+7. **Run the Pipeline**:
+   - Execute the Jenkins pipeline to build and push Docker images to ECR.
+
+#### 3. Jenkins Pipeline for Docker CI/CD
+
+```groovy
+pipeline {
+    agent any
+    tools {
+        maven "MAVEN3"
+        jdk "OracleJDK8"
+    }
+    environment {
+        registryCredential = 'ecr:us-east-2:awscreds'
+        appRegistry = "951401132355.dkr.ecr.us-east-2.amazonaws.com/vprofileappimg"
+        vprofileRegistry = "https://951401132355.dkr.ecr.us-east-2.amazonaws.com"
+    }
+    stages {
+        stage('Fetch Code') {
+            steps {
+                git branch: 'docker', url: 'https://github.com/devopshydclub/vprofileproject.git'
+            }
+        }
+        stage('Test') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+        stage('Code Analysis with Checkstyle') {
+            steps {
+                sh 'mvn checkstyle:checkstyle'
+            }
+            post {
+                success {
+                    echo 'Generated Analysis Result'
+                }
+            }
+        }
+        stage('Build & SonarQube Analysis') {
+            environment {
+                scannerHome = tool 'sonar4.7'
+            }
+            steps {
+                withSonarQubeEnv('sonar') {
+                    sh '''
+                    ${scannerHome}/bin/sonar-scanner \
+                    -Dsonar.projectKey=vprofile \
+                    -Dsonar.projectName=vprofile-repo \
+                    -Dsonar.projectVersion=1.0 \
+                    -Dsonar.sources=src/ \
+                    -Dsonar.java.binaries=target/test-classes/ \
+                    -Dsonar.junit.reportsPath=target/surefire-reports/ \
+                    -Dsonar.jacoco.reportsPath=target/jacoco.exec \
+                    -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml
+                    '''
+                }
+            }
+        }
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+        stage('Build App Image') {
+            steps {
+                script {
+                    dockerImage = docker.build("${appRegistry}:${BUILD_NUMBER}", "./Docker-files/app/multistage/")
+                }
+            }
+        }
+        stage('Upload App Image') {
+            steps {
+                script {
+                    docker.withRegistry(vprofileRegistry, registryCredential) {
+                        dockerImage.push("${BUILD_NUMBER}")
+                        dockerImage.push('latest')
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+#### 4. Explanation of Pipeline Stages
+
+- **Fetch Code**: Fetch the latest code from the Git repository.
+   ```groovy
+   git branch: 'docker', url: 'https://github.com/devopshydclub/vprofileproject.git'
+   ```
+
+- **Test**: Run unit tests using Maven.
+   ```groovy
+   sh 'mvn test'
+   ```
+
+- **Code Analysis (Checkstyle)**: Perform code analysis using Checkstyle.
+   ```groovy
+   sh 'mvn checkstyle:checkstyle'
+   ```
+
+- **SonarQube Analysis**: Analyze the code quality using SonarQube.
+   ```groovy
+   withSonarQubeEnv('sonar') {
+       sh '''
+       ${scannerHome}/bin/sonar-scanner \
+       -Dsonar.projectKey=vprofile \
+       -Dsonar.projectName=vprofile-repo \
+       -Dsonar.projectVersion=1.0 \
+       -Dsonar.sources=src/ \
+       -Dsonar.java.binaries=target/test-classes/ \
+       -Dsonar.junit.reportsPath=target/surefire-reports/ \
+       -Dsonar.jacoco.reportsPath=target/jacoco.exec \
+       -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml
+       '''
+   }
+   ```
+
+- **Quality Gate**: Ensure the quality gate is passed before proceeding.
+   ```groovy
+   waitForQualityGate abortPipeline: true
+   ```
+
+- **Build App Image**: Build the Docker image for the application.
+   ```groovy
+   dockerImage = docker.build("${appRegistry}:${BUILD_NUMBER}", "./Docker-files/app/multistage/")
+   ```
+
+- **Upload App Image**: Push the Docker image to ECR.
+   ```groovy
+   docker.withRegistry(vprofileRegistry, registryCredential) {
+       dockerImage.push("${BUILD_NUMBER}")
+       dockerImage.push('latest')
+   }
+   ```
+
+---
+
+This pipeline demonstrates how to automate Continuous Integration (CI) and Docker-based Continuous Delivery (CD) using Jenkins, AWS ECR, and Docker.
+
+### DevOps Notes: Continuous Integration with Jenkins and Docker
+
+#### 1. **Setting Up Jenkins and Docker**
+   - First, log in to the Jenkins server and install Docker by following the official Docker documentation:  
+     [Docker Installation on Ubuntu](https://docs.docker.com/engine/install/ubuntu/)
+   - Ensure you are a root user while installing Docker.
+
+#### 2. **Configuring Jenkins to Use Docker**
+   - After installing Docker, map the Jenkins user to the Docker group so that Jenkins can execute Docker commands.  
+     Check if the Jenkins user belongs to the Docker group:
+     ```bash
+     id jenkins
+     ```
+     If Docker group is not listed, add it using:
+     ```bash
+     usermod -a -G docker jenkins
+     ```
+   - Reboot or restart Jenkins after this change to apply the new Docker group membership.
+
+#### 3. **Installing AWS CLI**
+   - Install AWS CLI to allow pushing Docker images to AWS ECR (Elastic Container Registry):
+     ```bash
+     apt install awscli -y
+     ```
+
+#### 4. **Creating an IAM User and ECR Repository in AWS**
+   - **IAM User Creation**:
+     1. Go to AWS services and search for **IAM**.
+     2. In Access Management, navigate to **Users** and click **Add User**.
+     3. Provide a username and select **Access key - programmatic access**.
+     4. On the **Set Permissions** page, select "Attach existing policies directly" and assign the following permissions:
+        - `AmazonEC2ContainerRegistryFullAccess`
+        - `AmazonECS_FullAccess`
+     5. After creating the user, download the access key and secret key as a CSV file.
+   
+   - **ECR Repository Creation**:
+     1. Go to AWS services and search for **Elastic Container Registry**.
+     2. Click **Create Repository** and provide a repository name.
+     3. Copy the repository URI for use in Jenkins.
+
+#### 5. **Installing Jenkins Plugins for Docker and AWS Integration**
+   - Go to the Jenkins **Plugin Manager** and install the following plugins:
+     1. **Docker Pipeline**: To build and use Docker containers in pipelines.
+     2. **Amazon ECR**: Generates Docker authentication tokens from AWS credentials to access Amazon ECR.
+     3. **Amazon Web Services SDK**: Provides AWS SDK for Java modules.
+     4. **CloudBees Docker Build and Publish**: Enables building Dockerfile-based projects and publishing images to Docker registries.
+
+#### 6. **Adding AWS Credentials in Jenkins**
+   - Navigate to:
+     ```
+     Dashboard > Credentials > System > Global Credentials (unrestricted) > Add Credentials
+     ```
+   - Choose **AWS Credentials** and input the access key ID and secret access key obtained from the IAM user creation step.
+
+#### 7. **Setting Up Jenkins Pipeline**
+   - Update your pipeline script with the necessary environment variables:
+     ```groovy
+     pipeline {
+         environment {
+             registryCredential = 'ecr:<region>:<credential-id>'
+             appRegistry = '<REGISTRY_URL>/registryname'
+             vprofileRegistry = '<REGISTRY_PATH>'
+         }
+         stages {
+             stage('Build') {
+                 steps {
+                     script {
+                         // Pipeline steps for building and pushing Docker images
+                     }
+                 }
+             }
+         }
+     }
+     ```
+   - **Key Variables**:
+     - `registryCredential`: Credential ID for the ECR registry.
+     - `appRegistry`: The full Docker registry URL including the image name.
+     - `vprofileRegistry`: Full path to the ECR registry.
+
+#### 8. **Running the Jenkins Pipeline**
+   - After configuring the pipeline script, run the job. AWS credentials will automatically be used for authentication, allowing passwordless access to AWS services.
+
+#### 9. **Push Docker Images to AWS ECR**
+   - Edit the pipeline to include the steps to build, tag, and push Docker images to the ECR repository. Make sure to use the `ECR` registry details and tags in your pipeline configuration. Build the pipeline to deploy your Docker images into AWS ECR.
+
+---
+
+This guide helps set up a Jenkins pipeline with Docker and AWS integration, including necessary configurations, AWS setup, and Jenkins plugin installations.
+
+### DevOps Notes: Continuous Integration and Delivery with Jenkins, Docker, and AWS ECS
+
+#### 1. **Extending CI to Continuous Delivery**
+   - The goal is to extend the Jenkins Continuous Integration (CI) pipeline to include Continuous Delivery (CD).
+   - At the final stage of CI, Docker images are published to Amazon ECR (Elastic Container Registry).
+   - These images are then hosted on **Amazon ECS (Elastic Container Service)**, a Docker container hosting platform that pulls the latest image from ECR and hosts it on ECS.
+
+#### 2. **Docker Hosting Platforms**
+   - **Local Hosting**:  
+     Docker images can be run locally for development and testing using:
+     ```bash
+     docker run <image-name>
+     ```
+     However, local hosting lacks production features like high availability, self-healing, etc.
+   
+   - **Production Hosting**:  
+     For production environments, container orchestration platforms like **Kubernetes** are used. Available options include:
+     - AWS: **EKS (Elastic Kubernetes Service)**
+     - Azure: **AKS (Azure Kubernetes Service)**
+     - Google Cloud: **GKE (Google Kubernetes Engine)**
+     - Red Hat: **OpenShift**
+   
+   - **Amazon ECS**:  
+     The current solution utilizes **Amazon ECS** for hosting containerized applications. ECS provides a fully managed container orchestration service that integrates with other AWS services.
+
+#### 3. **ECS Clusters**
+   - **Cluster Creation**:  
+     An ECS cluster is a logical grouping of **EC2 instances** or **Fargate tasks** that run containerized applications. When creating an ECS cluster, you specify:
+     - The number of EC2 instances or Fargate tasks.
+     - Configuration details like instance type, AMI (Amazon Machine Image), and networking settings.
+   
+   - **Task Definitions and Services**:
+     - A **task definition** describes how to run containers, including the container's resources and networking requirements.
+     - An **ECS service** ensures a specified number of instances of a task definition run simultaneously in a cluster. Services can be configured with auto-scaling and fault tolerance.
+
+#### 4. **ECS Services and Scaling**
+   - **Service Management**:  
+     ECS services can dynamically scale and update as needed. For example:
+     - Update a service to use a new version of a task definition.
+     - Scale the service up or down by adjusting the number of running tasks.
+   
+   - **Integration with Other AWS Services**:  
+     ECS integrates with services like **Elastic Load Balancing (ELB)** and **Auto Scaling** for increased functionality and scalability.
+
+#### 5. **Jenkins Pipeline Configuration for ECS Deployment**
+   - **Environment Variables**:  
+     The Jenkins pipeline defines the following environment variables:
+     ```groovy
+     environment {
+         registryCredential = 'ecr:us-east-2:awscreds'
+         appRegistry = "951401132355.dkr.ecr.us-east-2.amazonaws.com/vprofileappimg"
+         vprofileRegistry = "https://951401132355.dkr.ecr.us-east-2.amazonaws.com"
+         cluster = "vprofile"
+         service = "vprofileappsvc"
+     }
+     ```
+     These variables store essential information, such as the ECR registry, cluster, and service details.
+
+   - **Deploy to ECS Stage**:  
+     The following pipeline stage deploys the Docker image to ECS:
+     ```groovy
+     stage('Deploy to ecs') {
+         steps {
+             withAWS(credentials: 'awscreds', region: 'us-east-2') {
+                 sh 'aws ecs update-service --cluster ${cluster} --service ${service} --force-new-deployment'
+             }
+         }
+     }
+     ```
+     - This step updates the ECS service with the latest image.
+     - The `--force-new-deployment` flag forces a new task deployment, pulling the latest image from ECR and updating the running container.
+
+#### 6. **Deploying Docker Images to ECS**
+   - **Cluster and Service Setup**:  
+     Before deploying, ensure the ECS cluster and service are created in the AWS Elastic Container Service.
+   
+   - **Image Deployment Process**:
+     - Jenkins uses AWS credentials and region details to trigger the ECS service update.
+     - The `--force-new-deployment` command creates a new task in ECS, pulls the latest Docker image from ECR, and replaces the old image in the service with the new one. 
+
+#### Summary:
+In this pipeline, Jenkins integrates with AWS ECS for a CI/CD solution. Docker images are built and stored in ECR, and then deployed to ECS clusters. The pipeline automates service updates, ensuring the latest images are deployed with every release.
+
+### DevOps Notes: AWS ECS Setup and Jenkins Integration
+
+#### 1. **Introduction to Amazon ECS**
+   - **Amazon ECS (Elastic Container Service)** is a scalable and fast container management service that allows you to run, stop, and manage containers on a cluster.
+   - **Jenkins Plugin**: To use ECS with Jenkins, install the necessary plugin.
+   - **Setup Steps**: Access ECS via AWS services and switch to the "new ECS experience" if prompted.
+
+#### 2. **Creating an ECS Cluster**
+   - **Networking Configuration**:
+     - When creating a cluster, provide a **cluster name**.
+     - ECS tasks and services run in **default subnets** of the default **VPC** unless custom VPC and subnets are specified.
+     - In production, it’s recommended to use **at least three subnets** for high availability.
+   
+   - **Infrastructure Options**:
+     - **AWS Fargate (Serverless)**: A serverless, pay-as-you-go service that manages containers without requiring manual EC2 configuration. Ideal for small, batch, or burst workloads.
+     - **EC2 Instances**: Manually configured for consistent workloads with high resource demands.
+     - **ECS Anywhere**: Allows manual configuration of EC2 instances across various locations for running containers anywhere.
+
+#### 3. **Enabling Monitoring for ECS**
+   - **CloudWatch Monitoring**:
+     - Enable monitoring to track container metrics such as **CPU**, **memory**, **disk**, and **network**.
+     - **Container Insights**: Provides diagnostic information like container restart failures.
+     - **CloudWatch Alarms**: You can set alarms on the collected metrics to proactively manage issues.
+
+#### 4. **Creating ECS Task Definition**
+   - After creating a cluster, the next step is creating a **task definition**.
+   - **Task Definition Parameters**:
+     - **Task Name**: Provide a name for the task definition.
+     - **Container Name** and **Image URI**: Specify the Docker image URI from **Elastic Container Registry (ECR)**.
+     - **Container Port**: Set the port as `8080` and protocol as `TCP`.
+
+   ```yaml
+   Task Definition:
+   - Container Name: my-container
+   - Image URI: <your-ECR-image-URI>
+   - Port: 8080
+   - Protocol: TCP
+   ```
+
+   - **Environment & Infrastructure Setup**:
+     - Assign **AWS Fargate** as the infrastructure.
+     - Configure environment variables, storage, monitoring, and tags.
+     - Set CPU and memory requirements for the task.
+
+#### 5. **Creating a Service for Task Deployment**
+   - Once the task definition is created, go to the **Services** tab in ECS to create a service.
+   - **Service Configuration**:
+     - Select the task definition from the dropdown.
+     - Set the **service name** and **number of tasks** to run (Desired, Minimum, Maximum).
+
+#### 6. **Configuring Load Balancer**
+   - **Load Balancer Setup**:
+     - Create an **Application Load Balancer** to distribute traffic across tasks running in the service.
+     - Set the **load balancer port** as `80` (listens on port 80) and protocol as `HTTP`.
+   
+   - **Security Group**:
+     - Configure a security group to control inbound traffic.
+     - Allow traffic for specific ports, such as `8080` for the application, by adding inbound rules.
+
+   ```bash
+   Inbound Rules:
+   - Port: 8080
+   - Protocol: TCP
+   - Source: <IP address or CIDR>
+   ```
+
+#### 7. **Editing Inbound Rules for EC2 Instance**
+   - If hosting an application on port `8080`, update the inbound rules to allow traffic on that port.
+   - For example, to allow access to port `8080`, add the rule for both **IPv4** and **IPv6**.
+
+#### 8. **Load Balancer Listener and Target Group**
+   - **Listener**: Defines the port and protocol that the load balancer listens on (Port `80` for HTTP).
+   - **Target Group**: The load balancer routes traffic to the tasks based on this group.
+     - The **target port** (e.g., `8080`) is where the application is running, while the **load balancer listens on port 80**.
+
+#### 9. **Accessing the Application**
+   - Once the service is deployed, you can access the application using:
+     - **Load balancer's output service address** or
+     - **Task's IP address** on port `8080`.
+
+#### Summary:
+This ECS setup involves creating clusters, defining tasks, configuring services, and setting up load balancers to ensure seamless deployment of Dockerized applications using AWS ECS and Jenkins.
+
+### DevOps Notes: Docker CICD with Jenkins and AWS ECS
+
+#### 1. **Integrating AWS ECS with Jenkins Pipeline**
+   - After creating an **ECS cluster**, tasks, services, and load balancer, the next step is to connect this setup to the **Jenkins pipeline** for automation.
+   - To enable this, you need to install the **'Pipeline: AWS Steps' plugin** from Jenkins' Plugin Manager.
+     - Go to **Manage Jenkins** > **Plugin Manager**, and search for the plugin to install it.
+
+#### 2. **Jenkins Pipeline Stages**
+   In the Jenkinsfile, the following stages are commonly used in a Docker CI/CD pipeline:
+   
+   ```groovy
+   pipeline {
+       agent any
+       stages {
+           stage('Fetch Code') {
+               steps {
+                   // Fetch the application code from the repository
+               }
+           }
+           stage('Test') {
+               steps {
+                   // Run tests
+               }
+           }
+           stage('Code Analysis with Checkstyle') {
+               steps {
+                   // Code analysis for code quality
+               }
+           }
+           stage('Build & SonarQube Analysis') {
+               steps {
+                   // Build the application and run SonarQube analysis
+               }
+           }
+           stage('Quality Gate') {
+               steps {
+                   // Check SonarQube Quality Gate results
+               }
+           }
+           stage('Build App Image') {
+               steps {
+                   // Build the Docker image of the application
+               }
+           }
+           stage('Upload App Image') {
+               steps {
+                   // Upload the built Docker image to Amazon ECR
+               }
+           }
+           stage('Deploy to ECS') {
+               steps {
+                   // Deploy the Docker image to ECS
+                   sh 'aws ecs update-service --cluster ${cluster} --service ${service} --force-new-deployment'
+               }
+           }
+       }
+   }
+   ```
+
+   - **Key Stages**:
+     1. **Fetch Code**: Pull the source code from the repository.
+     2. **Test**: Run unit tests.
+     3. **Code Analysis with Checkstyle**: Perform static code analysis to maintain code quality.
+     4. **Build & SonarQube Analysis**: Build the application and run **SonarQube** analysis.
+     5. **Quality Gate**: Enforce quality gates based on the SonarQube results.
+     6. **Build App Image**: Build the Docker image for the application.
+     7. **Upload App Image**: Push the built image to **Amazon ECR**.
+     8. **Deploy to ECS**: Update the ECS service using the latest Docker image by forcing a new deployment.
+
+   - The key command to update the ECS service is:
+   
+     ```bash
+     aws ecs update-service --cluster ${cluster} --service ${service} --force-new-deployment
+     ```
+
+   This command ensures that the ECS service fetches the latest Docker image, runs a new task, and replaces the old container with the new one.
+
+#### 3. **Cleanup ECS**
+   - To delete an ECS cluster, you must follow a specific order:
+     1. Set the number of tasks in the service to **0**.
+     2. Delete the **ECS service**.
+     3. Delete the **ECS cluster**.
+
+   ECS clusters cannot be deleted if there are still active tasks running in the service.
+
+#### 4. **Build Triggers**
+   - **Build Triggers** automate the Jenkins pipeline execution process. Instead of manually running the build with 'Build Now' or 'Build Now with Parameters', triggers enable automatic execution of the pipeline.
+   - Triggers can be set up based on events like:
+     - Changes in the code repository (e.g., a push to Git).
+     - Time-based schedules (e.g., a nightly build).
+     - Webhooks from external services.
+
+### DevOps Notes: Jenkins Build Triggers & Automation
+
+#### 1. **Overview of Jenkins Build Triggers**
+Jenkins build triggers are mechanisms that automate the execution of Jenkins jobs. Triggers help streamline the CI/CD process by automating the pipeline execution based on specific events or schedules.
+
+#### 2. **Popular Build Triggers**
+
+1. **Git Webhook**
+   - Triggers a Jenkins job whenever there’s a commit to the Git repository.
+   - GitHub sends a JSON payload to Jenkins, initiating the build automatically.
+
+2. **Poll SCM**
+   - Jenkins periodically checks the Git repository for new commits based on a predefined interval.
+   - If new commits are detected, the job is triggered.
+
+   ```bash
+   Poll SCM schedule: H/5 * * * *
+   ```
+   The above cron schedule checks every 5 minutes.
+
+3. **Scheduled Jobs**
+   - Jenkins jobs are scheduled to run at specific times or intervals, similar to cron jobs.
+   - For example, you can schedule a job to run at midnight every day:
+
+   ```bash
+   0 0 * * *
+   ```
+
+4. **Remote Triggers**
+   - Jobs can be triggered externally through API calls, scripts, or tools like Ansible.
+   - Remote triggers often use authentication tokens or secrets to ensure secure access.
+   
+   Example: Use a script to trigger the Jenkins job via API.
+   ```bash
+   curl -X POST http://jenkins-url/job/job-name/build?token=your-token
+   ```
+
+5. **Build After Other Projects Are Built**
+   - Automatically triggers a job once another job has successfully completed. Useful for multi-step pipelines where one job depends on the output of another.
+
+#### 3. **Automating Git Repository Access in Jenkins**
+
+##### Steps to Set Up GitHub Repository and SSH Access:
+
+1. **Create a GitHub Repository**
+   - Create a new GitHub repository (e.g., named `jenkinstriggers`).
+   - Choose whether the repository should be public or private.
+
+2. **Generate SSH Keys**
+   - Generate SSH keys on your terminal to set up passwordless access to your GitHub repository:
+
+     ```bash
+     ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+     ```
+   - The public key (`id_rsa.pub`) is added to your GitHub account under **SSH and GPG keys**.
+   - The private key (`id_rsa`) will be used in Jenkins for secure access.
+
+3. **Clone the Repository**
+   - After adding the public key to GitHub, clone the repository locally using SSH:
+     ```bash
+     git clone git@github.com:username/jenkinstriggers.git
+     ```
+
+4. **Jenkins Configuration for SSH Access**
+   - Go to **Manage Jenkins** > **Configure Global Security**.
+   - Under **Git Host Key Verification**, set the option to **Accept First Connection** to avoid SSH fingerprint verification issues.
+
+#### 4. **Creating and Configuring a Jenkins Pipeline**
+
+1. **Create a Jenkinsfile**
+   - Create a `Jenkinsfile` inside your Git repository to define your pipeline stages. An example pipeline for demonstration:
+
+     ```groovy
+     pipeline {
+         agent any
+         stages {
+             stage('Build') {
+                 steps {
+                     sh 'echo "Build completed."'
+                 }
+             }
+         }
+     }
+     ```
+
+2. **Configure Jenkins Job**
+   - In Jenkins, create a new **Pipeline** job.
+   - In the job configuration, select **Pipeline script from SCM**.
+   - Set the **Repository URL** (use the SSH URL) and provide the credentials (**SSH username with private key**).
+     - The private key is stored in Jenkins to securely access the Git repository.
+     - The public key is added to GitHub for passwordless access.
+
+   - Provide the branch name and specify the path to the `Jenkinsfile` (e.g., `Jenkinsfile`).
+
+3. **Save and Test the Job**
+   - After setting up the job, save the configuration.
+   - You can manually trigger the build or set up one of the popular triggers, such as a Git webhook or poll SCM.
+
+#### 5. **Testing Triggers**
+
+- After configuring Jenkins to pull the Jenkinsfile from GitHub, test the automation by committing and pushing changes to the repository.
+   ```bash
+   git commit -m "Added Jenkinsfile"
+   git push origin master
+   ```
+- If the triggers are set correctly (e.g., via GitHub Webhook), Jenkins will automatically run the pipeline.
+
+### DevOps Notes: Jenkins Build Triggers Demonstration
+
+#### 1. **Adding a GitHub Webhook to Jenkins**
+
+To trigger Jenkins jobs automatically upon code pushes to a GitHub repository, a webhook needs to be set up.
+
+##### Steps to Add a GitHub Webhook:
+1. **Access Jenkins URL:**
+   - Copy the Jenkins instance URL, such as `http://18.221.221.216:8080/`, from the browser.
+2. **GitHub Webhook Setup:**
+   - In the GitHub repository settings, navigate to **Webhooks**.
+   - Set the **Payload URL** as `http://18.221.221.216:8080/github-webhook/`.
+   - Set the **Content type** to `application/json`.
+   - Choose the **Push** event as the triggering event for the webhook.
+3. **Troubleshooting:**
+   - If the webhook fails to trigger, check:
+     - The Jenkins URL matches the Payload URL.
+     - The Jenkins server's security group allows access from the internet (GitHub needs access).
+
+#### 2. **Configuring Jenkins to Use the Webhook**
+
+1. **Jenkins Job Configuration:**
+   - In Jenkins, configure the job to use the **GitHub hook trigger for GITScm polling**.
+   - This ensures that any code push to the specified repository triggers the Jenkins job.
+   - Jenkins will auto-build whenever a commit is pushed to the repository.
+
+#### 3. **Poll SCM Trigger**
+
+Instead of waiting for GitHub to send a webhook, Jenkins can periodically poll the repository for new commits.
+
+##### Setting Up Poll SCM:
+1. **Configure Poll SCM:**
+   - In Jenkins, set a polling schedule in **cron format** under the **Build triggers** section.
+     - Example: Run every minute: `* * * * *`.
+   
+   ```bash
+   Schedule: * * * * *
+   ```
+2. **Logs:**
+   - View the **Git polling log** under the build section of the Jenkins dashboard to see when the last poll occurred and if any new commits were found.
+
+#### 4. **Comparison of Triggers: Webhook vs. Poll SCM**
+- **Git Webhook**: GitHub sends a JSON payload to Jenkins as soon as a commit happens.
+- **Poll SCM**: Jenkins periodically checks the GitHub repository for new commits, and if found, it triggers the job.
+
+#### 5. **Scheduled Jobs**
+Jobs can be configured to run periodically, regardless of repository changes.
+
+##### Setting a Schedule for Periodic Jobs:
+1. In Jenkins, go to **Job Configuration** > **Build triggers**.
+2. Select **Build periodically** and set a schedule using cron job syntax.
+   - Example: To schedule the job to run Monday through Friday:
+
+   ```bash
+   0 0 * * 1-5
+   ```
+
+#### 6. **Remote Triggers**
+
+You can trigger Jenkins jobs remotely using API calls, scripts, or other Jenkins servers.
+
+##### Setting Up Remote Triggers:
+1. **Enable Remote Triggers:**
+   - Go to **Job Configuration** > **Build triggers**.
+   - Check **Trigger builds remotely** and provide a token name (e.g., `testtoken`).
+2. **Generate API Token:**
+   - Under your username in Jenkins, navigate to **Configure** > **API Token**.
+   - Generate and save the API token for future use.
+3. **Generate Jenkins Crumb:**
+   - Use `wget` to obtain a Jenkins crumb:
+   
+   ```bash
+   wget -q --auth-no-challenge --user username --password password \
+   --output-document - 'http://JENKINS_IP:8080/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,":",//crumb)'
+   ```
+   - Save the generated crumb for remote triggering.
+
+##### Example of Triggering a Job Remotely via Curl:
+```bash
+curl -I -X POST http://admin:116ce8f1ae914b477d0c74a68ffcc9777c@52.15.216.180:8080/job/vprofile-Code-Analysis/build?token=testtoken -H "Jenkins-Crumb:8cb80f4f56d6d35c2121a1cf35b7b501"
+```
+
+#### 7. **Job Dependency Trigger**
+
+If one Jenkins job depends on the successful execution of another job, you can configure a dependency trigger.
+
+##### Configuring a Dependent Job:
+1. **In Job B (dependent job):**
+   - Go to **Job Configuration** > **Build triggers**.
+   - Check **Build after other projects are built**.
+   - Specify **Job A** (the upstream job) as the dependency. After **Job A** completes, **Job B** will automatically start.
+
+---
+
+These are key Jenkins build triggers to automate pipeline execution, from webhooks and Poll SCM to scheduled jobs and remote API triggers, ensuring efficient CI/CD practices.
+
+### DevOps Notes: Variables, JSON, YAML, and Docker
+
+#### 1. **Understanding Variables, JSON, and YAML**
+
+In DevOps, data is often exchanged between tools using **JSON** and **YAML** formats. As a DevOps engineer, it's important to be comfortable with these formats for configuration and data exchange.
+
+##### Variables in Shell Scripts:
+- When using variables in shell scripts, it's important to note how quotes affect variable interpolation:
+
+```bash
+name="Jeevan"
+echo "Hello $name"   # Output: Hello Jeevan
+echo 'Hello $name'   # Output: Hello $name (no interpolation)
+```
+
+#### 2. **Introduction to Docker**
+
+Docker is an open platform for developing, shipping, and running applications. It allows you to package applications in isolated environments called **containers**, which can run simultaneously on a single host without interference.
+
+##### Key Concepts:
+- **Docker Image**: A lightweight, standalone, and executable package that contains everything needed to run an application.
+- **Docker Container**: A running instance of a Docker image. Containers provide isolation and security for running applications.
+- **Docker Hub**: An official Docker registry where you can find pre-built images.
+
+##### Docker Workflow:
+- **Client-Server Model**: Docker commands are run on the client, and the **Docker Daemon** on the host executes them.
+- If an image is not available locally, Docker fetches it from the **Docker Registry**.
+
+#### 3. **Docker Installation on Linux**
+
+To install Docker on a Linux machine (e.g., Ubuntu), follow these steps:
+
+```bash
+sudo apt-get update
+sudo apt-get install \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release -y
+
+# Add Docker's official GPG key
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+# Set up the stable repository
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Install Docker Engine
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io -y
+```
+
+For the complete Docker installation documentation, refer to [Docker's official documentation](https://docs.docker.com/engine/install/ubuntu/).
+
+#### 4. **Essential Docker Commands**
+
+- **View Images**: List all Docker images stored locally.
+  
+  ```bash
+  docker images
+  ```
+
+- **View Running Containers**: List all active containers.
+  
+  ```bash
+  docker ps
+  ```
+
+- **View All Containers**: List containers in any state (running, stopped, or exited).
+  
+  ```bash
+  docker ps -a
+  ```
+
+- **Remove a Container**: Remove a container by its name.
+  
+  ```bash
+  docker rm <container-name>
+  ```
+
+- **Remove an Image**: Remove an image by its ID.
+  
+  ```bash
+  docker rmi <image-id>
+  ```
+
+#### 5. **Running Docker Containers with Port Mapping**
+
+When running a Docker container, port mapping is essential to access services running inside the container from the host machine.
+
+```bash
+docker run --name web01 -d -p 9080:80 nginx
+```
+
+- This command runs an **Nginx** container named `web01`, mapping the host’s port **9080** to the container’s port **80**. Any request sent to `localhost:9080` on the host will be forwarded to port **80** inside the container.
+
+##### Example of Port Mapping Output:
+```bash
+0.0.0.0:9080->80/tcp, :::9080->80/tcp
+```
+
+#### 6. **Inspecting Docker Containers**
+
+To find the **IP address** of a running container:
+
+```bash
+docker inspect <container-name>
+```
+
+- The IP address can be found under the `IPAddress` field in the output. For example, inside the container, you can access the application via `http://172.17.0.2:80`.
+  
+- To access this from the host, use the host machine's IP address and the mapped port:
+  
+  ```bash
+  http://192.168.0.127:9080
+  ```
+
+In this case, **192.168.0.127** is the host machine's IP, and **9080** is the port mapped to the container's port **80**.
+
+---
+
+These notes cover essential concepts of variables, JSON, YAML, and Docker, with examples and code snippets to help in understanding and practical implementation.
+
+### DevOps Notes: Containers, Microservices, and Docker-Compose
+
+#### 1. **Vprofile Project on Containers**
+
+In this project, **Vagrant** is used to dynamically launch multiple virtual machines (VMs). However, the focus is on using **Docker-Compose** to manage containerized services such as **MySQL**, **Memcached**, **RabbitMQ**, **Tomcat**, and **Nginx**.
+
+##### Key Docker-Compose Command:
+- To launch all the services defined in the `docker-compose.yml` file:
+
+```bash
+docker compose up -d
+```
+
+- Ensure that you run this command from the directory where the `docker-compose.yml` file is located.
+
+#### 2. **Monolithic vs. Microservices Architecture**
+
+##### Monolithic Architecture:
+- A **monolithic application** integrates all features (e.g., User Interface, Chat, Posts, Notifications) into a single codebase, often hosted on a single server.
+- Example: A Java application with multiple features running under a single **Tomcat server**. Modifying any feature requires stopping the entire application, leading to potential downtime and code conflict.
+
+##### Microservices Architecture:
+- **Microservices** split the application into small, independent services. Each service focuses on a single feature and communicates with others via an **API Gateway**.
+- Services are loosely coupled, allowing each to be developed, deployed, and maintained independently. This architecture reduces the risk of one service impacting another.
+
+##### Advantages of Microservices:
+- **Modularity**: Each service can be built using different technologies.
+- **Scalability**: Easier to scale specific services.
+- **Independent Deployment**: Teams can work independently on different services.
+- **Resilience**: A failure in one service doesn't affect others.
+
+##### Microservices and Containers:
+Instead of maintaining separate servers for each microservice, which increases costs, **containers** provide an efficient solution. Containers allow services to run in isolated environments on the same host, significantly reducing infrastructure costs.
+
+#### 3. **Microservices with Docker**
+
+Containers provide a dedicated environment for each microservice without the need for multiple Linux servers. Each service is packaged into a **Docker image**, which, when run, becomes a **Docker container**. This approach preserves modularity while optimizing resource use.
+
+##### Key Points:
+- Containers allow for a lightweight and efficient microservices architecture.
+- Each feature of the application is run in a separate container.
+
+#### 4. **Microservices Project: Docker-Compose Example**
+
+Below is a sample **docker-compose.yml** file that demonstrates how multiple services are launched using Docker-Compose. The services include **MySQL**, **Memcached**, **RabbitMQ**, **Tomcat**, and **Nginx**.
+
+```yaml
+version: '3.8'
+services:
+  vprodb:
+    image: vprocontainers/vprofiledb
+    ports:
+      - "3306:3306"
+    volumes:
+      - vprodbdata:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=vprodbpass
+
+  vprocache01:
+    image: memcached
+    ports:
+      - "11211:11211"
+
+  vpromq01:
+    image: rabbitmq
+    ports:
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+
+  vproapp:
+    image: vprocontainers/vprofileapp
+    ports:
+      - "8080:8080"
+    volumes:
+      - vproappdata:/usr/local/tomcat/webapps
+
+  vproweb:
+    image: vprocontainers/vprofileweb
+    ports:
+      - "80:80"
+
+volumes:
+  vprodbdata: {}
+  vproappdata: {}
+```
+
+##### Key Components of the Docker-Compose File:
+- **Services**: Each block under `services:` defines a containerized service such as **MySQL**, **Memcached**, **RabbitMQ**, **Tomcat**, or **Nginx**.
+- **Ports**: Ports are mapped between the host and the container. For example, **3306** is mapped for MySQL, **8080** for the application, and **80** for the web service.
+- **Volumes**: Data persistence is achieved using Docker volumes, such as `vprodbdata` for MySQL and `vproappdata` for Tomcat.
+
+#### 5. **Conclusion**
+This example highlights the power of **Docker-Compose** in managing multiple containerized services. By using **containers**, microservices architectures can be efficiently deployed with isolated, dedicated environments, reducing the overhead of managing multiple physical servers.
+
+### AWS and Cloud Computing Concepts
+
+#### 1. **What is Cloud Computing?**
+
+Cloud computing allows businesses to use resources such as servers, storage, and applications over the internet, rather than managing them locally. This provides flexibility, scalability, and cost-efficiency.
+
+##### Key Benefits of Cloud Computing:
+- **Elasticity**: 
+  - You don't need to over-provision resources in anticipation of scaling. You can scale up or down based on real-time needs. Cloud providers offer resources on a **pay-as-you-go** basis, preventing the need to invest in costly hardware.
+  
+- **Cost Savings**: 
+  - By scaling resources only as needed, you can avoid unnecessary costs, maximizing savings.
+
+- **Global Deployment in Minutes**: 
+  - Cloud services allow you to deploy your infrastructure and applications globally within minutes, improving speed and flexibility in operations.
+
+#### 2. **Cloud Service Models**
+
+Cloud computing services are categorized into three primary models:
+
+##### a) **Infrastructure as a Service (IaaS)**:
+- **IaaS** provides access to the fundamental building blocks of IT infrastructure, including virtual machines, networking, and storage.
+- **Advantages**: 
+  - You get complete control over your infrastructure, allowing for customization and scalability.
+  - Familiarity with traditional on-premise infrastructure, making it easier for IT departments to adapt.
+  
+- **Example Providers**: 
+  - Amazon Web Services (AWS), Microsoft Azure, Google Cloud Platform (GCP).
+
+##### b) **Platform as a Service (PaaS)**:
+- **PaaS** removes the need to manage underlying infrastructure such as hardware, operating systems, or storage, enabling developers to focus on building and managing applications.
+  
+- **Advantages**:
+  - Efficiency in application development without worrying about infrastructure maintenance, capacity planning, or patching.
+  - Infrastructure automatically scales based on the demand for the application.
+  
+- **Example Providers**:
+  - AWS Elastic Beanstalk, Google App Engine, Heroku.
+
+##### c) **Software as a Service (SaaS)**:
+- **SaaS** provides fully managed software solutions over the internet. The cloud provider manages everything, including infrastructure, application code, and updates.
+  
+- **Advantages**:
+  - Users only need to focus on how they will use the application, without concern for maintenance or infrastructure management.
+  
+- **Examples**:
+  - Web-based email (e.g., Gmail), CRM platforms (e.g., Salesforce), collaboration tools (e.g., Microsoft 365).
+
+#### 3. **Comparison of IaaS, PaaS, and SaaS**
+
+| **Service Model**       | **Control**                                                                 | **Focus Area**                   | **Examples**                                                                 |
+|-------------------------|-----------------------------------------------------------------------------|----------------------------------|-------------------------------------------------------------------------------|
+| **IaaS (Infrastructure)** | Full control over infrastructure (e.g., configuring network ports, security settings) | Networking, storage, compute     | AWS EC2, Azure VMs, Google Compute Engine                                      |
+| **PaaS (Platform)**      | Application-level management, infrastructure auto-scales                    | Application development          | AWS Elastic Beanstalk, Google App Engine, Heroku                              |
+| **SaaS (Software)**      | No control over underlying infrastructure, focus solely on using the application | End-user application usage       | Gmail, Salesforce, Microsoft 365                                              |
+
+#### 4. **Summary**
+Cloud computing offers three core models—**IaaS**, **PaaS**, and **SaaS**—each offering varying levels of control and flexibility over infrastructure, platform, and software services. These services provide businesses with significant advantages in terms of scalability, cost-efficiency, and global reach, making cloud computing a critical component of modern IT strategy.
+
+### AWS EC2 Introduction
+
+#### **1. Tags in AWS EC2**
+Tags in AWS help you manage and organize your resources efficiently. These are key-value pairs that provide metadata for your resources. For instance, you can use tags to name your EC2 instances or to specify the region they are deployed in.
+
+- **Key**: Descriptive term (e.g., "Name", "Region")
+- **Value**: Specific value for the key (e.g., "WebServer", "US-East")
+
+**Example**:
+```plaintext
+Key: Name     Value: WebServer01
+Key: Project  Value: Alpha
+```
+
+Tags help in searching and filtering resources.
+
+#### **2. Security Groups**
+Security Groups act as virtual firewalls for your EC2 instances. They control both inbound and outbound traffic. For each security group, you can define rules that allow or deny specific types of traffic based on protocol and IP addresses.
+
+- **Inbound Traffic**: Requests coming into the instance.
+- **Outbound Traffic**: Requests going out from the instance.
+
+#### **3. EC2 Login Using Key Pairs**
+To log in to an EC2 instance remotely, you need a key pair, which uses public-key cryptography for secure authentication. This consists of:
+- **Public Key**: Stored in AWS.
+- **Private Key**: Stored on your local machine.
+
+You use the private key to authenticate when connecting to your instance via SSH.
+
+#### **4. Launching an EC2 Instance**
+- Go to **Services > EC2** from the AWS dashboard.
+- Select **Launch Instance**.
+- Choose an **Amazon Machine Image (AMI)**, which is a template with the operating system, application server, and applications pre-configured for launching an instance.
+
+#### **5. Key Pair Types**
+When creating an EC2 instance, you need to generate a key pair for secure login. The key pair types are:
+- **RSA**: RSA-encrypted private and public key pair.
+- **ED25519**: An encryption method not supported for Windows instances.
+
+Key pair file formats:
+- **.pem**: For OpenSSH.
+- **.ppk**: For PuTTY.
+
+Store the private key securely, as it will be required to access the instance later.
+
+#### **6. Amazon Machine Images (AMIs)**
+Amazon Machine Images (AMIs) are templates that include an operating system and required software to launch EC2 instances.
+
+Types of AMIs:
+- **AWS Marketplace AMIs**: These are secure and verified by AWS and trusted third parties.
+- **Community AMIs**: Open-source AMIs that can be created by anyone and are not verified.
+
+**Example**:
+```yaml
+Key: Name         Value: WebServer01
+Key: Project      Value: Alpha
+```
+
+#### **7. EC2 Instance Types**
+When launching an EC2 instance, you can choose from several instance types based on:
+- **CPU capacity**.
+- **Memory**.
+- **Storage**.
+
+For general purposes, a **t2.micro** instance is free-tier eligible. For compute-intensive workloads, like machine learning tasks, use **C-series** instances.
+
+You can find more details on instance types here: [AWS EC2 Instance Types](https://aws.amazon.com/ec2/instance-types/).
+
+#### **8. Network Settings and Security**
+During EC2 instance creation, you can modify the network settings, such as:
+- **VPC Network**: Choose a virtual private cloud for your instance.
+- **Subnet**: If no preference is selected, the default subnet for the region will be used.
+- **Auto-assign Public IP**: Allocates a public IP for the instance (enabled by default).
+- **Security Groups**: Customize inbound and outbound traffic rules. By default, SSH traffic is allowed from anywhere, but you can restrict it to specific IPs for enhanced security.
+
+**Example**:
+```yaml
+# Example configuration with SSH access restricted
+SecurityGroup:
+  Allow SSH: MyIP
+  Deny: AllOthers
+```
+
+#### **9. Summary**
+AWS EC2 offers scalable and customizable virtual machines, allowing you to tailor instances to your needs with specific configurations, security, and management. The use of key pairs, AMIs, security groups, and network settings ensures the security and efficiency of your cloud infrastructure.
+
+### AWS EC2 Quick Start Notes
+
+#### 1. **Configuring EC2 Storage**
+- EC2 instances allow configuration of storage options during setup.
+- Free tier users are eligible for up to 30 GB of EBS (Elastic Block Store) General Purpose SSD or Magnetic storage.
+
+#### 2. **User Data for Initial Setup**
+- In the "Advanced Details" section, there's a **User Data** field for shell commands to execute automatically after the EC2 instance launches.
+- Example of user data for installing and starting the Apache HTTP server:
+  
+  ```bash
+  #!/bin/bash
+  sudo yum install httpd -y
+  sudo systemctl start httpd
+  sudo systemctl enable httpd
+  mkdir /tmp/test1
+  ```
+
+#### 3. **Checking EC2 Instance Details**
+- Navigate to the **Instances** tab to view:
+  - Name, Instance ID, State, Type, Status Checks, Alarm Status, Availability Zone, Public IPv4 Address, Private IPv4 Address.
+- **Health Checks**: EC2 instances undergo two health checks — hardware and the instance's launch script.
+  
+  **Address Usage**:
+  - **Public IPv4**: Used for remote connections to the instance.
+  - **Private IPv4**: Used within the subnet for communication.
+
+#### 4. **Connecting to an EC2 Instance via SSH**
+Steps to connect:
+1. Open an SSH client.
+2. Locate the private key file (`web-dev-key.pem`).
+3. Change file permissions to ensure the key is not publicly viewable:
+  
+   ```bash
+   chmod 400 web-dev-key.pem
+   ```
+
+4. Connect to the instance using its Public DNS:
+
+   ```bash
+   ssh -i "web-dev-key.pem" ec2-user@ec2-3-87-210-157.compute-1.amazonaws.com
+   ```
+
+#### 5. **Verifying Apache HTTP Server on EC2**
+- After connecting via SSH, check the status of the Apache HTTP server using the following command:
+
+  ```bash
+  sudo systemctl status httpd
+  ```
+
+  Example output:
+
+  ```
+  httpd.service - The Apache HTTP Server
+  Loaded: loaded (/usr/lib/systemd/system/httpd.service; enabled; preset: disabled)
+  Active: active (running) since Sat 2023-06-24
+  Main PID: 13174 (httpd)
+  ```
+
+#### 6. **Checking Network Ports**
+- Use the following command to check which processes are listening on port 80 (HTTP):
+
+  ```bash
+  ss -tunlp | grep 80
+  ```
+
+  **Explanation**:
+  - `ss` = Socket statistics.
+  - Options:
+    - `-t`: Filter by TCP.
+    - `-u`: Filter by UDP.
+    - `-n`: Show numerical addresses.
+    - `-l`: Show listening sockets.
+    - `-p`: Show process information.
+  - `grep 80`: Searches for port 80, used by HTTP protocol.
+
+#### 7. **Modifying Security Groups to Allow HTTP Access**
+- EC2 instances, by default, may only allow SSH (Port 22) access. To allow HTTP traffic on Port 80:
+  1. Go to the **Instance** page and select the instance.
+  2. Under the **Security Groups** tab, modify inbound rules.
+  3. Add a new rule:
+     - **Type**: Custom TCP.
+     - **Port**: 80.
+     - **Source**: Choose either `My IP` (for personal access) or `Anywhere` (for global access).
+  4. Save the changes to apply them.
+
+#### 8. **Managing EC2 Instance States**
+You can manage the state of your EC2 instance using the following options:
+1. **Stop**: Stops the instance but retains its configuration.
+2. **Start**: Boots the instance again after stopping.
+3. **Reboot**: Restarts the instance.
+4. **Hibernate**: Pauses the instance while saving its state to disk.
+5. **Terminate**: Completely removes the instance and clears the allocated volume.
+
+---
+
+These notes summarize the key concepts of launching and managing EC2 instances, along with relevant commands for setup and troubleshooting.
+
+### AWS EC2 Advanced Notes
+
+#### 1. **EC2 Instance Creation Process**
+- **Key Steps**:
+  1. **Requirement Gathering**
+  2. **Key Pairs** 
+  3. **Security Group**
+  4. **Instance Launch**
+
+#### 2. **Requirement Gathering for EC2**
+To create an EC2 instance, the following information is required:
+- **Operating System (OS)**: Choose OS for the application (e.g., CentOS).
+- **Size**: Define RAM, CPU, network requirements.
+- **Storage Size**: Specify disk size (e.g., 10 GB).
+- **Project Details**: Specify the software and the desired outcome.
+- **Services/Apps**: Define services (e.g., SSH, HTTP, MySQL) to ensure proper inbound/outbound rules.
+- **Environment**: Specify environment (Dev, QA, Staging, Prod).
+- **Login User/Owner**: Control access based on the role of the user.
+
+#### 3. **Security Groups**
+- **Purpose**: Acts as a virtual firewall, controlling traffic to/from instances.
+- **Statefulness**: Security groups are stateful, meaning return traffic is automatically allowed.
+- **Inbound Rules**: Controls incoming connections. Example for SSH:
+  
+  ```bash
+  Type: SSH
+  Source: My IP (restricts SSH access to specific IP)
+  ```
+
+- **Outbound Rules**: Controls outgoing traffic between the EC2 instance and the internet.
+
+#### 4. **Handling Security Groups**
+- If a security group is attached to resources, it cannot be deleted until all dependencies are removed.
+- Security groups can be shared across multiple instances.
+  
+#### 5. **Key Pairs**
+- **Definition**: A key pair consists of a private key (used for login) and a public key (injected into the instance).
+- Multiple key pairs can be created for different environments to isolate access.
+
+#### 6. **Launching Multiple Instances**
+- You can launch several instances simultaneously, each with unique configurations.
+- **Tags**: Tags are helpful for filtering instances globally.
+
+#### 7. **Hosting a Website on an EC2 Instance**
+After creating an instance, you can host a website using the following commands:
+
+```bash
+sudo apt update
+sudo apt install apache2 wget unzip -y
+wget https://www.tooplate.com/zip-templates/2128_tween_agency.zip
+unzip 2128_tween_agency.zip
+cp -r 2128_tween_agency/# /var/www/html/
+systemctl restart apache2
+```
+
+- To check the Apache server status:
+  
+  ```bash
+  systemctl status apache2
+  ```
+
+#### 8. **Accessing Port 80**
+To allow access to your hosted website via port 80:
+1. Modify **Inbound Rules** in the security group:
+   - Type: **Custom TCP**
+   - Port: **80**
+   - Source: **My IP** (or `Anywhere` for global access).
+2. Access the website using your public IP.
+
+#### 9. **Elastic IP Addresses**
+- **Public IP Address**: Changes with each instance restart. To maintain a persistent IP, use an **Elastic IP**.
+- **Creating an Elastic IP**:
+  - Go to **Network & Security > Elastic IPs > Create**.
+  - Allocate the Elastic IP to your instance.
+
+#### 10. **Network Interfaces and Volumes**
+- **Network Interfaces**: Can be created and assigned to an instance from **Network & Security**.
+- **Volumes**: Elastic Block Store volumes can be created and attached to instances.
+
+#### 11. **Quick Actions on Instances**
+From the **Instance Tab**, you can quickly perform actions like:
+- **Connect**: Access via SSH.
+- **Manage Instance State**: Start, stop, or reboot the instance.
+- **Networking**: View and edit network settings.
+- **Security**: Modify security groups and key pairs.
+- **Monitoring & Troubleshooting**: Analyze performance and resolve issues.
+
+#### 12. **Cloning Instances**
+- You can clone an instance to replicate its configuration but not its data.
+
+#### 13. **Cost Management**
+- Release unused resources (e.g., Elastic IPs, volumes) to avoid charges, as AWS operates on a pay-as-you-go basis.
+
+---
+
+These notes summarize the key steps and best practices for advanced EC2 instance management, including security, networking, and hosting applications.
+
+### AWS CLI Notes
+
+#### 1. **Introduction to AWS CLI**
+- AWS resources can be managed through both the **AWS Management Console (GUI)** and **AWS CLI** (Command Line Interface).
+- AWS CLI allows programmatic access to AWS services, useful for automation.
+- To install AWS CLI on Windows:
+  
+  ```bash
+  choco install awscli
+  ```
+
+#### 2. **Creating an IAM User for CLI Access**
+- To use AWS CLI, you need an **IAM user** with proper permissions.
+- Steps to create an IAM user:
+  1. Go to the **IAM Dashboard** on AWS.
+  2. Click **Add User** to create a new user.
+  3. Assign permissions:
+     - **Add User to Group**: Manage permissions based on the job function.
+     - **Copy Permissions**: Copy from an existing user.
+     - **Attach Policies Directly**: Directly assign policies (best for specific use cases, e.g., admin access).
+  
+#### 3. **Granting Permissions to IAM Users**
+- You can assign policies to a user or group, depending on the level of access required.
+- For admin-level access, use the **AdministratorAccess** policy. For limited access (e.g., EC2 only), assign specific policies like **AmazonEC2FullAccess**.
+  
+#### 4. **Generating Access Keys**
+- After creating the user, navigate to **Security Credentials**.
+- Create **Access Keys** to use AWS CLI (these are like a username/password for programmatic access).
+- **Important**: Store the access key and secret key safely (e.g., download as a CSV file). Never share them, as they grant admin access.
+
+#### 5. **Configuring AWS CLI**
+Once you have the access keys, configure AWS CLI using the `aws configure` command:
+
+```bash
+$ aws configure
+AWS Access Key ID [None]: <Your Access Key>
+AWS Secret Access Key [None]: <Your Secret Key>
+Default region name [None]: us-east-1
+Default output format [None]: json
+```
+
+- These values are stored in configuration files located at `~/.aws/` (Linux/Mac) or `%UserProfile%\.aws\` (Windows).
+
+  ```bash
+  $ cat ~/.aws/config
+  [default]
+  region = us-east-1
+  output = json
+  ```
+
+  ```bash
+  $ cat ~/.aws/credentials
+  [default]
+  aws_access_key_id = <Your Access Key>
+  aws_secret_access_key = <Your Secret Key>
+  ```
+
+#### 6. **Managing Access Keys**
+- If your keys are compromised, delete or deactivate them instead of deleting the IAM user.
+  
+  ```bash
+  aws iam delete-access-key --access-key-id <Your Access Key>
+  ```
+
+#### 7. **Basic AWS CLI Commands**
+- Get current user identity (User ID and Account ID):
+
+  ```bash
+  aws sts get-caller-identity
+  ```
+
+- Describe EC2 instances in your account:
+
+  ```bash
+  aws ec2 describe-instances
+  ```
+
+#### 8. **Useful Resources**
+- Official AWS CLI documentation: [AWS CLI Documentation](https://awscli.amazonaws.com/v2/documentation/api/latest/index.html)
+- For help with AWS CLI commands, you can also refer to tools like ChatGPT to generate the commands based on your needs.
+
+#### 9. **General Tips**
+- While AWS CLI provides automation and flexibility, the AWS GUI is always available for more intuitive resource management.
+
+--- 
+
+These notes cover setting up AWS CLI, creating an IAM user with the appropriate permissions, and executing basic AWS commands for managing resources.
+
+### AWS Elastic Block Storage (EBS) Notes
+
+#### 1. **Introduction to Elastic Block Store (EBS)**
+- **EBS** is a virtual hard disk for EC2 instances.
+- EBS is **block-based storage**, where data is stored and retrieved in blocks. It is automatically replicated within the same Availability Zone (AZ) to provide fault tolerance.
+- **Snapshot**: A backup of the EBS volume that can be restored later.
+
+#### 2. **Types of EBS Volumes**
+- **General Purpose (SSD)**: Used for most general workloads, e.g., `gp2` or `gp3`.
+- **Provisioned IOPS (SSD)**: Used for workloads where high Input/Output operations per second (IOPS) are a priority, e.g., large databases.
+- **Throughput Optimized HDD (st1)**: Ideal for processing large datasets, e.g., Big Data applications and data warehouses.
+- **Cold HDD (sc1)**: Suitable for infrequent access, often used in file servers.
+- **Magnetic**: A low-cost option, primarily used for backups and archiving.
+
+#### 3. **EBS Volume Performance**
+- **General Purpose SSD (gp2, gp3)**:
+  - Baseline throughput of 128 MiB/s per TiB, burstable to higher speeds depending on volume size and IOPS.
+- **Provisioned IOPS SSD (io1, io2)**:
+  - Maximum throughput of 1,000 MiB/s per volume.
+- **Throughput Optimized HDD (st1)**:
+  - Maximum throughput of 500 MiB/s.
+- **Cold HDD (sc1)**:
+  - Maximum throughput of 250 MiB/s.
+
+#### 4. **Monitoring EBS Performance**
+- Use **Amazon CloudWatch** to monitor and calculate throughput over time.
+- **EBS Performance Test Tool** can be used for benchmarking EBS volumes under different workloads.
+
+#### 5. **Setting up EBS on EC2**
+To test EBS on an EC2 instance, follow these steps:
+1. Launch a **CentOS EC2** instance.
+2. Run the following script in the instance or provide it as **user data**:
+
+   ```bash
+   yum install httpd wget unzip -y
+   systemctl start httpd
+   systemctl enable httpd
+   cd /tmp
+   wget https://www.tooplate.com/zip-templates/2128_tween_agency.zip
+   unzip -o 2128_tween_agency.zip
+   cp -r 2128_tween_agency/* /var/www/html/
+   systemctl restart httpd
+   ```
+
+- This sets up a basic web server on EC2 using **gp2** (General Purpose SSD) as the default storage.
+
+#### 6. **Storage Availability**
+- Both the instance and its attached volume must be in the same **Availability Zone**. You cannot attach an EBS volume from a different AZ.
+
+#### 7. **EBS Partitioning and Disk Information**
+- List disk details:
+
+  ```bash
+  fdisk -l
+  ```
+
+- Example output:
+
+  ```bash
+  Disk /dev/xvda: 8589 MB, 8589934592 bytes, 16777216 sectors
+  ```
+
+- To partition a volume, use the following command:
+
+  ```bash
+  fdisk /dev/xvda
+  ```
+
+#### 8. **Formatting EBS Volumes**
+- Format a volume with a file system (ext4 or xfs):
+  
+  **For ext4:**
+
+  ```bash
+  sudo mkfs -t ext4 /dev/sdb1
+  ```
+
+  **For xfs:**
+
+  ```bash
+  sudo mkfs -t xfs /dev/sdb1
+  ```
+
+- **Note**: Formatting a volume erases all the data on it.
+
+#### 9. **Mounting EBS Volumes**
+- To mount the volume to a directory (e.g., `/var/www/html/images`):
+
+  ```bash
+  mount /dev/xvdf1 /var/www/html/images/
+  ```
+
+- To unmount the volume:
+
+  ```bash
+  umount /var/www/html/images/
+  ```
+
+- **Persistent Mount**: To make the mount permanent, edit the `/etc/fstab` file and add the following line:
+
+  ```bash
+  /dev/xvdf1 /var/www/html/images ext4 defaults 0 0
+  ```
+
+- Apply the changes with:
+
+  ```bash
+  mount -a
+  ```
+
+#### 10. **EBS in AWS Free Tier**
+- The AWS free tier provides **up to 30GB** of EBS storage.
+
+---
+
+These notes cover key concepts of EBS, including volume types, partitioning, formatting, and mounting, as well as practical use cases on EC2 instances.
+
+### AWS Elastic Block Store (EBS) Snapshots Notes
+
+#### 1. **Managing Folders and Processes in Linux**
+- If a folder cannot be deleted due to being used by a process, you can use the following command to identify the process using the folder:
+
+  ```bash
+  lsof /var/www/html/images
+  ```
+
+- The command shows the process IDs using the folder. You can decide to terminate these processes if they are unnecessary, allowing you to delete the folder.
+
+#### 2. **Managing Unused EBS Volumes**
+- It's important to **delete unused volumes** to avoid paying for them.
+- After attaching a new volume to an EC2 instance, you can verify it with the following command:
+
+  ```bash
+  fdisk -l
+  ```
+
+#### 3. **Dedicated Partitions for Applications**
+- For applications like MySQL, it’s useful to create dedicated partitions on the EBS volume. For example, mount a partition to `/var/lib/mysql` to provide dedicated storage for MySQL data.
+
+#### 4. **EBS Snapshots: Backup and Restore**
+- **Snapshots** are backups of EBS volumes at a specific point in time.
+- To create a snapshot:
+  1. Navigate to the **Volumes** section under Elastic Block Store.
+  2. Select the volume.
+  3. Choose **Create Snapshot** under the **Actions** tab.
+  4. The snapshot will appear under the **Snapshots** section.
+
+- A snapshot captures all files on the volume until the time of creation, making it easy to restore data if needed.
+
+#### 5. **Restoring Data from a Snapshot**
+- Example: Recovering data from a MySQL database using a snapshot.
+  
+  **Steps:**
+  1. Stop the MariaDB service:
+
+     ```bash
+     systemctl stop mariadb
+     ```
+
+  2. Unmount the MySQL directory:
+
+     ```bash
+     umount /var/lib/mysql
+     ```
+
+  3. Detach the volume in the AWS Console by selecting the volume under **Volumes** and choosing **Detach Volume**.
+  4. Go to the **Snapshots** section and create a new volume from the snapshot via **Create Volume** under the **Actions** tab.
+  5. Attach the newly created volume to the EC2 instance.
+
+#### 6. **Snapshot Capabilities**
+- **Modify Volume Properties**: Snapshots allow you to change the volume size, switch between **Availability Zones**, or increase storage capacity.
+- **Copying Snapshots Across Regions**: You can copy a snapshot to different regions, allowing for cross-region replication of file structures.
+- **Creating AMIs from Snapshots**: Snapshots can also be used to create Amazon Machine Images (AMIs), enabling you to launch new instances based on the volume configuration.
+- **Public Snapshots**: Snapshots can be made public or shared with other AWS accounts by modifying permissions under the **Actions** tab.
+
+#### 7. **Code Snippet for Snapshot-Based Volume Restoration**
+```bash
+# Stop the MariaDB service
+systemctl stop mariadb
+
+# Unmount the MySQL directory
+umount /var/lib/mysql
+
+# Detach the volume from the instance (performed in AWS Console)
+
+# Create a new volume from the snapshot (performed in AWS Console)
+
+# Attach the new volume to the instance (performed in AWS Console)
+```
+
+By leveraging EBS snapshots, you can effectively manage backups, restore data, migrate across regions, and share resources between AWS accounts.
+
+### AWS Elastic Load Balancer (ELB) Notes
+
+#### 1. **Overview of Load Balancers in AWS**
+A **load balancer** in AWS automatically distributes incoming traffic across multiple targets such as **EC2 instances**, containers, and IP addresses. Load balancing enhances application scalability, availability, and performance.
+
+**Types of AWS Load Balancers:**
+1. **Application Load Balancer (ALB)**
+2. **Network Load Balancer (NLB)**
+3. **Classic Load Balancer (CLB)**
+4. **Gateway Load Balancer (GWLB)**
+
+---
+
+#### 2. **Elastic Load Balancing (ELB) Overview**
+- **Elastic Load Balancing (ELB)** automatically distributes application or network traffic across multiple **targets** in one or more **Availability Zones**.
+- Supports key features like **SSL/TLS termination**, **health checks**, **real-time monitoring**, and **integrated certificate management**.
+  
+  Key benefits:
+  - Automatically scales to handle changes in incoming traffic.
+  - Distributes traffic across targets for better performance and high availability.
+
+#### 3. **Frontend and Backend Ports**
+- **Frontend Ports (Listeners)**: Ports where the load balancer listens for incoming user requests.
+- **Backend Ports**: Ports where the applications running on the backend services (such as EC2 instances) listen for traffic.
+  
+  Example of a typical setup:
+  - **Frontend**: Receives user requests (e.g., HTTP or HTTPS).
+  - **Backend**: Routes traffic to services running on EC2 or containers.
+
+---
+
+#### 4. **Types of Load Balancers in Detail**
+
+##### **Classic Load Balancer (CLB)**
+- **Works at OSI Layer 4 (Transport Layer)**.
+- Routes traffic based on application or network-level information.
+- Primarily used for simple load balancing of traffic across EC2 instances.
+- **Cheapest option**, ideal for straightforward traffic distribution needs.
+
+##### **Application Load Balancer (ALB)**
+- **Operates at OSI Layer 7 (Application Layer)**.
+- Routes traffic based on advanced application-level information, such as HTTP headers, methods, paths, and query strings.
+- Ideal for handling **HTTP/HTTPS requests** and for routing traffic based on URL paths (e.g., directing requests for `www.example.com/images` to a specific set of resources).
+  
+  Example setup for ALB:
+  - Routes traffic based on path or host-based routing.
+  
+  ```bash
+  # ALB setup example to forward different URLs to different targets
+  Target group 1: www.example.com → Target EC2 Group A
+  Target group 2: www.example.com/images → Target EC2 Group B
+  ```
+
+##### **Network Load Balancer (NLB)**
+- **Operates at OSI Layer 4 (Transport Layer)**.
+- Designed to handle **millions of requests per second** and provides **ultra-high performance**.
+- Assigns a **static IP** address, which is useful for applications that require fixed IP endpoints (unlike ALB and CLB which have dynamic IPs).
+  
+  Example use case for NLB:
+  - High-performance applications requiring fast, consistent network traffic handling.
+  - Useful when a static IP is necessary.
+
+##### **Gateway Load Balancer (GWLB)**
+- Enables the deployment and scaling of **virtual appliances** such as firewalls, intrusion detection/prevention systems, and deep packet inspection.
+- Like other load balancers, it distributes traffic across multiple targets in multiple Availability Zones.
+
+---
+
+#### 5. **Code Snippet for Checking Health of ELB**
+AWS provides built-in health checks that monitor the health of the registered targets. Below is a command that helps monitor your load balancer using the **AWS CLI**.
+
+```bash
+# Describe the health of the targets in the load balancer target group
+aws elbv2 describe-target-health --target-group-arn <target-group-arn>
+```
+
+This will return the health status of your targets, enabling automatic removal of unhealthy instances.
+
+---
+
+#### 6. **Choosing the Right Load Balancer**
+- **Application Load Balancer (ALB)**: Best for **HTTP/HTTPS traffic**, web traffic, and advanced routing.
+- **Network Load Balancer (NLB)**: Ideal for high-performance, low-latency applications with a need for **static IP** addresses.
+- **Classic Load Balancer (CLB)**: Suitable for **simple traffic balancing** and backward compatibility.
+- **Gateway Load Balancer (GWLB)**: Perfect for **virtual network appliances** such as firewalls and intrusion prevention systems.
+
+By understanding the various types of load balancers and their use cases, you can select the most appropriate one based on your application's architecture, performance requirements, and security needs.
+
+### AWS Elastic Load Balancer (ELB) Hands-On
+
+This section provides a hands-on approach to setting up an **EC2 instance** and configuring a simple website that can be accessed via the instance's IP address. The steps include setting up Apache (HTTPD) or NGINX, depending on the Linux distribution (CentOS or Ubuntu), downloading a web template, and deploying it to the web server.
+
+#### 1. **Bash Script for EC2 Instance Setup**
+The following script will launch and configure an EC2 instance for testing the ELB (Elastic Load Balancer) storage by deploying a web application on either **CentOS** or **Ubuntu**. The script installs necessary packages, deploys a website, and starts the web server.
+
+```bash
+#!/bin/bash
+
+# Variable Declaration
+PACKAGE=""
+SVC=""
+URL='https://www.tooplate.com/zip-templates/2098_health.zip'
+ART_NAME='2098_health'
+TEMPDIR="/tmp/webfiles"
+
+# Check if running on CentOS or Ubuntu
+yum --help &> /dev/null
+
+if [ $? -eq 0 ]
+then
+    # Set Variables for CentOS
+    PACKAGE="httpd wget unzip"
+    SVC="httpd"
+
+    echo "Running Setup on CentOS"
+    # Installing Dependencies
+    echo "Installing packages."
+    sudo yum install $PACKAGE -y > /dev/null
+    echo
+
+    # Start & Enable Service
+    echo "Start & Enable HTTPD Service"
+    sudo systemctl start $SVC
+    sudo systemctl enable $SVC
+    echo
+
+    # Creating Temporary Directory
+    echo "Starting Artifact Deployment"
+    mkdir -p $TEMPDIR
+    cd $TEMPDIR
+    echo
+
+    # Download and Extract Web Template
+    wget $URL > /dev/null
+    unzip $ART_NAME.zip > /dev/null
+    sudo cp -r $ART_NAME/* /var/www/html/
+    echo
+
+    # Restart HTTPD Service
+    echo "Restarting HTTPD service"
+    sudo systemctl restart $SVC
+    echo
+
+    # Clean Up Temporary Files
+    echo "Removing Temporary Files"
+    rm -rf $TEMPDIR
+    echo
+
+    # Check Status of the Service
+    sudo systemctl status $SVC
+    ls /var/www/html/
+
+else
+    # Set Variables for Ubuntu
+    PACKAGE="apache2 wget unzip"
+    SVC="apache2"
+
+    echo "Running Setup on Ubuntu"
+    # Installing Dependencies
+    echo "Installing packages."
+    sudo apt update
+    sudo apt install $PACKAGE -y > /dev/null
+    echo
+
+    # Start & Enable Service
+    echo "Start & Enable Apache2 Service"
+    sudo systemctl start $SVC
+    sudo systemctl enable $SVC
+    echo
+
+    # Creating Temporary Directory
+    echo "Starting Artifact Deployment"
+    mkdir -p $TEMPDIR
+    cd $TEMPDIR
+    echo
+
+    # Download and Extract Web Template
+    wget $URL > /dev/null
+    unzip $ART_NAME.zip > /dev/null
+    sudo cp -r $ART_NAME/* /var/www/html/
+    echo
+
+    # Restart Apache2 Service
+    echo "Restarting Apache2 service"
+    sudo systemctl restart $SVC
+    echo
+
+    # Clean Up Temporary Files
+    echo "Removing Temporary Files"
+    rm -rf $TEMPDIR
+    echo
+
+    # Check Status of the Service
+    sudo systemctl status $SVC
+    ls /var/www/html/
+
+fi
+```
+
+---
+
+#### 2. **Steps Explained**
+1. **Variable Declaration:**
+   - Variables like `PACKAGE`, `SVC`, `URL`, and `ART_NAME` are defined for different distributions (CentOS vs Ubuntu) and the URL of the web template to be downloaded.
+   
+2. **Dependency Installation:**
+   - For **CentOS**, it installs `httpd` (Apache) and other required packages (`wget`, `unzip`).
+   - For **Ubuntu**, it installs `apache2` and the required packages.
+
+3. **Starting the Web Server:**
+   - Once the packages are installed, the web server (`httpd` or `apache2`) is started and enabled to run on boot.
+   - This is done using `systemctl` commands:  
+     ```bash
+     sudo systemctl start httpd
+     sudo systemctl enable httpd
+     ```
+
+4. **Artifact Deployment:**
+   - The web template is downloaded from the given URL and unzipped in a temporary directory.
+   - The extracted files are copied to the default web directory `/var/www/html/`.
+   
+5. **Service Restart and Cleanup:**
+   - The web service is restarted after deployment to reflect changes:
+     ```bash
+     sudo systemctl restart httpd
+     ```
+   - Temporary files are removed, and the script checks the status of the web service.
+
+---
+
+#### 3. **Accessing the Deployed Website**
+Once the EC2 instance is running and the script is executed, the website will be available at the following URL:
+```
+http://<EC2-IP>:8080
+```
+
+To troubleshoot if the website is not working:
+1. SSH into the EC2 instance.
+2. Check the status of the Apache or httpd service using:
+   ```bash
+   sudo systemctl status httpd  # For CentOS
+   sudo systemctl status apache2  # For Ubuntu
+   ```
+3. If the services are not running, manually install them and re-execute the script.
+
+### AWS Elastic Load Balancer (ELB) Hands-On
+
+This section details the process of setting up Elastic Load Balancers (ELBs) on AWS, working with EC2 instances, and using target groups for health checks. It also includes instructions on creating AMIs (Amazon Machine Images), automating image creation with EC2 Image Builder, and using launch templates for instance deployment.
+
+---
+
+### 1. **Creating an AMI from an EC2 Instance**
+To scale up your application, you can create multiple instances of an EC2 instance by creating an **Amazon Machine Image (AMI)**.
+
+- **Steps to create an AMI:**
+  1. Go to the **EC2 Instances** page.
+  2. Select the instance and choose **Create Image** from the instance actions.
+  3. The image will be listed under the **AMI** section.
+
+- **Options for AMIs:**
+  - You can **copy AMIs** from one region to another.
+  - **Edit Permissions**: You can make the AMI public, private, or share it with specific AWS accounts.
+
+---
+
+### 2. **Automating AMI Creation with EC2 Image Builder**
+You can automate the process of AMI creation by using **EC2 Image Builder**. This allows you to create a **pipeline** for AMI creation, which automates the entire process.
+
+- Steps:
+  - Set up a pipeline to build an AMI based on a specified EC2 instance configuration.
+
+---
+
+### 3. **Using Launch Templates**
+Creating **Launch Templates** saves time by pre-filling fields that are commonly used during EC2 instance launches. Instead of filling out all the details every time, you can use these templates to launch new instances quickly.
+
+- **Steps to create a Launch Template:**
+  1. Go to **Launch Templates**.
+  2. Save the configurations like instance type, security group, etc.
+  3. When launching an instance, select the **Launch Instance from Template** option and modify the necessary fields.
+
+---
+
+### 4. **Load Balancers and Target Groups**
+When launching multiple instances of your application, instead of interacting with each instance individually, you can use a **Load Balancer** to distribute traffic between instances.
+
+#### **Target Group:**
+A **Target Group** allows you to define a group of EC2 instances and perform **health checks** to ensure only healthy instances receive traffic.
+
+- **Health Checks:**
+  - **Protocol:** Select the protocol (HTTP/HTTPS) to perform the health check.
+  - **Port:** Define the port (e.g., `80` or `8080`).
+  - **Health Check Path:** This is the URL path to perform the health check.
+    - Example: `http://<IP_Address>:<Port>/<URL-Path>`
+    - Only the `<URL-Path>` is needed in the health check configuration.
+
+- **Health Check Parameters:**
+  - **Healthy Threshold:** Number of consecutive successes required for an instance to be considered healthy.
+  - **Unhealthy Threshold:** Number of consecutive failures required for an instance to be marked unhealthy.
+  - **Timeout:** Time, in seconds, to wait for a response.
+  - **Interval:** Time between health checks.
+  - **Success Codes:** HTTP success codes, such as `200`, to indicate a healthy instance.
+
+---
+
+### 5. **Creating a Load Balancer**
+Once your target group is set up, you can create a **Load Balancer** to distribute traffic among your EC2 instances.
+
+#### **Types of Load Balancers:**
+1. **Application Load Balancer** (Layer 7 - HTTP/HTTPS)
+2. **Network Load Balancer** (Layer 4 - TCP/UDP)
+3. **Gateway Load Balancer** (for virtual appliances like firewalls)
+
+#### **Steps to Create a Load Balancer:**
+1. Go to the **Load Balancer** section.
+2. Choose **Create Load Balancer**.
+3. Select the type of Load Balancer (e.g., **Application Load Balancer** for HTTP traffic).
+4. Provide basic details:
+   - **Load Balancer Name**
+   - **Scheme:** 
+     - **Internet-Facing:** Routes requests over the internet to targets in public subnets.
+     - **Internal:** Routes requests within a VPC using private IP addresses.
+5. Attach the **Target Group** created earlier to perform health checks on the instances.
+
+---
+
+### 6. **Example Load Balancer Setup**
+Here's an example of how to configure a Load Balancer for your application:
+
+- **Name:** MyApp-ALB
+- **Scheme:** Internet-facing
+- **Target Group:** MyApp-TargetGroup
+  - **Protocol:** HTTP
+  - **Port:** 80
+  - **Health Check Path:** `/healthcheck`
+  - **Healthy Threshold:** 3
+  - **Unhealthy Threshold:** 2
+  - **Timeout:** 5 seconds
+  - **Interval:** 30 seconds
+  - **Success Codes:** `200-299`
+
+This setup ensures that only healthy instances receive user traffic and improves the availability and fault tolerance of your application.
+
+### AWS Elastic Load Balancer (ELB) Overview
+
+Elastic Load Balancer (ELB) is a service that distributes incoming traffic across multiple EC2 instances, enhancing the scalability, availability, and fault tolerance of applications. ELBs support two main types of load balancers: **Internet-facing** and **Internal**.
+
+---
+
+### 1. **Types of Load Balancers**
+
+#### **Internet-facing Load Balancer**
+- **Public IP Address**: Can receive requests from clients over the internet.
+- **Use Case**: Suitable for applications like web servers or e-commerce sites that need to serve external users.
+
+#### **Internal Load Balancer**
+- **Private IP Address**: Only receives requests from within the same VPC or through a VPC-connected network (via VPC Peering, VPN, or Cloud Interconnect).
+- **Use Case**: Ideal for internal applications like database servers or microservices.
+
+#### **Key Difference**:
+- **Internet-facing**: Accessible by anyone over the internet.
+- **Internal**: Accessible only by clients within the VPC or connected networks.
+
+---
+
+### 2. **Virtual Private Cloud (VPC) Network**
+A **VPC network** is a virtual, isolated network in the cloud, customizable to user needs, and it allows you to securely launch and manage cloud resources like EC2 instances, load balancers, and VPNs.
+
+---
+
+### 3. **Load Balancer Configuration**
+
+#### **IP Address Types**
+- **IPv4 or IPv6**: Choose the type of IP address for the load balancer, based on your traffic requirements.
+
+#### **Availability Zones**
+- **Mapping to Availability Zones**: Select at least two availability zones to ensure high availability.
+- **Subnets**: Ensure that subnets are selected for the availability zones, as traffic will only be routed to targets within the selected zones.
+
+#### **Security Groups**
+- **Security Group Configuration**: Define the security group for the load balancer with rules for **inbound** and **outbound** traffic.
+  - **Inbound Rule Example**: Allow traffic on port 80 for HTTP from **any** source (IPv4 and IPv6), making your application accessible to all users.
+
+```bash
+# Example Inbound Rule for Security Group (Port 80)
+Inbound Rule:
+- Type: HTTP
+- Protocol: TCP
+- Port Range: 80
+- Source: 0.0.0.0/0 (IPv4) or ::/0 (IPv6)
+```
+
+---
+
+### 4. **Listeners and Routing**
+
+#### **Listeners**
+Listeners define how incoming requests are routed to the target group. For an HTTP listener on port 80, set up routing to direct traffic to the target group.
+
+#### **Target Group**
+- The **target group** contains the EC2 instances behind the load balancer.
+- Ensure that the load balancer forwards requests received on port 80 to the instances in the target group for health checks and request handling.
+
+```bash
+# Listener Example
+Listener:
+- Protocol: HTTP
+- Port: 80
+Target Group:
+- Protocol: HTTP
+- Port: 80
+- Health Check Path: / (or /healthcheck)
+```
+
+---
+
+### 5. **Troubleshooting and Health Checks**
+
+#### **Health Check Failures**
+If you're unable to access the website hosted behind the load balancer, check if:
+1. The individual instances in the target group are **healthy**.
+2. **Security Group Rules**: Ensure that the instances’ security group allows inbound traffic on port 80 from the load balancer’s security group.
+
+```bash
+# Security Group Rule for Instances
+Inbound Rule:
+- Type: HTTP
+- Protocol: TCP
+- Port Range: 80
+- Source: Load Balancer Security Group
+```
+
+---
+
+### 6. **Load Balancer Maintenance**
+
+#### **Deregistering Instances for Maintenance**
+When performing maintenance on instances:
+1. **Deregister the instance** from the target group to prevent it from receiving new traffic.
+2. The load balancer will drain existing requests before removing the instance.
+3. Once maintenance is complete, **re-register the instance** to bring it back online.
+
+```bash
+# Deregister Instance
+aws elbv2 deregister-targets --target-group-arn <target-group-arn> --targets Id=<instance-id>
+
+# Re-register Instance
+aws elbv2 register-targets --target-group-arn <target-group-arn> --targets Id=<instance-id>
+```
+
+- Only **healthy instances** will receive traffic during maintenance periods.
+- You can monitor the health of instances from the **Target Group** section in the Load Balancer dashboard.
+
+---
+
+### Summary
+
+Elastic Load Balancers are essential for distributing traffic across EC2 instances, ensuring scalability and availability. Whether for external applications or internal microservices, understanding how to configure and manage both **internet-facing** and **internal load balancers**, alongside security rules and health checks, is key to maintaining a robust cloud architecture.
