@@ -7375,3 +7375,1368 @@ S3 Bucket: s3://<Your-S3Bucket>
 ---
 
 This structured format organizes your notes into clear sections, making it easier to follow the steps for managing EC2 logs and integrating them with CloudWatch and S3.
+
+Here’s a summarized version of your DevOps notes on Terraform, organized with headings, explanations, and code snippets for clarity:
+
+---
+
+# Terraform Tutorial: Introduction and Exercise 1
+
+## 1. What is Terraform?
+- **Terraform** is an Infrastructure-as-Code (IaC) tool that automates the provisioning and management of cloud infrastructure.
+- Allows you to define your infrastructure's desired state, and it ensures resources are created and managed accordingly.
+- Terraform uses **HashiCorp Configuration Language (HCL)**, which is declarative and simple to learn.
+
+### Benefits:
+- Automates infrastructure provisioning and management.
+- Works across multiple cloud providers (AWS, Azure, Google Cloud).
+- Maintains infrastructure state and ensures it is kept consistent.
+
+## 2. Comparing Terraform with Other Automation Tools
+| Tool      | Purpose                                      | Approach       | Strengths                                         |
+|-----------|----------------------------------------------|----------------|--------------------------------------------------|
+| **Terraform** | Cloud infrastructure provisioning            | Declarative    | Cloud resource management across providers        |
+| **Ansible**   | IT automation, configuration management      | YAML playbooks | Simple, agentless, ideal for configuration tasks  |
+| **Puppet**    | Manages large infrastructures                | Declarative    | Consistency enforcement, strong reporting         |
+| **Chef**      | Configuration management                     | Convergent     | Flexible and scalable for complex infrastructures |
+
+### Key Differences:
+- Terraform focuses on **infrastructure provisioning**.
+- Ansible, Puppet, and Chef focus on **configuration management** of software within infrastructure.
+
+---
+
+## 3. Terraform Installation
+
+### Steps to Install Terraform
+1. Download the **Terraform binary** from the official website for your OS.
+2. Add the binary to your system's `PATH`. For Linux, the default location is `/usr/local/bin`.
+
+```bash
+# Example for adding Terraform to PATH on Linux
+export PATH=$PATH:/usr/local/bin
+```
+
+### On Windows:
+- Install Terraform via **choco** in PowerShell:
+```bash
+choco install terraform
+```
+
+---
+
+## 4. Launching an EC2 Instance with Terraform
+
+### Prerequisites:
+- An **AWS account**.
+- Create an **IAM User** with access keys.
+
+### Terraform Configuration File (instance.tf)
+Write the Terraform configuration file (`instance.tf`) to launch an EC2 instance:
+
+```hcl
+provider "aws" {
+  region = "us-east-2"
+}
+
+resource "aws_instance" "intro" {
+  ami = "ami-03657b56516ab7912"
+  instance_type = "t2.micro"
+  availability_zone = "us-east-2a"
+  key_name = "dove-key"
+  vpc_security_group_ids = ["sg-0780815f55104be8a"]
+  
+  tags = {
+    Name = "Dove-Instance"
+  }
+}
+```
+
+### Explanation:
+- **provider**: Specifies the cloud service (in this case, AWS) and region.
+- **resource**: Defines the AWS EC2 instance with attributes like AMI ID, instance type, availability zone, key pair, and security group.
+
+### Running Terraform Commands
+1. **Initialize Terraform**:
+   ```bash
+   terraform init
+   ```
+2. **Apply the Terraform configuration** to launch the instance:
+   ```bash
+   terraform apply
+   ```
+
+---
+
+## 5. Using AWS Access Keys with Terraform
+
+### Providing AWS Credentials
+While you can directly embed credentials in the Terraform configuration, this is not recommended for security reasons. Instead, use the AWS CLI to configure credentials:
+
+```bash
+aws configure
+```
+
+This command will prompt for the AWS Access Key ID, Secret Access Key, default region, and output format.
+
+### Safer Provider Block
+Instead of hardcoding keys, use the following `provider` block:
+```hcl
+provider "aws" {
+  region = "us-east-2"
+}
+```
+
+---
+
+## 6. Making Changes to EC2 Instance
+
+### Modifying the `instance.tf` file:
+- You can modify resources, such as changing the instance type or adding tags, and reapply the configuration.
+- Example of changing instance type:
+```hcl
+instance_type = "t2.medium"
+```
+
+After making changes, run:
+```bash
+terraform apply
+```
+
+---
+
+## 7. Exercise
+
+### Task:
+- Write an `instance.tf` file to launch an EC2 instance.
+- Modify the file and reapply changes using the following steps:
+  1. Create the `instance.tf` file.
+  2. Launch the instance with `terraform apply`.
+  3. Make changes (e.g., change instance type).
+  4. Reapply changes using `terraform apply`.
+
+---
+
+By following these steps, you can automate the process of creating and managing infrastructure using Terraform, while ensuring security and efficiency through proper practices.
+
+Here’s a structured summary of your Terraform notes, complete with headings, explanations, and code snippets for better understanding:
+
+---
+
+# Terraform Tutorial: Commands, Variables, and Provisioners
+
+## 1. Running Terraform Commands
+
+### Initializing Terraform
+The first command to run when using Terraform is:
+```bash
+terraform init
+```
+- **Purpose**: This command initializes the working directory containing the Terraform configuration files.
+- **Outcome**: It checks the resource provider and downloads the necessary plugins, creating a hidden `.terraform` directory where these plugins are stored:
+  ```
+  .terraform/plugins/
+  ```
+
+### Validating and Formatting Terraform Scripts
+- **Validate**: Use the following command to check for syntax errors in your configuration:
+  ```bash
+  terraform validate
+  ```
+- **Format**: To automatically format the configuration files for readability, use:
+  ```bash
+  terraform fmt
+  ```
+
+### Planning and Applying Changes
+- **Plan**: Before applying changes, you can review the expected modifications by running:
+  ```bash
+  terraform plan
+  ```
+- **Apply**: To apply the configuration and create resources, use:
+  ```bash
+  terraform apply
+  ```
+
+### State Files
+Terraform tracks the state of your infrastructure in a file called `terraform.tfstate`. It contains details about the current state of the resources, and a backup file (`terraform.tfstate.backup`) is also maintained.
+
+### Destroying Resources
+To delete all resources defined in your configuration, run:
+```bash
+terraform destroy
+```
+
+---
+
+## 2. Working with Variables in Terraform
+
+Variables allow you to manage sensitive information and frequently changing values without hardcoding them in the main configuration files. They also enable reusability.
+
+### Declaring Variables
+Variables can be declared in separate files like `vars.tf` and referenced in the configuration files.
+
+#### Example:
+- **providers.tf**:
+```hcl
+provider "aws" {
+  region = var.REGION
+}
+```
+- **vars.tf**:
+```hcl
+variable "AWS_ACCESS_KEY" {}
+variable "AWS_SECRET_KEY" {}
+
+variable "REGION" {
+  default = "us-west-1"
+}
+
+variable "AMIS" {
+  type = "map"
+  default = {
+    us-west-1 = "ami-06397100adf427136"
+    us-west-2 = "ami-0a42f4d8"
+  }
+}
+```
+- **terraform.tfvars** (Sensitive information should be stored here):
+```hcl
+AWS_ACCESS_KEY = "your-access-key"
+AWS_SECRET_KEY = "your-secret-key"
+```
+
+### Using Variables in Terraform Files
+- **instance.tf**:
+```hcl
+resource "aws_instance" "intro" {
+  ami             = var.AMIS[var.REGION]
+  instance_type   = "t2.micro"
+  availability_zone = "us-west-1a"
+}
+```
+
+---
+
+## 3. Example of Variables
+
+#### Example:
+- **vars.tf**:
+```hcl
+variable "REGION" {
+  default = "us-east-2"
+}
+
+variable "ZONE1" {
+  default = "us-east-2a"
+}
+
+variable "AMIS" {
+  type = "map"
+  default = {
+    us-east-2 = "ami-03657b56516ab7912"
+    us-east-1 = "ami-0947d2ba12ee1ff75"
+  }
+}
+```
+- **providers.tf**:
+```hcl
+provider "aws" {
+  region = var.REGION
+}
+```
+- **instance.tf**:
+```hcl
+resource "aws_instance" "dove-inst" {
+  ami = var.AMIS[var.REGION]
+  instance_type = "t2.micro"
+  availability_zone = var.ZONE1
+  key_name = "new-dove"
+  vpc_security_group_ids = ["sg-0780815f55104be8a"]
+
+  tags = {
+    Name = "Dove-Instance"
+    Project = "Dove"
+  }
+}
+```
+
+### Important:
+- Public IPs for EC2 instances cannot be changed unless the instance is terminated and recreated.
+
+---
+
+## 4. Provisioners in Terraform
+
+Provisioners in Terraform help set up resources by executing scripts or commands after the resource is created.
+
+### Types of Provisioning:
+1. **Custom Images**: Build custom images using tools like **Packer**.
+2. **Standard Images**: Use provisioners to install software and upload files after the resource is launched.
+
+#### Example of `remote-exec`:
+You can install software on a newly created EC2 instance using the `remote-exec` provisioner.
+
+```hcl
+provisioner "remote-exec" {
+  inline = [
+    "sudo yum install -y sqlite"
+  ]
+}
+```
+
+### Connecting Terraform with Other Configuration Management Tools
+- Terraform can connect with **Ansible**, **Puppet**, or **Chef** to further configure resources.
+- **Ansible** can be used without an agent, while **Puppet** and **Chef** require agents on the resources.
+
+---
+
+### Example of File Provisioning:
+You can use the `file` provisioner to copy files to a remote instance.
+```hcl
+provisioner "file" {
+  source      = "files/test.conf"
+  destination = "/etc/test.conf"
+
+  connection {
+    type     = "ssh"
+    user     = "root"
+    password = var.root_password
+  }
+}
+```
+
+This script copies `test.conf` from your local machine to `/etc/test.conf` on the EC2 instance via SSH.
+
+--- 
+
+This structured approach should help you better understand and implement Terraform configurations, variables, and provisioning techniques in your DevOps projects.
+
+Here’s a summarized version of your Terraform notes, organized with headings, explanations, and code snippets to better understand the concepts:
+
+---
+
+# Terraform Tutorial: Provisioners, Key Pairs, and File Transfers
+
+## 1. Provisioners in Terraform
+
+Provisioners allow you to execute scripts, copy files, or perform other tasks after a resource is created.
+
+### Common Provisioners:
+1. **File Provisioner**: Used to copy files or directories to a remote machine.
+   ```hcl
+   provisioner "file" {
+     source      = "conf/myapp.conf"
+     destination = "C:/App/myapp.conf"
+     connection {
+       type     = "winrm"
+       user     = "Administrator"
+       password = var.admin_password
+     }
+   }
+   ```
+
+2. **Remote-Exec Provisioner**: Invokes commands or scripts on a remote resource.
+   ```hcl
+   provisioner "remote-exec" {
+     inline = [
+       "sudo yum install -y nginx"
+     ]
+   }
+   ```
+
+3. **Local-Exec Provisioner**: Executes local commands after the resource creation.
+
+4. **Puppet Provisioner**: Installs and configures Puppet on a remote resource. Supports both SSH and WinRM connections.
+
+5. **Chef Provisioner**: Installs and configures Chef on a remote resource. Supports SSH and WinRM connections.
+
+6. **Ansible Integration**: Run Terraform, output the IP address, and run Ansible playbooks using `local-exec`.
+
+---
+
+## 2. Using SSH Keys with Terraform
+
+You can define variables for private and public keys and reuse them across configurations.
+
+### Example: Key Pair Variables
+- **vars.tf**:
+  ```hcl
+  variable "PRIV_KEY_PATH" {
+    default = "infi-inst_key"
+  }
+
+  variable "PUB_KEY_PATH" {
+    default = "infi-inst_key.pub"
+  }
+
+  variable "USER" {
+    default = "ubuntu"
+  }
+  ```
+
+### Upload Public Key to AWS
+The `aws_key_pair` resource is used to upload a public key to AWS.
+```hcl
+resource "aws_key_pair" "dove-key" {
+  key_name   = "dovekey"
+  public_key = file("dovekey.pub")
+}
+```
+
+You can then reference this key in your EC2 instance configuration:
+```hcl
+resource "aws_instance" "intro" {
+  ami                      = var.AMIS[var.REGION]
+  instance_type            = "t2.micro"
+  availability_zone        = var.ZONE1
+  key_name                 = aws_key_pair.dove-key.key_name
+  vpc_security_group_ids   = ["sg-833e24fd"]
+}
+```
+
+---
+
+## 3. File Provisioning and Script Execution
+
+You can use the **file provisioner** to push files from the local machine to a remote instance and the **remote-exec provisioner** to execute scripts on the remote instance.
+
+### Example: File Provisioning
+```hcl
+provisioner "file" {
+  source      = "web.sh"
+  destination = "/tmp/web.sh"
+
+  connection {
+    user        = var.USER
+    private_key = file(var.PRIV_KEY_PATH)
+    host        = self.public_ip
+  }
+}
+```
+
+### Example: Remote Execution
+Once the file is copied, use the **remote-exec** provisioner to run the script:
+```hcl
+provisioner "remote-exec" {
+  inline = [
+    "chmod u+x /tmp/web.sh",
+    "sudo /tmp/web.sh"
+  ]
+}
+```
+
+---
+
+## 4. End-to-End Terraform Workflow
+
+Here’s the general workflow to set up and configure infrastructure with Terraform:
+
+1. **Generate Key Pair**: Create your SSH key pair and define them as variables.
+2. **Write Script**: Write a shell script (e.g., `web.sh`) that installs software or configures your resources.
+3. **Write Providers and Variables**: Define providers (`providers.tf`) and variables (`vars.tf`).
+4. **Define EC2 Instance**: Write `instance.tf` and reference your key pairs, AMIs, and other resources.
+5. **Use Provisioners**: Use file provisioners to copy files and remote-exec to run scripts.
+6. **Apply Terraform**: Run `terraform apply` to create and configure the resources.
+
+---
+
+## 5. Example Files for Complete Setup
+
+### vars.tf:
+```hcl
+variable "REGION" {
+  default = "us-east-2"
+}
+
+variable "ZONE1" {
+  default = "us-east-2a"
+}
+
+variable "AMIS" {
+  type = map
+  default = {
+    us-east-2 = "ami-03657b56516ab7912"
+    us-east-1 = "ami-0947d2ba12ee1ff75"
+  }
+}
+```
+
+### providers.tf:
+```hcl
+provider "aws" {
+  region = var.REGION
+}
+```
+
+### web.sh (Shell Script):
+```bash
+#!/bin/bash
+yum install wget unzip httpd -y
+systemctl start httpd
+systemctl enable httpd
+wget https://www.tooplate.com/zip-templates/2117_infinite_loop.zip
+unzip -o 2117_infinite_loop.zip
+cp -r 2117_infinite_loop/* /var/www/html/
+systemctl restart httpd
+```
+
+---
+
+This structured approach highlights how to use Terraform provisioners, key pairs, and remote commands effectively in your infrastructure automation tasks.
+
+Here’s a summary of your DevOps notes with relevant headings, explanations, and code snippets:
+
+---
+
+# Terraform: Key Concepts and Practical Examples
+
+## 1. Defining AWS Resources with Terraform
+
+### AWS Key Pair and EC2 Instance Setup
+
+Terraform allows you to create and manage AWS resources like EC2 instances and key pairs. Below is an example of how to create an AWS key pair and launch an EC2 instance:
+
+### Example: EC2 Instance and Key Pair
+
+**`instance.tf`**:
+```hcl
+resource "aws_key_pair" "dove-key" {
+  key_name   = "dovekey"
+  public_key = file("dovekey.pub")
+}
+
+resource "aws_instance" "dove-inst" {
+  ami                  = var.AMIS[var.REGION]
+  instance_type        = "t2.micro"
+  availability_zone    = var.ZONE1
+  key_name             = aws_key_pair.dove-key.key_name
+  vpc_security_group_ids = ["sg-0780815f55104be8a"]
+
+  tags = {
+    Name    = "Dove-Instance"
+    Project = "Dove"
+  }
+
+  provisioner "file" {
+    source      = "web.sh"
+    destination = "/tmp/web.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod u+x /tmp/web.sh",
+      "sudo /tmp/web.sh"
+    ]
+  }
+
+  connection {
+    user        = var.USER
+    private_key = file("dovekey")
+    host        = self.public_ip
+  }
+}
+```
+
+### Steps to Apply Changes
+
+To apply the above Terraform configuration, follow these commands:
+```bash
+terraform init       # Initialize the configuration
+terraform validate   # Validate the syntax of the Terraform files
+terraform fmt        # Format the Terraform code
+terraform plan       # Preview the changes
+terraform apply      # Apply the changes and create the resources
+```
+
+### Destroy Resources
+To delete all resources created by Terraform:
+```bash
+terraform destroy
+```
+
+---
+
+## 2. Outputting Instance Details
+
+To retrieve instance details like Public and Private IPs after resource creation, you can use the **output** block.
+
+### Example: Output Block for IP Addresses
+
+**`instance.tf`**:
+```hcl
+output "PublicIP" {
+  value = aws_instance.dove-inst.public_ip
+}
+
+output "PrivateIP" {
+  value = aws_instance.dove-inst.private_ip
+}
+```
+
+When you run `terraform apply`, the outputs will look like this:
+```
+Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+
+Outputs:
+PrivateIP = 172.31.1.145
+PublicIP  = 18.189.145.9
+```
+
+---
+
+## 3. Managing Terraform State with Backend
+
+In a collaborative environment, it’s essential to store the **terraform state** centrally, so multiple team members can work on the same environment. Terraform can store its state in an **S3 bucket**.
+
+### Example: S3 Backend Configuration
+
+**`backend.tf`**:
+```hcl
+terraform {
+  backend "s3" {
+    bucket = "terra-state-dove"
+    key    = "terraform/backend"
+    region = "us-east-2"
+  }
+}
+```
+
+### Steps to Apply Changes with Backend
+
+To use this backend configuration, run:
+```bash
+terraform init
+terraform validate
+terraform fmt
+terraform plan
+terraform apply
+```
+
+---
+
+## 4. Multi-Cloud Resource Management
+
+Terraform supports multiple cloud providers such as AWS, Azure, GCP, Kubernetes, and Oracle Cloud Infrastructure.
+
+### Resources for Multi-Cloud Examples:
+- **Terraform Provider Registry**: [registry.terraform.io](https://registry.terraform.io/)
+- **AWS Provider Documentation**: [Terraform AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
+
+Here, you can find various code snippets and examples for managing cloud resources with Terraform across different cloud platforms.
+
+---
+
+This summarized guide provides an overview of essential Terraform commands, resource creation (like EC2 instances and key pairs), output management, and backend configuration with S3.
+
+### Creating a VPC using Terraform
+
+In this exercise, we will create a Virtual Private Cloud (VPC) along with subnets and necessary resources using Terraform. Below is the breakdown of the steps:
+
+---
+
+#### 1. Define Variables
+
+The variables are defined in a `vars.tf` file to store region, availability zones, AMIs, and user keys.
+
+```hcl
+# vars.tf
+variable "REGION" {
+  default = "us-east-2"
+}
+
+variable "ZONE1" {
+  default = "us-east-2a"
+}
+
+variable "ZONE2" {
+  default = "us-east-2b"
+}
+
+variable "ZONE3" {
+  default = "us-east-2c"
+}
+
+variable "AMIS" {
+  type = map
+  default = {
+    us-east-2 = "ami-03657b56516ab7912"
+    us-east-1 = "ami-0947d2ba12ee1ff75"
+  }
+}
+
+variable "USER" {
+  default = "ec2-user"
+}
+
+variable "PUB_KEY" {
+  default = "dovekey.pub"
+}
+
+variable "PRIV_KEY" {
+  default = "dovekey"
+}
+```
+
+---
+
+#### 2. AWS Provider Configuration
+
+In the `providers.tf` file, we configure AWS as the provider and set the region dynamically using the defined variable.
+
+```hcl
+# providers.tf
+provider "aws" {
+  region = var.REGION
+}
+```
+
+---
+
+#### 3. Creating a VPC
+
+The VPC is created in the `vpc.tf` file. This example shows the creation of a VPC with the CIDR block of `10.0.0.0/16`.
+
+```hcl
+# vpc.tf
+resource "aws_vpc" "dove" {
+  cidr_block = "10.0.0.0/16"
+  instance_tenancy = "default"
+  enable_dns_support = true
+  enable_dns_hostnames = true
+  
+  tags = {
+    Name = "dove-vpc"
+  }
+}
+```
+
+---
+
+#### 4. Creating Public Subnets
+
+Three public subnets are created, one in each availability zone defined earlier.
+
+```hcl
+resource "aws_subnet" "dove-pub-1" {
+  vpc_id = aws_vpc.dove.id
+  cidr_block = "10.0.1.0/24"
+  map_public_ip_on_launch = true
+  availability_zone = var.ZONE1
+  
+  tags = {
+    Name = "dove-pub-1"
+  }
+}
+
+resource "aws_subnet" "dove-pub-2" {
+  vpc_id = aws_vpc.dove.id
+  cidr_block = "10.0.2.0/24"
+  map_public_ip_on_launch = true
+  availability_zone = var.ZONE2
+  
+  tags = {
+    Name = "dove-pub-2"
+  }
+}
+
+resource "aws_subnet" "dove-pub-3" {
+  vpc_id = aws_vpc.dove.id
+  cidr_block = "10.0.3.0/24"
+  map_public_ip_on_launch = true
+  availability_zone = var.ZONE3
+  
+  tags = {
+    Name = "dove-pub-3"
+  }
+}
+```
+
+---
+
+#### 5. Creating Private Subnets
+
+Similar to public subnets, private subnets are created for each availability zone.
+
+```hcl
+resource "aws_subnet" "dove-priv-1" {
+  vpc_id = aws_vpc.dove.id
+  cidr_block = "10.0.4.0/24"
+  map_public_ip_on_launch = false
+  availability_zone = var.ZONE1
+  
+  tags = {
+    Name = "dove-priv-1"
+  }
+}
+
+resource "aws_subnet" "dove-priv-2" {
+  vpc_id = aws_vpc.dove.id
+  cidr_block = "10.0.5.0/24"
+  map_public_ip_on_launch = false
+  availability_zone = var.ZONE2
+  
+  tags = {
+    Name = "dove-priv-2"
+  }
+}
+
+resource "aws_subnet" "dove-priv-3" {
+  vpc_id = aws_vpc.dove.id
+  cidr_block = "10.0.6.0/24"
+  map_public_ip_on_launch = false
+  availability_zone = var.ZONE3
+  
+  tags = {
+    Name = "dove-priv-3"
+  }
+}
+```
+
+---
+
+#### 6. Creating an Internet Gateway
+
+An Internet Gateway is created to allow internet access to the public subnets.
+
+```hcl
+resource "aws_internet_gateway" "dove-IGW" {
+  vpc_id = aws_vpc.dove.id
+  
+  tags = {
+    Name = "dove-IGW"
+  }
+}
+```
+
+---
+
+#### 7. Creating a Route Table
+
+A route table is created to route internet traffic through the Internet Gateway for the public subnets.
+
+```hcl
+resource "aws_route_table" "dove-pub-RT" {
+  vpc_id = aws_vpc.dove.id
+  
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.dove-IGW.id
+  }
+  
+  tags = {
+    Name = "dove-pub-RT"
+  }
+}
+```
+
+---
+
+#### 8. Associating Route Table with Subnets
+
+Lastly, the route table is associated with each of the public subnets using `aws_route_table_association`.
+
+```hcl
+resource "aws_route_table_association" "dove-pub-RT-assoc-1" {
+  subnet_id = aws_subnet.dove-pub-1.id
+  route_table_id = aws_route_table.dove-pub-RT.id
+}
+
+resource "aws_route_table_association" "dove-pub-RT-assoc-2" {
+  subnet_id = aws_subnet.dove-pub-2.id
+  route_table_id = aws_route_table.dove-pub-RT.id
+}
+
+resource "aws_route_table_association" "dove-pub-RT-assoc-3" {
+  subnet_id = aws_subnet.dove-pub-3.id
+  route_table_id = aws_route_table.dove-pub-RT.id
+}
+```
+
+---
+
+This concludes the creation of a VPC with public and private subnets, an Internet Gateway, a route table, and the required associations using Terraform.
+
+### Terraform Tutorial 292 - Exercise 6: Multi-Resource Deployment
+
+This tutorial focuses on creating a Virtual Private Cloud (VPC) and related resources using Terraform, including route table associations, security groups, EC2 instances, and EBS volumes.
+
+---
+
+#### 1. Route Table Associations
+
+We create route table associations for three public subnets. These associations ensure that requests from the subnets are routed through the route table and ultimately to the internet gateway.
+
+```hcl
+# Route Table Associations
+resource "aws_route_table_association" "dove-pub-1-a" {
+  subnet_id      = aws_subnet.dove-pub-1.id
+  route_table_id = aws_route_table.dove-pub-RT.id
+}
+
+resource "aws_route_table_association" "dove-pub-2-a" {
+  subnet_id      = aws_subnet.dove-pub-2.id
+  route_table_id = aws_route_table.dove-pub-RT.id
+}
+
+resource "aws_route_table_association" "dove-pub-3-a" {
+  subnet_id      = aws_subnet.dove-pub-3.id
+  route_table_id = aws_route_table.dove-pub-RT.id
+}
+```
+
+> **Note:** Each subnet has a route table association that redirects traffic to the route table, which further routes the request to the Internet Gateway.
+
+---
+
+#### 2. Security Group Configuration
+
+A security group is created for the VPC, allowing only SSH access from a specific IP address (MYIP) while allowing all outbound traffic.
+
+```hcl
+# Security Group (secgrp.tf)
+resource "aws_security_group" "dove_stack_sg" {
+  vpc_id      = aws_vpc.dove.id
+  name        = "dove-stack-sg"
+  description = "Security Group for dove SSH"
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.MYIP]
+  }
+
+  tags = {
+    Name = "allow-ssh"
+  }
+}
+
+# Variable for MYIP
+variable "MYIP" {
+  default = "183.83.39.203/32"
+}
+```
+
+> **Note:** The security group allows SSH access only from the specified IP address while allowing all outbound traffic.
+
+---
+
+#### 3. Storing Terraform State in S3
+
+We configure Terraform to store its state file (`terraform.tfstate`) in an S3 bucket for safe and centralized storage.
+
+```hcl
+# Terraform Backend Configuration
+terraform {
+  backend "s3" {
+    bucket = "terra-state-dove"
+    key    = "terraform/backend_exercise6"
+    region = "us-east-2"
+  }
+}
+```
+
+---
+
+#### 4. Provisioning with a Shell Script
+
+The `web.sh` script provisions an EC2 instance by installing necessary packages and deploying a simple website.
+
+```bash
+# web.sh
+#!/bin/bash
+yum install wget unzip httpd -y
+systemctl start httpd
+systemctl enable httpd
+wget https://www.tooplate.com/zip-templates/2117_infinite_loop.zip
+unzip -o 2117_infinite_loop.zip
+cp -r 2117_infinite_loop/* /var/www/html/
+systemctl restart httpd
+```
+
+> **Note:** This script installs Apache, downloads a web template, and sets up the web server.
+
+---
+
+#### 5. EC2 Instance and EBS Volume
+
+We create an EC2 instance with a key pair, associate a security group, and attach an Elastic Block Store (EBS) volume.
+
+```hcl
+# EC2 Instance and Key Pair
+resource "aws_key_pair" "dove-key" {
+  key_name   = "dovekey"
+  public_key = file(var.PUB_KEY)
+}
+
+resource "aws_instance" "dove-web" {
+  ami                    = var.AMIS[var.REGION]
+  instance_type          = "t2.micro"
+  subnet_id              = aws_subnet.dove-pub-1.id
+  key_name               = aws_key_pair.dove-key.key_name
+  vpc_security_group_ids = [aws_security_group.dove_stack_sg.id]
+
+  tags = {
+    Name = "my-dove"
+  }
+}
+
+# EBS Volume
+resource "aws_ebs_volume" "vol_4_dove" {
+  availability_zone = var.ZONE1
+  size              = 3  # 3GB Volume
+
+  tags = {
+    Name = "extr-vol-4-dove"
+  }
+}
+
+# Volume Attachment
+resource "aws_volume_attachment" "atch_vol_dove" {
+  device_name = "/dev/xvdh"
+  volume_id   = aws_ebs_volume.vol_4_dove.id
+  instance_id = aws_instance.dove-web.id
+}
+```
+
+> **Note:** An EBS volume is created and attached to the EC2 instance as an additional storage device.
+
+---
+
+#### 6. Output Variables
+
+We can define output variables to capture and display values like the public IP of the EC2 instance after resource creation.
+
+```hcl
+# Output the Public IP
+output "PublicIP" {
+  value = aws_instance.dove-web.public_ip
+}
+```
+
+> **Note:** The public IP of the EC2 instance will be displayed after running `terraform apply`.
+
+---
+
+This concludes the multi-resource Terraform exercise, demonstrating how to deploy VPCs, subnets, security groups, EC2 instances, EBS volumes, and other AWS resources programmatically.
+
+### Terraform Tutorial 293: AWS Elastic Kubernetes Service (EKS) Setup
+
+This guide outlines how to set up an Amazon Elastic Kubernetes Service (EKS) cluster using Terraform. We will create the required infrastructure, including VPC, EKS cluster, and worker nodes, while leveraging Terraform modules and resources.
+
+---
+
+### 1. Overview of Amazon EKS
+
+Amazon EKS provides a managed Kubernetes service, simplifying cluster administration. Unlike `kops` or `kubeadm`, Amazon EKS takes care of many aspects such as automatic scaling, secure control plane, and integrations with AWS services like EC2, VPC, IAM, and EBS. Although EKS is more expensive, it reduces the complexity of cluster management.
+
+---
+
+### 2. Creating an EKS Cluster with Terraform
+
+To set up the EKS cluster and associated resources like VPC, we utilize predefined Terraform modules from the Terraform Registry.
+
+#### Code to Create a VPC for EKS:
+
+```hcl
+# VPC Module
+module "vpc" {
+  source = "terraform-aws-modules/vpc/aws"
+
+  name            = "my-vpc"
+  cidr            = "10.0.0.0/16"
+  azs             = ["eu-west-1a", "eu-west-1b", "eu-west-1c"]
+  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+
+  enable_nat_gateway = true
+  enable_vpn_gateway = true
+
+  tags = {
+    Terraform   = "true"
+    Environment = "dev"
+  }
+}
+```
+
+> **Note:** The module `terraform-aws-modules/vpc/aws` simplifies the VPC creation process. We pass necessary arguments like CIDR blocks, subnets, and availability zones (AZs). 
+
+#### Terraform Backend Configuration for Storing State:
+
+```hcl
+# terraform.tf
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 4.46.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.4.3"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0.4"
+    }
+    cloudinit = {
+      source  = "hashicorp/cloudinit"
+      version = "~> 2.2.0"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.16.1"
+    }
+  }
+
+  backend "s3" {
+    bucket = "terra-eks12"
+    key    = "state/terraform.tfstate"
+    region = "us-east-1"
+  }
+
+  required_version = "~> 1.3"
+}
+```
+
+> **Note:** We specify the required providers for AWS, Kubernetes, and other dependencies. We also configure the backend to store the Terraform state in an S3 bucket.
+
+---
+
+### 3. Defining Variables for Cluster Setup
+
+We create variables for essential configuration like the AWS region and the EKS cluster name.
+
+```hcl
+# variables.tf
+variable "region" {
+  description = "AWS region"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "clusterName" {
+  description = "Name of the EKS cluster"
+  type        = string
+  default     = "vpro-eks"
+}
+```
+
+> **Note:** These variables help maintain flexibility in configuring the region and cluster name for the EKS setup.
+
+---
+
+### 4. EKS Cluster and Kubernetes Provider
+
+We configure the EKS and AWS providers to interact with the cluster and manage resources.
+
+```hcl
+# main.tf
+provider "kubernetes" {
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+}
+
+provider "aws" {
+  region = var.region
+}
+
+# Fetch available AWS availability zones
+data "aws_availability_zones" "available" {}
+
+locals {
+  cluster_name = var.clusterName
+}
+```
+
+> **Note:** The `kubernetes` provider needs the cluster’s endpoint and certificate authority data, which are provided by the EKS module. The `aws_availability_zones` data source retrieves a list of available zones in the specified region.
+
+---
+
+### 5. Using Predefined Terraform Modules
+
+Terraform modules simplify the creation of complex infrastructure. For instance, the `terraform-aws-modules/vpc/aws` module creates a VPC with public and private subnets, NAT gateways, and more. 
+
+You can find predefined modules in the [Terraform Registry](https://registry.terraform.io/browse/modules), which contains reusable code for a variety of infrastructure components.
+
+#### Example of Using a Module:
+
+```hcl
+# Usage of a predefined module
+module "vpc" {
+  source = "terraform-aws-modules/vpc/aws"
+
+  name            = "my-vpc"
+  cidr            = "10.0.0.0/16"
+  azs             = ["eu-west-1a", "eu-west-1b", "eu-west-1c"]
+  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+
+  enable_nat_gateway = true
+  enable_vpn_gateway = true
+
+  tags = {
+    Terraform   = "true"
+    Environment = "dev"
+  }
+}
+```
+
+---
+
+### Conclusion
+
+Setting up an EKS cluster using Terraform allows for an efficient and scalable Kubernetes environment with AWS’s managed services. By leveraging Terraform modules and defining resources like VPCs, clusters, and nodes, you can automate the deployment and management of your infrastructure.
+
+### Terraform Tutorial 293: AWS Elastic Kubernetes Service (EKS) Setup
+
+This guide explains how to set up Amazon Elastic Kubernetes Service (EKS) using Terraform. It covers configuring VPCs, subnets, EKS cluster, and worker nodes, as well as accessing the cluster using `kubectl`.
+
+---
+
+### 1. VPC Configuration
+
+We begin by creating a Virtual Private Cloud (VPC) using Terraform's AWS VPC module. This VPC will contain both private and public subnets.
+
+#### VPC Code Example:
+
+```hcl
+# vpc.tf
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "3.14.2"
+
+  name            = "vprofile-eks"
+  cidr            = "172.20.0.0/16"
+  azs             = slice(data.aws_availability_zones.available.names, 0, 3)
+  
+  private_subnets = ["172.20.1.0/24", "172.20.2.0/24", "172.20.3.0/24"]
+  public_subnets  = ["172.20.4.0/24", "172.20.5.0/24", "172.20.6.0/24"]
+
+  enable_nat_gateway     = true
+  single_nat_gateway     = true
+  enable_dns_hostnames   = true
+
+  public_subnet_tags = {
+    "kubernetes.io/cluster/${local.cluster_name}" = "shared"
+    "kubernetes.io/role/elb"                     = 1
+  }
+
+  private_subnet_tags = {
+    "kubernetes.io/cluster/${local.cluster_name}" = "shared"
+    "kubernetes.io/role/internal-elb"            = 1
+  }
+}
+```
+
+> **Explanation**: 
+- The `module "vpc"` configures a VPC with private and public subnets.
+- The availability zones are sliced from the list `data.aws_availability_zones.available.names`.
+- NAT Gateway is enabled, but only one instance is used for all private subnets (`single_nat_gateway` is true).
+
+---
+
+### 2. EKS Cluster Configuration
+
+Once the VPC is set up, we configure the Amazon EKS cluster and its node groups using the `terraform-aws-modules/eks/aws` module.
+
+#### EKS Cluster Code Example:
+
+```hcl
+# eks-cluster.tf
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "19.0.4"
+
+  cluster_name    = local.cluster_name
+  cluster_version = "1.27"
+
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnets
+
+  cluster_endpoint_public_access = true
+
+  eks_managed_node_group_defaults = {
+    ami_type = "AL2_x86_64"
+  }
+
+  eks_managed_node_groups = {
+    one = {
+      name          = "node-group-1"
+      instance_types = ["t3.small"]
+      min_size       = 1
+      max_size       = 3
+      desired_size   = 2
+    }
+    two = {
+      name          = "node-group-2"
+      instance_types = ["t3.small"]
+      min_size       = 1
+      max_size       = 2
+      desired_size   = 1
+    }
+  }
+}
+```
+
+> **Explanation**:
+- The EKS cluster is created with the VPC's private subnets.
+- We define two managed node groups with different desired capacities and instance types (`t3.small`).
+
+---
+
+### 3. AWS CLI Configuration
+
+To interact with AWS from a Linux terminal, use `aws configure` to set up credentials, region, and output format.
+
+#### AWS CLI Configuration Example:
+
+```bash
+$ aws configure
+AWS Access Key ID [ **************** CX6S]:
+AWS Secret Access Key [ **************** 4pcC]:
+Default region name [us-east-1]:
+Default output format [json]:
+```
+
+---
+
+### 4. Updating Kubeconfig
+
+After creating the EKS cluster, update the kubeconfig file to allow `kubectl` to interact with the EKS cluster.
+
+#### Kubeconfig Update Command:
+
+```bash
+$ aws eks update-kubeconfig --region us-east-1 --name vprof-eks
+```
+
+> **Explanation**: This command adds the EKS cluster's configuration to the kubeconfig file, enabling `kubectl` to communicate with the Kubernetes cluster.
+
+---
+
+### 5. Installing `kubectl` on Windows
+
+To manage the Kubernetes cluster on Windows, install `kubectl` using Chocolatey.
+
+#### Kubectl Installation:
+
+```bash
+choco install kubernetes-cli -y
+```
+
+> **Explanation**: This installs `kubectl` on a Windows machine, allowing you to manage Kubernetes resources.
+
+---
+
+### Conclusion
+
+This setup demonstrates how to configure an Amazon EKS cluster using Terraform, deploy it with managed node groups, and connect to it using `kubectl`.
