@@ -6035,3 +6035,1343 @@ aws elbv2 register-targets --target-group-arn <target-group-arn> --targets Id=<i
 ### Summary
 
 Elastic Load Balancers are essential for distributing traffic across EC2 instances, ensuring scalability and availability. Whether for external applications or internal microservices, understanding how to configure and manage both **internet-facing** and **internal load balancers**, alongside security rules and health checks, is key to maintaining a robust cloud architecture.
+
+### AWS CloudWatch Overview
+
+AWS CloudWatch is a monitoring and management service that provides visibility into the performance and health of your AWS resources and applications. It allows you to collect metrics, create alarms, trigger automated actions, and visualize data using dashboards. CloudWatch helps ensure your systems operate efficiently and within desired thresholds.
+
+---
+
+### Key CloudWatch Components
+
+#### 1. **CloudWatch Metrics**
+CloudWatch allows you to monitor the utilization and status of AWS resources like EC2, RDS, S3, and more by default. You can also define **custom metrics** for your specific applications.
+
+Example code to publish a custom metric using AWS SDK for Python (Boto3):
+```python
+import boto3
+
+# Create CloudWatch client
+cloudwatch = boto3.client('cloudwatch')
+
+# Put custom metric data
+response = cloudwatch.put_metric_data(
+    MetricData=[
+        {
+            'MetricName': 'PageViews',
+            'Dimensions': [
+                {
+                    'Name': 'PageName',
+                    'Value': 'Homepage'
+                },
+            ],
+            'Unit': 'Count',
+            'Value': 100.0
+        },
+    ],
+    Namespace='MyCustomNamespace'
+)
+
+print("Metric submitted: ", response)
+```
+
+#### 2. **CloudWatch Alarms**
+Alarms notify you when a specified threshold is crossed for a metric, and can trigger actions like sending notifications via **Amazon SNS**.
+
+Example of creating a CloudWatch Alarm using Boto3:
+```python
+cloudwatch.put_metric_alarm(
+    AlarmName='HighCPUAlarm',
+    ComparisonOperator='GreaterThanThreshold',
+    EvaluationPeriods=1,
+    MetricName='CPUUtilization',
+    Namespace='AWS/EC2',
+    Period=300,
+    Statistic='Average',
+    Threshold=80.0,
+    ActionsEnabled=True,
+    AlarmActions=['arn:aws:sns:REGION:ACCOUNT_ID:MyTopic'],
+    AlarmDescription='Alarm when server CPU exceeds 80%',
+    Dimensions=[
+        {
+            'Name': 'InstanceId',
+            'Value': 'i-0123456789abcdef0'
+        },
+    ],
+    Unit='Seconds'
+)
+```
+
+#### 3. **CloudWatch Events**
+CloudWatch Events deliver near real-time events from AWS services (e.g., EC2, Lambda). You can set up rules that trigger actions when an event occurs. For example, triggering a Lambda function when an EC2 instance state changes.
+
+Example of setting up a CloudWatch Event rule:
+```json
+{
+  "source": ["aws.ec2"],
+  "detail-type": ["EC2 Instance State-change Notification"],
+  "detail": {
+    "state": ["stopped"]
+  }
+}
+```
+
+#### 4. **CloudWatch Logs**
+CloudWatch Logs allow you to store, access, and monitor log data from AWS resources such as EC2, Lambda, and CloudTrail. To stream logs from an EC2 instance, you need to install and configure the **CloudWatch Logs Agent**.
+
+Sample command to install the CloudWatch Logs agent on an EC2 instance:
+```bash
+sudo yum install -y awslogs
+sudo service awslogs start
+sudo chkconfig awslogs on
+```
+You will also need to configure the `/etc/awslogs/awslogs.conf` file to define which log files to monitor.
+
+#### 5. **CloudWatch Dashboards**
+CloudWatch Dashboards offer a customizable visual display of your metrics, alarms, and logs. These dashboards can be shared across teams and embedded into other applications or websites.
+
+---
+
+### Use Case Example: Automating EBS Storage Expansion
+Using CloudWatch Metrics, you can monitor the utilization of an Amazon EBS volume. When the storage usage exceeds a certain threshold (e.g., 75%), CloudWatch can trigger an Amazon SNS notification, which could notify an admin or automatically initiate an action (such as increasing EBS volume size).
+
+#### Steps:
+1. **Set up a CloudWatch metric** to monitor EBS storage utilization.
+2. **Create a CloudWatch Alarm** to trigger when usage exceeds 75%.
+3. **Set up an Amazon SNS topic** to send a notification or trigger an automated action, such as extending the storage.
+
+### AWS CloudWatch Hands-On
+
+#### 1. Monitoring Key Metrics in CloudWatch
+CloudWatch automatically tracks several key metrics for AWS resources, particularly for EC2 instances. Here are some metrics you can monitor:
+- **CPU Utilization**
+- **Network In/Out (Bytes)**
+- **Network Packets In/Out (Count)**
+- **Disk Reads/Writes (Bytes & Operations)**
+- **CPU Credit Usage/Balance**
+
+If you need to monitor additional metrics, like **RAM Utilization** or **Storage Utilization**, you’ll need to create **custom metrics** in CloudWatch.
+
+By default, CloudWatch updates these metrics every 5 minutes. For more detailed monitoring, you can enable **Detailed Monitoring**, which updates every minute. While **basic monitoring** is free, **detailed monitoring** is a paid service with a low cost.
+
+#### 2. Installing Stress Library on EC2 for Load Testing
+The **stress** tool is useful for simulating high CPU, memory, disk, or network usage on an EC2 instance. This helps test application performance under load. To install the stress tool on an EC2 instance (Amazon Linux), use the following commands:
+
+```bash
+# Install EPEL repository
+sudo amazon-linux-extras install epel -y
+
+# Install stress tool
+sudo yum install stress -y
+```
+
+The **stress** tool is used to test system resilience by generating different types of loads, which helps you observe system performance.
+
+#### 3. Using Stress Tool with AWS Fault Injection Simulator (FIS)
+AWS Fault Injection Simulator (FIS) can run fault injection experiments, including **CPU stress**, **memory stress**, **disk stress**, and **network stress** on EC2 instances. FIS helps simulate failures and monitor the resilience and observability of your systems.
+
+FIS allows you to define:
+- **Stop conditions**: To control the safety of experiments.
+- **Rollbacks**: To restore the system to its normal state after the experiment.
+
+#### 4. Generating Stress on EC2 Instances
+To simulate a high CPU load on your EC2 instance, you can use the following command to create 4 fake processes for 300 seconds:
+
+```bash
+nohup stress -c 4 -t 300 &
+```
+This command runs 4 CPU-intensive tasks for 300 seconds in the background, simulating a CPU load on the instance. You can check this using the `top` command on your instance.
+
+#### 5. Advanced Stress Simulation on EC2
+To simulate varying levels of stress on an EC2 instance, you can combine **sleep** and **stress** commands to create different load conditions:
+
+```bash
+sleep 60 && stress -c 4 -t 60 && sleep 60 && stress -c 4 -t 30 && sleep 30 && stress -c 4 -t 200 && sleep 30 && stress -c 4 -t 500
+```
+This command alternates between periods of stress and inactivity, helping you observe different load patterns in CloudWatch.
+
+#### 6. Creating Alarms in CloudWatch
+You can set up CloudWatch alarms to monitor specific metrics and trigger actions when a threshold is crossed. For example, you can create an alarm for **CPU Utilization** and set it to trigger an email notification when CPU usage exceeds a certain percentage.
+
+Steps to create an alarm:
+1. Go to the **CloudWatch dashboard**.
+2. Select your EC2 instance and choose the metric (e.g., **CPU Utilization**).
+3. Set a threshold and configure your email or SNS to receive notifications.
+4. Optional: Under **EC2 actions**, choose whether to **Stop**, **Terminate**, **Reboot**, or **Auto Scale** the instance when the alarm is triggered.
+
+### AWS Elastic File System (EFS) Overview
+
+#### 1. Introduction to EFS
+Amazon Elastic File System (EFS) is a scalable, elastic, and fully managed **NFS file system** for use with AWS services and on-premises resources. It supports **shared storage** across multiple EC2 instances, making it ideal for scenarios where data needs to be centralized for multiple servers.
+
+Key features:
+- **Scalable storage**: Automatically grows and shrinks based on the files stored.
+- **Two storage classes**: 
+  - **Standard**: For frequently accessed files.
+  - **Infrequent Access (IA)**: Cost-optimized for files not accessed frequently.
+
+EFS supports shared storage, unlike **EBS**, which can only be attached to one instance at a time.
+
+#### 2. EFS Use Cases
+Some common use cases of AWS EFS include:
+- **Web Content Serving**: EFS can store and serve web content (e.g., images, videos) while providing high availability.
+- **Enterprise Applications**: EFS can serve as a shared file system for enterprise workloads.
+- **Media Processing**: Useful for storing and processing large media files, such as videos, for tasks like transcoding and rendering.
+- **Shared Directories**: EFS is suitable for creating shared or home directories across multiple EC2 instances.
+- **Database Backups**: Ideal for storing backups of databases and restoring them quickly when needed.
+- **Development Tools**: Store and share code, configuration files, and logs for development environments.
+
+#### 3. Setting Up EFS
+
+##### a. Security Group for EFS
+When setting up EFS, you must configure a security group with the following rules:
+- **Inbound Rule**: 
+  - Type: **NFS**.
+  - Source: Custom IP, which should accept requests from the security group of the EC2 instance (where the website is hosted).
+
+##### b. EFS Performance Modes
+- **General Purpose**: Free under the free tier, suitable for most use cases.
+- **Max I/O**: Paid feature, useful for high-performance needs.
+
+##### c. EFS Throughput Modes
+- **Bursting**: Free and works based on a burst credit system.
+- **Provisioned**: Paid option for consistent, high throughput.
+
+##### d. Mount Targets
+Assign the security group created for EFS to all **availability zones**. This ensures that the EC2 instances can communicate with EFS using the correct security groups.
+
+#### 4. Accessing EFS from EC2
+
+##### a. Installing EFS Utilities
+To access EFS from an Amazon Linux EC2 instance, you need to install the `amazon-efs-utils` package:
+
+```bash
+sudo yum install -y amazon-efs-utils
+```
+
+For other Linux distributions:
+- **CentOS**:
+  ```bash
+  sudo yum -y install git
+  git clone https://github.com/aws/efs-utils
+  sudo yum -y install make rpm-build
+  sudo make rpm
+  sudo yum -y install ./build/amazon-efs-utils*rpm
+  ```
+
+- **Debian**:
+  ```bash
+  sudo apt-get -y install binutils
+  ./build-deb.sh
+  sudo apt-get -y install ./build/amazon-efs-utils*deb
+  ```
+
+##### b. Creating Mount Point
+To create a mount point from the EC2 instance to EFS, add the following entry to the `/etc/fstab` file:
+
+```bash
+file-system-id efs-mount-point efs _netdev,tls,accesspoint=access-point-id 0 0
+```
+
+Replace:
+- `file-system-id`: The ID of the file system, obtained from EFS details.
+- `access-point-id`: The ID of the access point, obtained from the access point details.
+
+Example:
+```bash
+fs-47a7ccb2 /var/www/html/img efs _netdev,tls,accesspoint=fsap-03f6334520365d2d7 0 0
+```
+
+This ensures that the mount point is automatically created when the EC2 instance reboots.
+
+#### 5. Troubleshooting
+- **Timeout Errors**: Check the security groups if you encounter timeouts.
+- **File System Errors**: Verify the correctness of the file system ID and access point ID.
+
+#### 6. Creating an AMI with EFS Setup
+You can create an **AMI** from an EC2 instance that has EFS storage enabled. This preserves the configuration of security groups and instances, making it easier to replicate the setup without reconfiguring all the settings.
+
+By creating an AMI, you ensure that all security group settings and EFS configurations are stored and can be reused without repeating the setup.
+
+### AWS Auto Scaling Group (ASG) Overview
+
+#### 1. Introduction to Auto Scaling
+AWS Auto Scaling is a service that automatically adjusts the number of EC2 instances to maintain performance and optimize costs for applications. Auto Scaling works closely with **CloudWatch Alarms** to monitor metrics and dynamically upscale or downscale instances based on demand.
+
+**Key Benefits:**
+- **Upscaling**: Automatically adds instances when demand increases to ensure high availability.
+- **Downscaling**: Removes instances during low demand to reduce costs.
+
+Auto Scaling utilizes a **Launch Configuration/Template** to create EC2 instances, and scaling policies determine when to increase or decrease the number of instances.
+
+#### 2. Key Terminologies
+- **Minimum Size**: The minimum number of instances that must always be running.
+- **Desired Capacity**: The optimal number of instances to run based on expected load.
+- **Maximum Size**: The maximum number of instances that Auto Scaling can launch to handle traffic spikes, ensuring cost control.
+
+#### 3. Hands-On: Setting Up Auto Scaling
+
+##### a. Pre-requisites
+1. **Create a Target Group**: This group allows requests from the **Load Balancer**. Add the security group of the load balancer to the inbound rules of the target group.
+2. **Create a Load Balancer**: Ensure that the load balancer is set up to distribute traffic to the instances in the Auto Scaling Group (ASG).
+3. **Create an AMI**: Use an AMI (Amazon Machine Image) that contains your desired instance configuration.
+4. **Launch Template**: Customize a launch template that includes:
+   - Inbound and outbound rules.
+   - AMI details.
+   - Desired instance configuration.
+
+##### b. Creating an Auto Scaling Group (ASG)
+To create an Auto Scaling Group:
+- Provide the **Auto Scaling Group name**.
+- Select the **Launch Template** to be used for creating new instances dynamically.
+- Choose the **Availability Zones** where the ASG should operate. It’s recommended to use at least two availability zones for high availability.
+- Optionally, attach a **Load Balancer** and select the target groups created earlier.
+
+##### c. Health Check
+Auto Scaling Groups provide two health check types:
+- **EC2 Health Check**: Checks the hardware and software state of the EC2 instance.
+- **ELB Health Check**: Checks the application's state by sending requests via the **Elastic Load Balancer (ELB)** and verifying the response status.
+
+Auto Scaling uses health checks to determine if an instance needs to be replaced. If an instance is deemed unhealthy, Auto Scaling will terminate it and launch a new one.
+
+##### d. Group Size Configuration
+Configure the group size by defining:
+- **Minimum Capacity**: The least number of instances that must always run.
+- **Desired Capacity**: The ideal number of instances to meet the load.
+- **Maximum Capacity**: The upper limit of instances that can be launched.
+
+The relation between these capacities:
+```
+Minimum Capacity <= Desired Capacity <= Maximum Capacity
+```
+
+##### e. Scaling Policies
+Scaling policies adjust the number of instances dynamically between the minimum and maximum capacity. Notifications can be set up for events like instance launches, terminations, or failures.
+
+#### 4. Instance Management and Protection
+
+##### a. Instance States
+In the **Instance Management** section of the Auto Scaling Group, instances can be:
+- **Detached**: Removed from the ASG.
+- **Standby**: Temporarily removed from service.
+- **Inservice**: Actively serving traffic.
+- **Scale-in Protection**: Instances with this protection cannot be terminated by the ASG during scale-in.
+
+##### b. Modifying Instances
+Direct changes to running instances within an Auto Scaling Group are temporary. Any manual changes will be lost when the ASG launches new instances. To make persistent changes:
+- **Update the Launch Template**: Modify the template and refresh the Auto Scaling Group. This ensures that future instances inherit the changes.
+
+##### c. Refreshing Instances
+After updating the launch template, use the **Refresh Instances** option to apply changes across instances. To minimize downtime, set the **minimum healthy percentage** to a value like 90%, which ensures that at least 90% of the instances remain in service during the update.
+
+#### 5. Data Persistence
+Since EC2 instances in an Auto Scaling Group are dynamic, data stored locally on the instances may be lost during scaling events or refreshes. To ensure data persistence:
+- **Mount EBS or EFS volumes** to store data outside the instance.
+
+#### 6. Deleting an Auto Scaling Group
+To delete instances created by an Auto Scaling Group, the group itself must be deleted. Otherwise, new instances will continue to be created based on the scaling policy. Additionally, if a load balancer is attached, it must be removed to complete project cleanup.
+
+---
+
+**Example: Scaling Policy Setup in CLI**
+```bash
+aws autoscaling put-scaling-policy \
+--auto-scaling-group-name my-asg \
+--policy-name scale-out \
+--scaling-adjustment 1 \
+--adjustment-type ChangeInCapacity
+```
+
+This creates a scaling policy to increase the capacity by one instance when triggered.
+
+### AWS Relational Database Service (RDS) Overview
+
+#### 1. Introduction to RDS
+Amazon Relational Database Service (RDS) is a managed service that handles the administrative tasks of relational databases. It simplifies tasks like:
+- **Database Installation**
+- **Patching**
+- **Monitoring**
+- **Performance Tuning**
+- **Backups**
+- **Scaling**
+- **Security** and **Privacy**
+- **Hardware Upgrades**
+- **Storage Management**
+
+RDS helps reduce the operational burden by automating these tasks, allowing developers to focus on application development.
+
+#### 2. Key Features of RDS
+- **High Availability with Multi-AZ Deployments**: RDS supports Multi-AZ deployments, hosting databases across two availability zones. The primary instance handles traffic, and a secondary instance is kept in sync. If the primary fails, the secondary automatically takes over, ensuring high availability.
+  
+- **Effortless Scaling**: Scaling RDS up or down based on demand is seamless. You can adjust the compute and storage capacity with minimal disruption.
+  
+- **Read Replicas for Performance**: RDS supports **Read Replicas** to improve performance by offloading read operations from the main database. Read replicas can also be used for disaster recovery, business reporting, or cross-region replication.
+
+#### 3. Read Replicas
+- **Purpose**: Read replicas are ideal for offloading read operations, improving performance, and providing additional redundancy.
+- **Supported Databases**: MySQL, MariaDB, PostgreSQL, Oracle, SQL Server, and Amazon Aurora.
+- **Replication**: The replication process is **asynchronous**, meaning there might be slight delays in data synchronization between the primary database and the read replica.
+- **Cross-Region Replication**: Read replicas can be created across different AWS regions for added redundancy and disaster recovery.
+  
+**Promoting a Read Replica**: If needed, you can promote a read replica to become a standalone instance.
+
+**Code Snippet for Creating Read Replica:**
+```bash
+aws rds create-db-instance-read-replica \
+    --db-instance-identifier my-read-replica \
+    --source-db-instance-identifier my-primary-db
+```
+
+#### 4. Basic RDS Architecture Use Case
+In a typical use case, RDS is private to a **VPC** (Virtual Private Cloud) while an **EC2 instance** hosts a web application. The web application is publicly accessible through an **Internet Gateway**, while RDS remains private, enhancing security. The application interacts with RDS, but external access to the database is restricted.
+
+**Architecture Example**:
+- **EC2 (Web Application)** → Public Access
+- **RDS** → Private in VPC, only accessible via EC2 instance
+
+#### 5. Creating an RDS Instance
+
+##### a. Database Creation Methods
+- **Standard Create**: Configure all options, including availability, security, backups, and maintenance.
+- **Easy Create**: Uses AWS-recommended configurations for simplicity. Options can be modified later if necessary.
+
+##### b. Recommended Database Engine: Amazon Aurora
+AWS recommends using **Amazon Aurora** for MySQL or PostgreSQL workloads. Aurora offers:
+- **64TB of Auto-Scaling Storage**
+- **6-way replication** across three availability zones
+- **15 low-latency read replicas**
+- **5x faster than MySQL** and **3x faster than PostgreSQL**
+  
+Aurora also supports **serverless architecture**, providing flexibility in handling variable workloads.
+
+##### c. Configuring the Database
+When creating an RDS instance, the following settings must be configured:
+- **Database Engine**: Select from Amazon Aurora, MySQL, MariaDB, PostgreSQL, Oracle, Microsoft SQL Server. For this example, choose **MySQL**.
+- **Engine Version**: Choose the desired version of the database engine.
+- **Database Template**: Select from:
+  - **Production**: Optimized for high availability and consistent performance.
+  - **Dev/Test**: For development and testing environments.
+  - **Free Tier**: Suitable for learning and testing purposes under AWS Free Tier.
+  
+##### d. DB Instance Classes
+Choose the instance class based on your use case:
+- **Standard Classes** (e.g., m-class)
+- **Memory Optimized Classes** (e.g., r-class, x-class)
+- **Burstable Classes** (e.g., t-class, suitable for free tier usage)
+
+##### e. Instance Identifier and Credentials
+- **DB Instance Identifier**: Provide a unique name for your RDS instance in your AWS region.
+- **Credentials**: Set the username and password for accessing the database. Optionally, you can use auto-generated passwords.
+
+**Code Snippet for Creating an RDS Instance (CLI)**:
+```bash
+aws rds create-db-instance \
+    --db-instance-identifier mydbinstance \
+    --db-instance-class db.t2.micro \
+    --engine mysql \
+    --allocated-storage 20 \
+    --master-username admin \
+    --master-user-password password123
+```
+
+#### 6. Best Practices for RDS
+
+- **Security**: Keep RDS private within the VPC. Use IAM roles and security groups to manage access.
+- **Backups**: Enable automated backups to ensure data recovery.
+- **Performance**: Use read replicas to optimize read-heavy workloads.
+- **Monitoring**: Use Amazon CloudWatch to monitor performance metrics and set up alarms.
+  
+#### 7. Conclusion
+Amazon RDS simplifies database management by handling administrative tasks like patching, backups, and scaling. With high availability, read replicas, and seamless scaling, it is a reliable solution for managing relational databases in the cloud.
+
+### AWS RDS (Relational Database Service) Overview
+
+---
+
+#### 1. **Storage Types in RDS**
+
+When setting up Amazon RDS, you have three storage options to choose from:
+
+- **General Purpose (SSD)**: Standard storage option suitable for a wide range of workloads.
+- **Provisioned IOPS (SSD)**: Optimized for I/O-intensive workloads, offering high-performance storage.
+- **Magnetic**: Legacy option, now mostly replaced by SSD options.
+
+You can also configure **Storage Autoscaling** to dynamically adjust the storage size based on demand. It's important to set an upper limit to control costs.
+
+---
+
+#### 2. **Multi-AZ Deployment for High Availability**
+
+**Multi-AZ Deployment** ensures high availability, durability, and fault tolerance by replicating data synchronously across multiple Availability Zones (AZs). It automatically fails over to a standby instance in case of primary instance failure, minimizing downtime and avoiding data loss. Multi-AZ can be enabled via:
+
+- **AWS Management Console**
+- **AWS CLI**
+- **RDS API**
+
+Supported database engines include **MySQL, PostgreSQL, MariaDB, Oracle, and SQL Server**.
+
+```bash
+# Command to create Multi-AZ RDS using AWS CLI
+aws rds modify-db-instance \
+    --db-instance-identifier mydbinstance \
+    --multi-az \
+    --apply-immediately
+```
+
+**Note**: Multi-AZ deployments are more expensive due to the additional standby instance and data transfer costs.
+
+---
+
+#### 3. **RDS Replicas for Read Throughput**
+
+RDS supports **Read Replicas** to scale read-intensive workloads. Replicas can be created to offload read operations from the primary instance, improving overall performance.
+
+- **Main RDS instance**: Used for write operations.
+- **Read Replicas**: Serve read queries, enhancing throughput.
+
+---
+
+#### 4. **Public and Private Subnet Configuration**
+
+You can set RDS to be accessible via a **Public** or **Private Subnet**:
+
+- **Public Subnet**: Allows access over the internet.
+- **Private Subnet**: Restricts access within the **VPC (Virtual Private Cloud)**.
+
+In a private subnet configuration, you’ll need to define VPC **Security Groups** to specify inbound and outbound rules for your database.
+
+---
+
+#### 5. **RDS Authentication Options**
+
+RDS allows you to authenticate using:
+
+- **Username and Password**
+- **IAM-based Authentication**: Secure access using AWS IAM users.
+
+---
+
+#### 6. **Backup and Recovery**
+
+RDS provides automatic backups with a configurable **Backup Retention Period** (up to 35 days). You can also set up **Backup Windows** to define when backups are initiated.
+
+- After the retention period, backups are deleted.
+- You can enable **Cross-Region Backup Replication** to store backups in other regions for disaster recovery.
+
+---
+
+#### 7. **Monitoring and Logs**
+
+RDS can be monitored in real time, with intervals as low as 1 second. Key logs you can export to **Amazon CloudWatch** include:
+
+- **Audit Logs**
+- **Error Logs**
+- **General Logs**
+- **Slow Query Logs**
+
+```bash
+# Exporting RDS logs to CloudWatch using AWS CLI
+aws rds modify-db-instance \
+    --db-instance-identifier mydbinstance \
+    --cloudwatch-logs-export-configuration '{"EnableLogTypes":["audit","error","general","slowquery"]}'
+```
+
+---
+
+#### 8. **Automatic Updates and Protection**
+
+- **Minor Version Upgrades**: Can be enabled to automatically apply updates that don’t involve major changes.
+- **Deletion Protection**: Helps prevent accidental deletion of RDS instances.
+
+---
+
+#### 9. **RDS Costs**
+
+Key factors contributing to RDS costs include:
+
+- **DB Instance** cost
+- **Storage** cost
+- **Multi-AZ standby instance** costs
+
+---
+
+#### 10. **Connecting to RDS via Command Line**
+
+You can connect to an RDS instance using the MySQL client via the command line:
+
+```bash
+mysql -h <RDS-endpoint> -u <user-name> -p
+```
+
+To troubleshoot connection issues, use **telnet** to verify if the RDS instance is reachable:
+
+```bash
+telnet <RDS-endpoint> <port-num>
+```
+
+If connection fails, check the **Security Group** settings and ensure the instance's private IP address is allowed.
+
+---
+
+#### 11. **Creating Read Replicas**
+
+You can create a **Read Replica** from the RDS console or CLI. If you’ve created a snapshot of your RDS instance, it can be used to restore deleted instances or create new ones.
+
+```bash
+# Command to create a read replica
+aws rds create-db-instance-read-replica \
+    --db-instance-identifier mydbinstance \
+    --source-db-instance-identifier mydbinstance
+```
+
+---
+
+#### 12. **RDS Automation**
+
+AWS RDS provides a high level of automation, which reduces the need for a dedicated **Database Administrator (DBA)**. A basic understanding of **AWS** and **SQL** is enough to manage RDS instances effectively.
+
+---
+
+This summarized version of AWS RDS gives an overview of key concepts, features, and management techniques for relational databases in AWS. The provided command snippets help in using the AWS CLI for setting up and managing RDS instances.
+
+### AWS VPC (Virtual Private Cloud) Overview
+
+---
+
+#### 1. **Introduction to VPC and Networking Components**
+
+In traditional data centers, physical networking components like **Switches, Routers, and Firewalls** are used to manage network traffic between different **subnets**. A subnet could be dedicated to a front-end service, while another might be assigned to a back-end service. 
+
+AWS introduced **VPC (Virtual Private Cloud)** to allow users to create and manage a virtual network in the cloud, with full control over network architecture.
+
+---
+
+#### 2. **What is a VPC?**
+
+A **VPC (Virtual Private Cloud)** is a logically isolated virtual network on AWS where you can launch AWS resources such as **EC2 instances, RDS databases**, and more. It mimics a traditional **LAN (Local Area Network)** but is created within the AWS cloud, giving you control over IP addressing, subnets, route tables, and security.
+
+- **Custom VPC**: Offers more control over configurations.
+- **Default VPC**: Automatically created by AWS for each region.
+
+---
+
+#### 3. **VPC Features**
+
+- **Full control over network components**: Decide the **IP address range**, subnets, and configure routing and security.
+- **Private environment**: Resources inside the VPC are logically isolated from other AWS users, ensuring security.
+- **High Availability**: Distribute subnets across multiple **Availability Zones** for better resilience and uptime.
+
+```bash
+# AWS CLI to create a VPC
+aws ec2 create-vpc --cidr-block 10.0.0.0/16
+```
+
+---
+
+#### 4. **IPv4 Addressing in VPC**
+
+- **IPv4 addresses** are 32-bit addresses, represented in four octets.
+    - Example: `192.168.100.1`
+    - Range: `0.0.0.0` to `255.255.255.255`
+
+- **Public IP Addresses**: Used for public-facing services, e.g., websites (`54.86.23.90`).
+- **Private IP Addresses**: Used within private networks and not exposed to the public internet.
+  
+##### Private IP Ranges:
+- **Class A**: `10.0.0.0 - 10.255.255.255`
+- **Class B**: `172.16.0.0 - 172.31.255.255`
+- **Class C**: `192.168.0.0 - 192.168.255.255`
+
+---
+
+#### 5. **Classes of IP Addresses**
+
+1. **Class D** (Multicast Addresses):
+   - **Purpose**: Used for multicast communication (one-to-many).
+   - **Example**: Used in video conferencing, streaming services.
+   - Cannot be used for regular unicast traffic.
+
+2. **Class E** (Reserved Addresses):
+   - **Purpose**: Reserved for future or experimental use.
+   - Not used for general communication on the internet.
+
+---
+
+#### 6. **Subnet Mask and Network Segmentation**
+
+- A **Subnet Mask** is a 32-bit number that divides an IP address into:
+    - **Network bits**: Identify the network.
+    - **Host bits**: Identify specific devices within the network.
+
+The subnet mask allows you to define smaller networks (**subnets**) within a larger network. This segmentation enhances network management and security.
+
+- Example of Subnet Mask: `255.255.255.0` for a subnet in `192.168.1.0/24`
+
+```bash
+# AWS CLI to create a subnet in a VPC
+aws ec2 create-subnet --vpc-id vpc-12345678 --cidr-block 10.0.1.0/24
+```
+
+---
+
+### 7. **VPC Use Cases and Benefits**
+
+- **Custom Network Architectures**: You can define subnets for different layers of your application (e.g., public for web servers, private for databases).
+- **Security and Isolation**: Traffic between subnets can be filtered using **Network ACLs (Access Control Lists)** and **Security Groups**.
+- **Cost-Efficiency and Performance**: By reducing the need for a public internet gateway and enabling private connections, VPCs lower data transfer costs and improve performance with low-latency access.
+
+---
+
+### Summary
+
+AWS **VPC** enables you to create a secure, isolated network environment in the cloud where you have full control over IP addressing, subnets, routing, and security. By understanding **IP addressing**, **subnet masks**, and the classes of IP addresses, you can effectively design robust and scalable network architectures for your AWS resources.
+
+### AWS VPC: Subnet Masks and CIDR Notation
+
+---
+
+#### 1. **Purpose of Subnet Masks**
+
+**Subnet Masks** are used to divide a large IP network into smaller, manageable subnetworks. They help in organizing and managing IP addresses efficiently within a network and improve overall security and network performance.
+
+**Key Functions of Subnet Masks:**
+
+- **Network Segmentation**: Splits a larger network into smaller subnets.
+- **Efficient IP Allocation**: Assigns IP addresses to different departments or teams.
+- **Broadcast Domain Control**: Limits unnecessary broadcast traffic within the subnet.
+- **Security**: Isolates different parts of a network for better security.
+- **Routing Decisions**: Helps routers decide whether the IP is local or needs to be routed externally.
+
+---
+
+#### 2. **CIDR Notation (Classless Inter-Domain Routing)**
+
+CIDR is a flexible method for IP address allocation and routing, replacing the traditional IP class system (A, B, C). It allows for efficient and granular control over subnet sizes and address assignments.
+
+- **CIDR Notation**: Represents the IP address followed by a slash `/` and a number that specifies the number of bits allocated to the network prefix.
+  - Example: `192.168.1.10/24` (24 bits are for the network portion, and the remaining are for hosts).
+
+```bash
+# Example of a CIDR block for a VPC
+10.0.0.0/16
+```
+
+**Advantages of CIDR:**
+- Allows flexible subnet size control.
+- Aggregates routes, reducing the size of routing tables.
+- Efficient IP address allocation, slowing down the exhaustion of IPv4 addresses.
+
+---
+
+#### 3. **Subnet Mask and Usable IPs**
+
+Subnet masks determine which portion of the IP address belongs to the network and which part is for host identification.
+
+##### Examples:
+
+- **192.168.0.174/24** (Subnet Mask: `255.255.255.0`)
+  - **Network IP**: `192.168.0.0`
+  - **Usable IPs**: `192.168.0.1 - 192.168.0.254`
+  - **Broadcast IP**: `192.168.0.255`
+  - **Total Usable IPs**: 254
+
+- **172.16.12.36/16** (Subnet Mask: `255.255.0.0`)
+  - **Network IP**: `172.16.0.0`
+  - **Usable IPs**: `172.16.0.1 - 172.16.255.254`
+  - **Broadcast IP**: `172.16.255.255`
+  - **Total Usable IPs**: 65534
+
+- **10.23.12.56/8** (Subnet Mask: `255.0.0.0`)
+  - **Network IP**: `10.0.0.0`
+  - **Usable IPs**: `10.0.0.1 - 10.255.255.254`
+  - **Broadcast IP**: `10.255.255.255`
+  - **Total Usable IPs**: 16,777,214
+
+---
+
+#### 4. **CIDR and Subnet Mask Conversion**
+
+CIDR notation simplifies subnet mask representation:
+
+| CIDR | Subnet Mask       | Binary Representation                       |
+|------|-------------------|---------------------------------------------|
+| /8   | 255.0.0.0         | 11111111.00000000.00000000.00000000         |
+| /16  | 255.255.0.0       | 11111111.11111111.00000000.00000000         |
+| /24  | 255.255.255.0     | 11111111.11111111.11111111.00000000         |
+
+**Example:**
+- **172.20.0.0/16**: 
+  - Network: `172.20`
+  - Host Address: `0.0`
+  - Subnet Mask: `255.255.0.0`
+  - Wildcard: `0.0.255.255` (opposite of the subnet mask)
+
+---
+
+### Summary
+
+Understanding **Subnet Masks** and **CIDR Notation** is essential for effectively managing and organizing IP networks. Subnet masks help in breaking a large network into smaller subnets, while CIDR provides flexibility in IP address allocation and routing, making networks more efficient and scalable.
+
+### AWS VPC Design & Components
+
+---
+
+#### 1. **VPC Overview**
+A **Virtual Private Cloud (VPC)** is the main network container where multiple subnets are created. VPCs are isolated from each other, allowing you to define your own network space within AWS. Subnets within a VPC can be classified into two types:
+
+- **Public Subnets**: Instances within public subnets can access the internet through an **Internet Gateway**.
+- **Private Subnets**: Instances in private subnets cannot access the internet directly as they lack public IPs. However, they can communicate through a **NAT Gateway** to access external services when necessary.
+
+---
+
+#### 2. **Public and Private Subnets**
+
+- **Public Subnets**: 
+  - Instances in public subnets have public IP addresses and access the internet via the **Internet Gateway (IGW)**.
+  - Suitable for services that need to be accessible from the internet, such as web servers.
+
+- **Private Subnets**:
+  - Instances in private subnets lack public IP addresses, so they cannot connect to the internet directly.
+  - To access the internet for updates or installations, private subnets use a **NAT Gateway** placed in a public subnet.
+
+---
+
+#### 3. **Subnet Availability Zones**
+Each subnet is mapped to a specific **Availability Zone (AZ)**, ensuring that the network spans multiple data centers for redundancy. To enhance **high availability**, subnets are distributed across multiple AZs.
+
+```bash
+# Example VPC with 4 Subnets in two Availability Zones
+VPC CIDR: 172.20.0.0/16
+Public Subnet 1: 172.20.1.0/24 (AZ: us-west-1a)
+Public Subnet 2: 172.20.2.0/24 (AZ: us-west-1b)
+Private Subnet 1: 172.20.3.0/24 (AZ: us-west-1a)
+Private Subnet 2: 172.20.4.0/24 (AZ: us-west-1b)
+```
+
+---
+
+#### 4. **Internet Gateway and NAT Gateway**
+
+- **Internet Gateway (IGW)**:
+  - A highly available, horizontally scaled VPC component.
+  - It allows instances in public subnets to communicate with the internet.
+  
+- **NAT Gateway**:
+  - Enables instances in private subnets to connect to the internet or AWS services, but prevents the internet from directly initiating a connection to those instances.
+  - Requests from private subnets are routed through the NAT Gateway to the Internet Gateway.
+
+```bash
+# Routing table for Public Subnet
+0.0.0.0/0 -> Internet Gateway
+
+# Routing table for Private Subnet
+0.0.0.0/0 -> NAT Gateway
+```
+
+---
+
+#### 5. **Route Tables and Network ACLs**
+
+Each subnet has an associated **route table** that controls where traffic is directed. **Network ACLs (NACLs)** are applied to control inbound and outbound traffic at the subnet level, similar to how security groups work at the instance level.
+
+- Public subnet route tables forward traffic to the Internet Gateway.
+- Private subnet route tables forward traffic to the NAT Gateway.
+
+---
+
+#### 6. **High Availability with VPC**
+
+To ensure high availability, at least one public and private subnet should be deployed in each availability zone. In case of a failure in one zone, traffic can be handled by other zones.
+
+- **Bastion Host**: A bastion host is placed in a public subnet and is used to securely access instances in private subnets that do not have direct access to the internet.
+
+```bash
+# Example Setup
+Region: us-west-1
+VPC CIDR: 172.20.0.0/16
+Public Subnet 1: 172.20.1.0/24
+Private Subnet 1: 172.20.3.0/24
+Bastion Host in Public Subnet: 172.20.1.10
+```
+
+---
+
+#### 7. **Default VPC and Custom VPC**
+
+Each AWS region comes with a **default VPC**, which includes default subnets. These subnets are public, and if traffic is routed through the Internet Gateway, they allow access to the internet.
+
+To check whether a subnet is public or private:
+- If the route table directs traffic to `0.0.0.0/0` through an Internet Gateway, the subnet is public.
+- If the traffic is routed to a NAT Gateway, it is a private subnet.
+
+---
+
+#### 8. **Architecture for VPC Setup**
+
+For setting up a VPC architecture, here's an example structure:
+
+- **Region**: `us-west-1`
+- **VPC Range**: `172.20.0.0/16`
+- **4 Subnets**: 
+  - `172.20.1.0/24` (Public Subnet in us-west-1a)
+  - `172.20.2.0/24` (Public Subnet in us-west-1b)
+  - `172.20.3.0/24` (Private Subnet in us-west-1a)
+  - `172.20.4.0/24` (Private Subnet in us-west-1b)
+- **Internet Gateway**: 1
+- **NAT Gateways**: 2 (one per availability zone)
+- **Elastic IPs (EIP)**: 2 for NAT Gateways
+- **Route Tables**: Separate route tables for public and private subnets
+- **Bastion Host**: Used to connect from the public subnet to instances in the private subnet.
+
+To save cost, some setups may use only 1 NAT Gateway and Elastic IP.
+
+---
+
+### Summary
+
+Understanding **VPC architecture** is essential for building scalable, secure, and highly available cloud environments. Public subnets, private subnets, Internet Gateways, and NAT Gateways work together to handle different networking needs, while route tables and NACLs control how traffic flows in and out of the VPC.
+
+### AWS VPC Creation and Configuration
+
+---
+
+#### 1. **Creating a VPC**
+
+- To create a VPC, navigate to the VPC creation window.
+- **VPC Only**: This option is used when creating only the VPC without subnets or gateways.
+  - Provide a **name** and a **CIDR range** (e.g., `x.x.x.x/x`).
+  - Click **Create**.
+
+- **VPC and More**: Use this option to create an entire VPC architecture, including public/private subnets, NAT gateways, and an Internet Gateway.
+  - Add tags for the VPC, set **IPv4 CIDR range**, and choose **availability zones**.
+  - Define the number of **public and private subnets**.
+  - If you need dedicated hardware, set the **tenancy** to "Dedicated" (optional).
+
+```bash
+# Example VPC setup
+VPC CIDR: 172.20.0.0/16
+Public Subnet 1 CIDR: 172.20.1.0/24
+Public Subnet 2 CIDR: 172.20.2.0/24
+Private Subnet 1 CIDR: 172.20.3.0/24
+Private Subnet 2 CIDR: 172.20.4.0/24
+```
+
+---
+
+#### 2. **NAT Gateway Options**
+
+When creating the VPC, you will have options for setting up a NAT Gateway:
+- **None**: No NAT Gateway.
+- **In 1 AZ**: One NAT Gateway in a public subnet for all private subnets.
+- **1 per AZ**: One NAT Gateway per availability zone for high availability, but it's more costly.
+
+To avoid using a NAT Gateway when accessing **S3** (which can incur costs), use **VPC Endpoints** and configure an **S3 Gateway**. This reduces NAT Gateway charges and improves security.
+
+---
+
+#### 3. **Subnets**
+
+Subnets can be created individually under the **Subnet Menu**:
+- Provide a **name**, **CIDR block**, and select the **availability zone**.
+- Subnets should be associated with the main VPC's CIDR block.
+- Subnets by default have **private IP addresses** and are not internet-accessible unless public.
+
+---
+
+#### 4. **Internet Gateway**
+
+An **Internet Gateway (IGW)** connects your VPC to the internet. 
+- Create an IGW and name it.
+- The IGW will initially be in a "detached" state.
+- Attach the IGW to your VPC to allow communication with the internet.
+
+---
+
+#### 5. **Route Tables**
+
+**Route Tables** define the pathways for your subnets to communicate with the internet or NAT Gateways.
+
+- Create a route table and associate it with the VPC.
+- Under the route table, **edit subnet associations** to associate the public subnets.
+- For public subnets, create a rule that routes traffic with `0.0.0.0/0` to the Internet Gateway.
+- For private subnets, route traffic to the NAT Gateway.
+
+```bash
+# Example for public subnet route table
+Destination: 0.0.0.0/0 -> Target: Internet Gateway
+
+# Example for private subnet route table
+Destination: 0.0.0.0/0 -> Target: NAT Gateway
+```
+
+---
+
+#### 6. **NAT Gateway Setup**
+
+- Allocate a **static IP (Elastic IP)** to the NAT Gateway.
+- When creating the NAT Gateway, assign the Elastic IP and select a **public subnet**.
+- Private subnets' traffic is routed through the NAT Gateway, which forwards it to the internet.
+
+---
+
+#### 7. **VPC Endpoints for S3**
+
+To reduce NAT Gateway costs for accessing S3:
+- Create a **VPC endpoint** for S3, which allows private subnets to directly access S3 without routing through the internet.
+- Customize the **endpoint policy** for security and access control.
+
+---
+
+#### 8. **Bastion Host**
+
+A **Bastion Host** provides a secure way to access resources in private subnets via SSH:
+- The Bastion Host resides in a **public subnet** and allows access to instances in private subnets.
+- Create a **security group** for the Bastion Host, allowing **SSH access** from your IP (`My IP`).
+- Generate a **key pair** for SSH access.
+
+When launching an EC2 instance in a private subnet, use the **key pair** and **security group** created for the Bastion Host.
+
+```bash
+# Example security group inbound rule for Bastion Host
+Type: SSH
+Protocol: TCP
+Port: 22
+Source: My IP
+```
+
+---
+
+#### 9. **Launching EC2 Instances**
+
+- When creating an EC2 instance, select the custom VPC instead of the default VPC.
+- Attach the **key pair** and **security group** created earlier.
+- After launching, the instance will have a **public IP** if it's in a public subnet, or will be accessible via the Bastion Host if in a private subnet.
+
+```bash
+# Steps for EC2 instance
+- Select AMI
+- Choose custom VPC
+- Assign security group and key pair
+- Launch the instance
+```
+
+Once the instance is launched, you can SSH into the instance using the public IP or through the Bastion Host if the instance resides in a private subnet.
+
+---
+
+By following these steps, you can create a well-architected AWS VPC with public and private subnets, route tables, gateways, and secure access using Bastion Hosts and VPC endpoints.
+
+### AWS VPC Setup and Architecture
+
+#### Creating a VPC
+- To **create a VPC**, choose the "VPC only" option, provide the **name** and the **CIDR block** (e.g., `x.x.x.x/x`), and then create the VPC.
+- If you want to create a complete architecture (public/private subnets, NAT gateway, Internet gateway), select "VPC and more." Provide the **IPv4 CIDR range** and other configurations such as:
+  - Tenancy: Default or Dedicated
+  - Number of **Availability Zones (AZs)**
+  - Number of public/private **subnets**
+
+**Example CIDR ranges**:
+- VPC: `172.20.0.0/24`
+- Public Subnet 1: `172.20.1.0/24`
+- Private Subnet 1: `172.20.3.0/24`
+
+#### Internet Gateway (IGW)
+- An **Internet Gateway** connects a VPC to the internet.
+- After creating an IGW, attach it to your VPC to change its state from *detached* to *attached*.
+
+#### Subnets
+- **Subnets** can be created individually under the VPC by specifying the subnet name, CIDR block, and the availability zone.
+- Public subnets require an IGW, while **private subnets** use a **NAT Gateway** to access the internet.
+
+#### Route Tables
+- Create **Route Tables** for each subnet (public/private).
+- For **public subnets**, add a route to forward traffic (e.g., `0.0.0.0/0`) to the IGW.
+- For **private subnets**, create a route that directs non-local traffic to the **NAT Gateway**.
+
+```bash
+# Example route table entry for public subnets
+Destination: 0.0.0.0/0
+Target: Internet Gateway
+```
+
+#### NAT Gateway
+- A **NAT Gateway** is used to allow instances in private subnets to access the internet while keeping them unreachable from the outside.
+- Allocate an **Elastic IP** for the NAT Gateway and assign it to a public subnet.
+- Update the **route tables** of the private subnets to route traffic to the NAT Gateway.
+
+```bash
+# Route for private subnets
+Destination: 0.0.0.0/0
+Target: NAT Gateway
+```
+
+### Bastion Host Setup
+- A **Bastion Host** is a server that provides secure access to instances in a private subnet.
+- Create a security group for the Bastion Host and allow inbound **SSH** connections only from your IP.
+
+```bash
+# SSH to bastion host
+ssh -i bastion-key.pem ec2-user@<Bastion-IP>
+```
+
+#### Accessing Instances in Private Subnets
+To access an instance in a private subnet through the Bastion Host:
+1. **Copy the key** used to access the private instance from your local machine to the Bastion Host.
+2. **SSH into the private instance** using the copied key:
+
+```bash
+# Copy key to Bastion Host
+scp -i bastion-key.pem web-key.pem ec2-user@<Bastion-IP>:/home/ec2-user/
+
+# Access private instance from Bastion Host
+ssh -i web-key.pem ec2-user@<Private-Instance-IP>
+```
+
+### Hosting a Website in a Private Subnet
+
+#### Setting Up EC2 Instance for the Website
+- Create an **EC2 instance** in a private subnet and use **Bastion Host** for access.
+- Install necessary software packages (Apache, wget, unzip):
+
+```bash
+yum install httpd wget unzip -y
+```
+
+- Download a website template from a provider like **tooplate.com** using `wget`, unzip it, and copy the contents to `/var/www/html/`.
+
+```bash
+wget https://www.tooplate.com/zip-templates/2136_kool_form_pack.zip
+unzip 2136_kool_form_pack.zip
+cp -r 2136_kool_form_pack/* /var/www/html/
+```
+
+- Restart Apache to serve the website:
+
+```bash
+systemctl restart httpd
+systemctl enable httpd
+```
+
+#### Application Load Balancer (ALB)
+- To make the website accessible, set up an **Application Load Balancer** in the public subnet.
+- Create a **target group** for the instances in the private subnet and configure the load balancer to forward HTTP requests to the target group.
+- Ensure that security groups for both the EC2 instance and the load balancer allow traffic on port 80.
+
+```bash
+# Sample DNS name for accessing the website
+vpro-web-elb-401942659.us-west-1.elb.amazonaws.com
+```
+
+### VPC Peering
+- **VPC Peering** enables communication between two VPCs (either in the same or different regions/accounts).
+- Ensure that the CIDR blocks of the VPCs do not overlap.
+- After creating a **peering connection**, establish routes in the route tables of both VPCs to forward traffic to the peering connection.
+
+```bash
+# Example route for VPC peering
+Destination: <VPC2-CIDR>
+Target: Peering Connection
+```
+
+Here's a structured summary of your DevOps notes on AWS EC2 logs, including headings and code snippets for clarity:
+
+---
+
+# AWS Part 2: EC2 Logs and CloudWatch Integration
+
+## 1. Overview of EC2 Logs
+When hosting a website on an EC2 instance, two main types of logs are generated:
+- **Access Log**: Located at `/var/log/httpd/access_log`, it records all actions on the website.
+- **Error Log**: Located at `/var/log/httpd/error_log`, it captures errors encountered during operations.
+
+### Importance of Log Management
+For public-facing websites, the logs can grow quickly, consuming significant disk space. To manage this effectively, it's essential to archive these logs and store them in a location like an S3 bucket.
+
+## 2. Archiving Logs
+### Step 1: Create an Archive
+To archive the logs, execute the following commands:
+```bash
+# Navigate to the log directory
+cd /var/log/httpd
+
+# List existing log files
+ls
+# Output: access_log error_log
+
+# Create a compressed archive of the logs
+tar czvf wave-web01-httpdlogs19122020.tar.gz *
+```
+
+### Step 2: Move Archive to a Temporary Folder
+After creating the archive, move it to a designated temporary folder for S3 upload:
+```bash
+# Create a temporary directory for logs
+mkdir /tmp/logs-wave
+
+# Move the archive to the temporary folder
+mv wave-web01-httpdlogs19122020.tar.gz /tmp/logs-wave/
+```
+
+### Step 3: Clear Local Log Files
+To free up local disk space, clear the contents of the logs:
+```bash
+# Clear the contents of access_log
+cat /dev/null > access_log
+
+# Clear the contents of error_log
+cat /dev/null > error_log
+```
+
+## 3. Installing and Configuring AWS CLI
+To interact with S3 and other AWS services from the terminal, install the AWS Command Line Interface (CLI):
+```bash
+# Install AWS CLI
+yum install awscli
+```
+
+### Step 1: Create IAM User
+1. Create an IAM user with programmable access.
+2. Attach a policy that provides S3 read/write access.
+
+### Step 2: Configure AWS CLI
+Use the following command to configure the AWS CLI with your Access Key ID and Secret Access Key:
+```bash
+# Configure AWS CLI
+aws configure
+```
+Provide the following details when prompted:
+```
+AWS Access Key ID [None]: <Your_Access_Key_ID>
+AWS Secret Access Key [None]: <Your_Secret_Access_Key>
+Default region name [None]: us-east-2
+Default output format [None]: json
+```
+
+## 4. Uploading Logs to S3
+To copy the archived logs to your S3 bucket, use:
+```bash
+# Copy the archive to S3
+aws s3 cp /tmp/logs-wave/wave-web01-httpdlogs19122020.tar.gz s3://<your-s3-bucket-name>/
+```
+
+### Keeping Source and S3 in Sync
+To synchronize local files with the S3 bucket, use:
+```bash
+# Sync the local folder with the S3 destination
+aws s3 sync /tmp/logs-wave/ s3://wave-web-logs-321/
+```
+This command only copies files that are present on one side but not the other. You can automate this with a cron job to keep the folders in sync.
+
+## 5. Using CloudWatch Logs
+For real-time access to logs without sharing production credentials, utilize AWS CloudWatch Logs. This service helps monitor, analyze, and store logs centrally.
+
+### Creating IAM Roles for CloudWatch and S3
+1. Create a role with full access to S3 and CloudWatch.
+2. Assign this role to the IAM user created for log operations.
+
+### Removing Old Credentials
+After creating the IAM user and roles, remove the old AWS CLI credentials:
+```bash
+# Remove old AWS credentials
+rm -rf ~/.aws/credentials
+```
+
+## 6. Installing CloudWatch Agent
+To install the AWS CloudWatch agent for log management, execute:
+```bash
+# Install AWS CloudWatch agent
+yum install awslogs -y
+```
+
+---
+
+This structure provides a clear overview and step-by-step instructions on managing EC2 logs, configuring AWS CLI, and utilizing CloudWatch for monitoring.
+
+Here’s a structured summary of your DevOps notes on streamlining EC2 logs to CloudWatch and managing load balancer access logs with S3, including headings and code snippets for clarity:
+
+---
+
+# AWS Part 2: Streamlining EC2 Logs to CloudWatch and S3
+
+## 1. Streaming Logs to CloudWatch
+To send logs to CloudWatch using the `awslogs` agent, you'll need to edit the configuration file located at `/etc/awslogs/awslogs.conf`.
+
+### Configuration for Log Streaming
+Edit the `/etc/awslogs/awslogs.conf` file and add the following configurations for `messages` and `access_log`:
+
+```ini
+# Log configuration for /var/log/messages
+[/var/log/messages]
+datetime_format = %b %d %H:%M:%S
+file = /var/log/messages
+buffer_duration = 5000
+log_stream_name = web01-sys-logs
+initial_position = start_of_file
+log_group_name = wave-web
+
+# Log configuration for /var/log/httpd/access_log
+[/var/log/httpd/access_log]
+datetime_format = %b %d %H:%M:%S
+file = /var/log/httpd/access_log
+buffer_duration = 5000
+log_stream_name = web01-httpd-access
+initial_position = start_of_file
+log_group_name = wave-web
+```
+
+### Configuration Parameters Explained
+- **Configuration Name**: Identifies the log file being configured.
+- **file**: Path to the log file you want to stream to CloudWatch.
+- **log_stream_name**: Unique identifier for the log stream.
+- **log_group_name**: Logical grouping for related log streams.
+
+### Restarting the AWS Logs Daemon
+After making changes, restart and enable the `awslogs` service with the following commands:
+```bash
+# Restart the awslogs daemon
+systemctl restart awslogsd
+
+# Enable awslogs service to start on boot
+systemctl enable awslogsd
+```
+
+## 2. Viewing Logs in CloudWatch
+After restarting the service, logs should start streaming to CloudWatch. To view them:
+1. Navigate to the **CloudWatch Service** in the AWS Management Console.
+2. Check the **Log Groups** section for the group named `wave-web`.
+3. Under **Log Streams**, locate `web01-sys-logs` to view the logs created from `access_log`.
+
+## 3. Additional Configuration
+You also need to edit the configuration in `/var/awslogs/etc/awslogs.conf` to ensure proper access to the logs.
+
+```bash
+# Edit the main awslogs configuration file
+vi /var/awslogs/etc/awslogs.conf
+
+# Restart the awslogs service
+service awslogs restart
+```
+
+## 4. Exporting Logs to S3 and Other Services
+You can export streamlined logs to Amazon S3 and integrate with other AWS services like Elasticsearch and Lambda. 
+
+### Creating Metric Filters
+Create metric filters to analyze log content based on specific patterns such as `ERROR`, `INFO`, or `WARNING`. This allows you to trigger alarms based on these metrics.
+
+## 5. Managing Load Balancer Access Logs
+To store load balancer access logs in S3, you must adjust the S3 bucket policy to allow access from the Elastic Load Balancer (ELB).
+
+### Steps to Enable Access Logs
+1. **Edit S3 Bucket Policy**: Ensure your S3 bucket policy allows the ELB to write logs. Refer to the [AWS documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/enable-accesslogs.html) for detailed instructions.
+  
+2. **Enable ELB Access Logs**: After configuring the S3 bucket policy, enable access logging on your ELB and specify the S3 bucket for log storage.
+
+### Accessing ELB Logs
+Provide the necessary details from the Load Balancer to access the logs stored in your S3 bucket:
+```plaintext
+S3 Bucket: s3://<Your-S3Bucket>
+```
+
+---
+
+This structured format organizes your notes into clear sections, making it easier to follow the steps for managing EC2 logs and integrating them with CloudWatch and S3.
