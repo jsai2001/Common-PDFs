@@ -8740,3 +8740,2209 @@ choco install kubernetes-cli -y
 ### Conclusion
 
 This setup demonstrates how to configure an Amazon EKS cluster using Terraform, deploy it with managed node groups, and connect to it using `kubectl`.
+
+Here is a summarized version of the provided transcript with appropriate headings and code snippets:
+
+---
+
+### Ansible: Introduction
+
+Ansible is one of the most popular DevOps tools for automation and configuration management. It evolved after scripting tools like Bash (Linux) and Batch (Windows), which were followed by languages such as Python, PERL, and Ruby. Configuration management tools like Puppet and SaltStack were also used in infrastructure management. Puppet, written in Ruby, manages configurations via agents on servers, while SaltStack, based on Python, allows remote command execution.
+
+Ansible, however, is simpler and agentless, making it suitable for both Linux and Windows automation, as well as cloud, networking, and database automation.
+
+---
+
+### Ansible Use Cases
+- **Automation**: Automates tasks like setting up web services, databases, and configuration management.
+- **Change Management**: Manages production changes efficiently.
+- **Provisioning**: Automates cloud infrastructure setup and provisioning.
+- **Orchestration**: Combines and sequences multiple automations, integrated with CI tools like Jenkins.
+
+---
+
+### Ansible vs. Other Tools
+- **Puppet/Chef**: Requires agents on target servers, with master-slave architecture.
+- **Ansible**: No agents required. Connects to target systems via SSH (Linux), WinRM (Windows), or APIs (Cloud services). Configuration is managed using YAML and is written to JSON format.
+
+---
+
+### Ansible Playbooks and Architecture
+- **Playbooks**: Written in YAML, a structured method for declaring automation tasks.
+- **Inventory File**: Contains details about target machines (IP address, credentials).
+- **Modules**: Ansible includes a wide range of modules (e.g., for package installation, service management, cloud resource management).
+  
+**Ansible Setup Example**:
+1. Define inventory:
+```yaml
+[webservers]
+vprofile-web01 ansible_host=10.0.0.1 ansible_user=ubuntu
+vprofile-web02 ansible_host=10.0.0.2 ansible_user=ubuntu
+
+[dbservers]
+vprofile-db01 ansible_host=10.0.0.3 ansible_user=ubuntu
+```
+
+2. Basic Playbook to install a web server:
+```yaml
+---
+- hosts: webservers
+  tasks:
+    - name: Install Apache
+      apt:
+        name: apache2
+        state: present
+    - name: Start Apache service
+      service:
+        name: apache2
+        state: started
+```
+
+---
+
+### Ansible Setup: Practical Example
+
+To set up an Ansible control machine and multiple target machines:
+
+1. **Control Machine Setup (Ubuntu EC2 instance)**:
+   - Launch an EC2 instance for Ansible.
+   - Assign security group rules to allow SSH access on port 22.
+   - Download the key-pair for secure login.
+
+```bash
+ssh -i Downloads/control.pem ubuntu@<control-machine-ip>
+```
+
+2. **Target Machines (CentOS EC2 instances)**:
+   - Launch three EC2 instances for web and DB servers.
+   - Assign security group rules allowing SSH access from the control machine.
+
+```bash
+ssh -i Downloads/web.pem centos@<web-machine-ip>
+```
+
+3. **Access Control**:
+   - Ensure port 22 is open for SSH between the control machine and target machines.
+
+```bash
+cat ~/.ssh/known_hosts
+```
+
+---
+
+### Power of Ansible
+
+Ansible can replace many traditional automation tools due to its simplicity, agentless design, and wide range of integrations (e.g., cloud, databases, and networks).
+
+--- 
+
+This structure covers the key points of Ansible along with practical code snippets to demonstrate basic operations.
+
+Here’s a summarized version of your DevOps notes on Ansible with relevant headings and code snippets:
+
+---
+
+## 1. Introduction to Ansible
+
+Ansible is a popular DevOps tool designed for configuration management and automation. It evolved from earlier tools like Puppet, Chef, and SaltStack but is simpler and agentless, making it easier to manage infrastructure using SSH or WinRM.
+
+### Key Features:
+- Agentless: Uses SSH/WinRM for communication.
+- Configuration format: Uses YAML for playbooks.
+- Cloud, database, and network automation support.
+  
+---
+
+## 2. Use Cases of Ansible
+
+- **Automation**: Automate Linux/Windows configurations, start/stop services, manage web/database services.
+- **Change Management**: Manage production servers.
+- **Provisioning**: Set up cloud resources and services from scratch.
+- **Orchestration**: Integrate with tools like Jenkins to orchestrate larger automation workflows.
+
+---
+
+## 3. Ansible Architecture
+
+Ansible playbooks are written in YAML and use an inventory file and various modules to target different hosts. The architecture doesn't require master-slave nodes, unlike Puppet or Chef.
+
+- **Inventory file**: Contains information about the target machines (IP, username, password).
+- **Modules**: Predefined tasks such as package installation or restarting services.
+
+---
+
+## 4. Setting Up Ansible on Ubuntu
+
+To install Ansible on an Ubuntu control machine:
+
+```bash
+$ sudo apt update
+$ sudo apt install software-properties-common
+$ sudo add-apt-repository --yes --update ppa:ansible/ansible
+$ sudo apt install ansible
+```
+
+---
+
+## 5. Inventory & Ping Module
+
+An inventory file lists the target machines and their details. It can be written in **INI** or **YAML** format.
+
+### INI Format Example:
+
+```ini
+[webservers]
+foo.example.com
+bar.example.com
+
+[dbservers]
+one.example.com
+two.example.com
+```
+
+### YAML Format Example:
+
+```yaml
+all:
+  hosts:
+    web01:
+      ansible_host: 172.31.31.178
+      ansible_user: ec2-user
+      ansible_ssh_private_key_file: clientkey.pem
+```
+
+### Command to Ping a Host:
+
+```bash
+ansible web01 -m ping -i inventory
+```
+
+- `web01`: Hostname from the inventory file.
+- `-m`: Specifies the module (ping in this case).
+- `-i`: Path to the inventory file.
+
+### Disabling Host Key Verification:
+
+Edit the `ansible.cfg` file to disable host key checking:
+
+```bash
+ansible-config init --disabled -t all > ansible.cfg
+```
+
+Set `host_key_checking = False` to disable the verification step.
+
+---
+
+## 6. Ansible Variables
+
+Ansible variables help define host-specific information, such as:
+
+- `ansible_host`: IP or DNS name of the target.
+- `ansible_user`: SSH username for connecting.
+- `ansible_password`: Password (use vault for secure storage).
+- `ansible_ssh_private_key_file`: Path to the private key for SSH connections.
+
+For more information, check the official [Ansible Inventory Documentation](https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html).
+
+---
+
+By organizing these notes under relevant headings and including the necessary commands and examples, this summary should help you with your DevOps learning focused on Ansible.
+
+Here’s a summarized version of your DevOps notes on Ansible (Inventory Part 2 and YAML & JSON) with relevant headings and code snippets:
+
+---
+
+## 1. Inventory File in Ansible (Part 2)
+
+Ansible's inventory file defines the hosts or groups of hosts on which playbooks are executed. You can group hosts and even create hierarchical parent-child relationships between them.
+
+### Example Inventory File:
+
+```yaml
+all:
+  hosts:
+    web01:
+      ansible_host: 172.31.31.178
+      ansible_user: ec2-user
+      ansible_ssh_private_key_file: clientkey.pem
+    web02:
+      ansible_host: 172.31.22.225
+      ansible_user: ec2-user
+      ansible_ssh_private_key_file: clientkey.pem
+    db01:
+      ansible_host: 172.31.19.215
+      ansible_user: ec2-user
+      ansible_ssh_private_key_file: clientkey.pem
+  children:
+    webservers:
+      hosts:
+        web01:
+        web02:
+    dbservers:
+      hosts:
+        db01:
+    dc_oregon:
+      children:
+        webservers:
+        dbservers:
+```
+
+### Connecting to Hosts Using Ansible:
+
+```bash
+ansible web02 -m ping -i inventory
+ansible db01 -m ping -i inventory
+```
+
+### Grouping Hosts:
+
+Groups like `webservers` and `dbservers` make it easier to manage multiple hosts at once. A parent group like `dc_oregon` can be used to combine both:
+
+```bash
+ansible webservers -m ping -i inventory
+ansible dc_oregon -m ping -i inventory
+ansible '*' -m ping -i inventory
+ansible 'web*' -m ping -i inventory
+```
+
+---
+
+## 2. Variables in Ansible Inventory
+
+Variables can be defined at the **host level** or the **group level**. Group-level variables apply to all hosts within the group, but host-level variables have higher priority.
+
+### Example with Group-Level Variables:
+
+```yaml
+all:
+  hosts:
+    web01:
+      ansible_host: 172.31.31.178
+    web02:
+      ansible_host: 172.31.22.225
+    db01:
+      ansible_host: 172.31.19.215
+  children:
+    webservers:
+      hosts:
+        web01:
+        web02:
+    dbservers:
+      hosts:
+        db01:
+  vars:
+    ansible_user: ec2-user
+    ansible_ssh_private_key_file: clientkey.pem
+```
+
+To execute the inventory across all hosts:
+
+```bash
+ansible all -m ping -i inventory
+```
+
+---
+
+## 3. Understanding JSON and YAML in Ansible
+
+Ansible uses **YAML** for writing playbooks and **JSON** for response output. YAML is more human-readable, while JSON is often used for machine processing.
+
+### JSON Example:
+
+```json
+{
+  "DevOps": [
+    "AWS",
+    "Jenkins",
+    "Python",
+    "Ansible"
+  ],
+  "Development": [
+    "Java",
+    "NodeJS",
+    ".net"
+  ],
+  "ansible_facts": {
+    "python": "/usr/bin/python"
+  }
+}
+```
+
+### Equivalent YAML Example:
+
+```yaml
+DevOps:
+  - AWS
+  - Jenkins
+  - Python
+  - Ansible
+
+Development:
+  - Java
+  - NodeJS
+  - .net
+
+ansible_facts:
+  python: /usr/bin/python
+  version: 2.7
+```
+
+YAML is designed to be clean and more readable, whereas JSON is structured like a Python dictionary but in a vertical format. Most modern tools, including Ansible, use YAML for configuration files.
+
+---
+
+## 4. List of Dictionaries in YAML
+
+In YAML, complex data structures like lists and dictionaries can be combined. Here's an example of a **list of dictionaries**:
+
+```yaml
+# Employee records
+- martin:
+    name: Martin D'vloper
+    job: Developer
+    skills:
+      - python
+      - perl
+      - pascal
+- tabitha:
+    name: Tabitha Bitumen
+    job: Developer
+    skills:
+      - lisp
+      - fortran
+      - erlang
+```
+
+For more details on YAML syntax, refer to [Ansible YAML Syntax Documentation](https://docs.ansible.com/ansible/latest/reference_appendices/YAMLSyntax.html).
+
+---
+
+This summary organizes your notes into structured sections with code examples and explanations. It covers both inventory management and the use of JSON/YAML in Ansible.
+
+### Ansible - Ad Hoc Commands
+
+#### What Are Ad Hoc Commands?
+Ad hoc commands in Ansible are simple one-liners used for quick tasks like verification or debugging. These commands are useful when you need immediate results without creating a full playbook.
+
+**Example: Ping a server**
+```bash
+ansible web01 -m ping -i inventory
+```
+
+#### Installing a Package Using Ad Hoc Command
+To install the `httpd` package on `web01` using the `yum` module:
+```bash
+ansible web01 -m ansible.builtin.yum -a "name=httpd state=present" -i inventory
+```
+For sudo privileges:
+```bash
+ansible web01 -m ansible.builtin.yum -a "name=httpd state=present" -i inventory --become
+```
+
+#### Starting a Service Using Ad Hoc Command
+Start and enable the `httpd` service on all servers in the `webservers` group:
+```bash
+ansible webservers -m ansible.builtin.service -a "name=httpd state=started enabled=yes" -i inventory --become
+```
+
+Equivalent commands in Linux:
+```bash
+systemctl start httpd
+systemctl enable httpd
+```
+
+#### Copying a File Using Ad Hoc Command
+Copy the `index.html` file from the local machine to the `/var/www/html` directory on the `webservers` group:
+```bash
+ansible webservers -m ansible.builtin.copy -a "src=index.html dest=/var/www/html/index.html" -i inventory --become
+```
+
+### Ansible Playbook & Modules
+
+#### Example of a Simple Playbook
+A playbook defines tasks in YAML format to be executed on target servers. 
+
+**Playbook Example:**
+```yaml
+- hosts: websrvgrp
+  tasks:
+    - name: Install Apache
+      yum:
+        name: httpd
+        state: present
+    - name: Deploy Config
+      copy:
+        src: file/httpd.conf
+        dest: /etc/httpd.conf
+- hosts: dbsrvgrp
+  tasks:
+    - name: Install Postgresql
+      yum:
+        name: postgresql
+        state: latest
+```
+
+#### Explanation of Playbook Elements
+- `hosts`: Specifies the group of servers.
+- `tasks`: Contains the list of tasks to perform.
+- `yum`: Module to install packages.
+- `copy`: Module to copy files to remote servers.
+
+#### Playbook with Multiple Plays and Tasks
+**Example Playbook:**
+```yaml
+- name: Webserver setup
+  hosts: webservers
+  become: yes
+  tasks:
+    - name: Install httpd
+      ansible.builtin.yum:
+        name: httpd
+        state: present
+    - name: Start service
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: yes
+
+- name: DBserver setup
+  hosts: dbservers
+  become: yes
+  tasks:
+    - name: Install mariadb-server
+      ansible.builtin.yum:
+        name: mariadb-server
+        state: present
+    - name: Start mariadb service
+      ansible.builtin.service:
+        name: mariadb
+        state: started
+        enabled: yes
+```
+
+In this example, there are two plays: one for web servers and one for database servers, each performing respective tasks like installing and starting services.
+
+### Ansible - Playbook & Modules
+
+#### Executing Ad Hoc Commands vs Playbooks
+Ad hoc commands are useful for quick tasks, but for more complex operations, playbooks are preferred. Below is an example of removing a package via an ad hoc command:
+```bash
+ansible webservers -m yum -a "name=httpd state=absent" -i inventory --become
+```
+
+#### Running an Ansible Playbook
+To execute an Ansible playbook:
+```bash
+ansible-playbook -i inventory web-db.yaml
+```
+
+#### Debugging Ansible Playbooks with Verbose Mode
+Ansible supports four levels of verbosity for debugging:
+```bash
+ansible-playbook -i inventory web-db.yaml -v    # Basic verbosity
+ansible-playbook -i inventory web-db.yaml -vv   # More detailed output
+ansible-playbook -i inventory web-db.yaml -vvv  # Even more detailed output
+ansible-playbook -i inventory web-db.yaml -vvvv # Maximum verbosity
+```
+
+#### Syntax Check and Dry Run
+Before executing a playbook, you can check for syntax errors:
+```bash
+ansible-playbook -i inventory web-db.yaml --syntax-check
+```
+To perform a dry run without making actual changes:
+```bash
+ansible-playbook -i inventory web-db.yaml -C
+```
+Dry runs help validate playbooks before applying them to production environments.
+
+#### Best Practice for Playbook Execution
+1. Run a syntax check.
+2. Perform a dry run.
+3. Execute the actual playbook.
+
+### Ansible Modules
+
+Ansible offers a vast library of modules for different tasks across cloud providers and infrastructure setups. You can find a complete list of modules here:  
+[Ansible Modules Documentation](https://docs.ansible.com/ansible/latest/collections/index_module.html)
+
+#### Example: Database Server Setup
+Below is a playbook for setting up a database server, installing `mariadb-server`, and managing a MySQL database and user.
+
+```yaml
+- name: DBserver setup
+  hosts: dbservers
+  become: yes
+  tasks:
+    - name: Install mariadb-server
+      ansible.builtin.yum:
+        name: mariadb-server
+        state: present
+    - name: Install pymysql
+      ansible.builtin.yum:
+        name: python3-PyMySQL
+        state: present
+    - name: Start mariadb service
+      ansible.builtin.service:
+        name: mariadb
+        state: started
+        enabled: yes
+    - name: Create a new database with name 'accounts'
+      community.mysql.mysql_db:
+        name: accounts
+        state: present
+        login_unix_socket: /var/lib/mysql/mysql.sock
+    - name: Create database user with name 'vprofile'
+      community.mysql.mysql_user:
+        name: vprofile
+        password: 'admin943'
+        priv: '*.*:ALL'
+        state: present
+        login_unix_socket: /var/lib/mysql/mysql.sock
+```
+
+### Socket Files in DevOps
+
+#### What Are Socket Files?
+Socket files (Unix domain sockets) are special files used for inter-process communication (IPC) on the same machine. Unlike network sockets, they handle communication between local processes.
+
+#### Common Use Cases
+1. **Web Servers and Application Servers:**  
+   Web servers like Nginx and Apache use socket files to communicate with application servers (e.g., uWSGI, Gunicorn), enhancing performance and security.
+   
+2. **Database Connections:**  
+   Databases like MySQL and PostgreSQL use socket files for local connections, reducing network overhead.
+
+3. **Container Orchestration:**  
+   Containers in systems like Docker communicate using socket files within the same pod.
+
+4. **System Services:**  
+   Services like `systemd` use socket files for triggering service activation based on incoming connections.
+
+### Ansible Configuration
+
+#### Changing Ansible Default Behavior
+To modify Ansible's default behavior, such as connecting to SSH on a different port (e.g., port 2020 instead of the default 22), you need to edit the Ansible configuration settings.
+
+#### Ansible Configuration File Priority
+Ansible configuration settings can be changed in different files with the following priority:
+1. **Highest Priority**: The file set in the `ANSIBLE_CONFIG` environment variable.
+2. **Second Priority**: An `ansible.cfg` file in the project directory (committed to the repository for team-wide use).
+3. **Third Priority**: A hidden file in the home directory (`~/.ansible.cfg`).
+4. **Last Priority**: The default global configuration file (`/etc/ansible/ansible.cfg`).
+
+#### Example Ansible Configuration File
+Here’s an example of a simple Ansible configuration file:
+```ini
+[defaults]
+host_key_checking = False
+inventory = ./inventory
+forks = 5
+log_path = /var/log/ansible.log
+
+[privilege_escalation]
+become = True
+become_method = sudo
+become_ask_pass = False
+```
+
+#### Handling Log File Permission Errors
+If you encounter an error regarding write permissions for the log file:
+```bash
+[WARNING]: log file at /var/log/ansible.log is not writable
+```
+Fix it with:
+```bash
+sudo touch /var/log/ansible.log
+sudo chown ubuntu:ubuntu /var/log/ansible.log
+```
+
+### Variables & Debugging in Ansible
+
+#### Defining Variables
+Variables can be defined directly in the playbook after the `hosts` section:
+```yaml
+- hosts: websrvgrp
+  vars:
+    http_port: 80
+    sqluser: admin
+```
+In this example, `http_port` and `sqluser` are custom variables. Ansible also has many inbuilt variables such as:
+- `ansible_os_family`: OS name (e.g., RedHat, Debian)
+- `ansible_processor_cores`: Number of CPU cores
+- `ansible_kernel`: Kernel version
+- `ansible_default_ipv4`: IP, MAC address, and gateway
+
+#### Registering Variables for Task Output
+You can store the output of a task using the `register` module:
+```yaml
+- name: Create database user with name 'vprofile'
+  community.mysql.mysql_user:
+    name: "{{dbuser}}"
+    password: "{{dbpass}}"
+    priv: '*.*:ALL'
+    state: present
+    login_unix_socket: /var/lib/mysql/mysql.sock
+  register: dbout
+
+- name: Print dbout variable
+  debug:
+    var: dbout
+```
+This registers the output of the task in the `dbout` variable and prints it in the next task.
+
+#### Example Playbook with Variables
+Below is an example of using variables in a playbook to make it more generic and reusable:
+```yaml
+- name: DBserver setup
+  hosts: dbservers
+  become: yes
+  vars:
+    dbname: electric
+    dbuser: current
+    dbpass: tesla
+  tasks:
+    - debug:
+        msg: "The dbname is {{dbname}}"
+    - debug:
+        var: dbuser
+    - name: Install mariadb-server
+      ansible.builtin.yum:
+        name: mariadb-server
+        state: present
+    - name: Install pymysql
+      ansible.builtin.yum:
+        name: python3-PyMySQL
+        state: present
+    - name: Start mariadb service
+      ansible.builtin.service:
+        name: mariadb
+        state: started
+        enabled: yes
+    - name: Create a new database with name '{{dbname}}'
+      mysql_db:
+        name: "{{dbname}}"
+        state: present
+        login_unix_socket: /var/lib/mysql/mysql.sock
+    - name: Create database user with name '{{dbuser}}'
+      community.mysql.mysql_user:
+        name: "{{dbuser}}"
+        password: "{{dbpass}}"
+        priv: '*.*:ALL'
+        state: present
+        login_unix_socket: /var/lib/mysql/mysql.sock
+```
+
+### Debugging with Ansible
+Use the `debug` module to print variable values or messages during playbook execution, helping with troubleshooting:
+```yaml
+- debug:
+    msg: "The dbname is {{dbname}}"
+- debug:
+    var: dbuser
+```
+
+This approach is useful when you want to verify variable values or output during playbook execution.
+
+### Group & Host Variables in Ansible
+
+#### Defining Variables at the Inventory Level
+Instead of defining variables within playbooks, you can declare them at the inventory level, making them reusable across multiple playbooks.
+
+1. **Group Variables**: To define variables for a group of hosts, create a `group_vars` directory under your project directory, then create a file named `all` for global variables.
+
+Example:
+```yaml
+# group_vars/all
+dbname: sky
+dbuser: pilot
+dbpass: aircraft
+```
+These variables will apply to all hosts unless overridden in the playbook itself, as playbook variables have higher priority.
+
+#### Priority of Variables
+1. **Playbook Variables**: Highest priority.
+2. **Host Variables**: Defined in `host_vars` and applied to specific hosts.
+3. **Group Variables**: Defined in `group_vars` and applied to a group of hosts.
+4. **Global Variables**: Declared in `group_vars/all` and applied to all hosts.
+
+#### Defining Group Variables
+For example, to create group-specific variables for webservers, define them under `group_vars/webservers`:
+```yaml
+# group_vars/webservers
+USRNM: webgroup
+COMM: variable from group_vars/webservers file
+```
+
+#### Defining Host Variables
+Host-specific variables can be declared under the `host_vars` directory, with file names corresponding to the inventory file. For example:
+```yaml
+# host_vars/web02
+USRNM: web02user
+COMM: variables from host_vars/web02 file
+```
+
+#### Example Playbook Using Variables
+Below is an example playbook using variables from the `group_vars` directory:
+```yaml
+- name: Understanding vars
+  hosts: all
+  become: yes
+  vars:
+    USRNM: playuser
+    COMM: variable from playbook
+  tasks:
+    - name: create user
+      ansible.builtin.user:
+        name: "{{USRNM}}"
+        comment: "{{COMM}}"
+      register: usrout
+
+    - debug:
+        var: usrout.name
+    - debug:
+        var: usrout.comment
+```
+
+#### Registering and Debugging Variables
+You can register the output of a task and then debug it as follows:
+```yaml
+- name: create user
+  ansible.builtin.user:
+    name: "{{USRNM}}"
+    comment: "{{COMM}}"
+  register: usrout
+
+- debug:
+    var: usrout.name
+- debug:
+    var: usrout.comment
+```
+Example output:
+```bash
+ok: [web01] => {"usrout.name": "playuser"}
+ok: [web01] => {"usrout.comment": "variable from playbook"}
+```
+
+#### Using External Variable Files
+You can also define variables in an external file and use them in the playbooks:
+```yaml
+- hosts: all
+  remote_user: root
+  vars:
+    favcolor: blue
+  vars_files:
+    - /vars/external_vars.yml
+  tasks:
+    - name: This is just a placeholder
+      ansible.builtin.command: /bin/echo foo
+```
+
+#### Variable Precedence
+Variable precedence in Ansible is as follows:
+1. **Playbook variables**
+2. **Host variables**
+3. **Group variables**
+4. **All host variables**
+
+### Fact Variables in Ansible
+
+#### What Are Fact Variables?
+Fact variables are runtime variables generated when the `setup` module is executed. These variables provide system information like OS, hardware details, and network configuration. Examples of fact variables:
+- `ansible_os_family`: OS name (e.g., RedHat, Debian)
+- `ansible_processor_cores`: Number of CPU cores
+- `ansible_kernel`: Kernel version
+- `ansible_devices`: Connected device information
+- `ansible_default_ipv4`: IP, MAC address, and gateway
+- `ansible_architecture`: 64-bit or 32-bit system architecture
+
+When an Ansible playbook runs, the first step is "Gathering Facts," which executes the `setup` module to gather these facts. You can use these variables in your playbooks as needed.
+
+#### Skipping Fact Gathering
+To skip the fact-gathering step, you can disable it by setting `gather_facts: False` in the playbook.
+
+Example:
+```yaml
+- name: Understanding vars
+  hosts: all
+  become: yes
+  gather_facts: False
+  vars:
+    USRNM: playuser
+    COMM: variable from playbook
+  tasks:
+    - name: create user
+      ansible.builtin.user:
+        name: "{{USRNM}}"
+        comment: "{{COMM}}"
+      register: usrout
+    - debug:
+        var: usrout.name
+    - debug:
+        var: usrout.comment
+```
+
+#### Gathering Host Information with `setup` Module
+To fetch configuration and setup details of a host, use the following command:
+```bash
+ansible -m setup web01
+```
+
+#### Using and Debugging Fact Variables in Playbooks
+Example of printing fact variables:
+```yaml
+- name: Print facts
+  hosts: all
+  tasks:
+    - name: Print OS name
+      debug:
+        var: ansible_distribution
+
+    - name: Print SELinux mode
+      debug:
+        var: ansible_selinux.mode
+
+    - name: Print RAM memory
+      debug:
+        var: ansible_memory_mb.real.free
+
+    - name: Print Processor name
+      debug:
+        var: ansible_processor[2]
+```
+
+If the variable is not defined, the output will show a message like:
+```bash
+ok: [web01] => {"ansible_distribution": "VARIABLE IS NOT DEFINED!"}
+```
+
+#### Defining User and Host in the Inventory File
+You can declare the user and host information in the inventory file as follows:
+```yaml
+all:
+  hosts:
+    web01:
+      ansible_host: 172.31.31.178
+    web02:
+      ansible_host: 172.31.22.225
+    web03:
+      ansible_host: 172.31.23.53
+  vars:
+    ansible_user: ubuntu
+```
+
+#### Checking Connectivity with Ping
+You can check if you can connect to all hosts using the following command:
+```bash
+ansible -m ping all
+```
+
+---
+
+### Decision Making in Playbooks
+
+#### Conditional Execution Using `when`
+In Ansible, you can execute tasks conditionally based on certain facts. For example, to install and start services based on the OS type, use the `when` clause.
+
+Example:
+```yaml
+- name: Provisioning servers
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install NTP agent on CentOS
+      yum:
+        name: chrony
+        state: present
+      when: ansible_distribution == "CentOS"
+
+    - name: Install NTP agent on Ubuntu
+      apt:
+        name: ntp
+        state: present
+        update_cache: yes
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Start service on CentOS
+      service:
+        name: chronyd
+        state: started
+        enabled: yes
+      when: ansible_distribution == "CentOS"
+
+    - name: Start service on Ubuntu
+      service:
+        name: ntp
+        state: started
+        enabled: yes
+      when: ansible_distribution == "Ubuntu"
+```
+
+#### Dry Run of Playbook
+You can perform a dry run of the playbook without making actual changes by running:
+```bash
+ansible-playbook provisioning.yaml -C
+```
+
+### Decision Making in Ansible
+
+#### Using `update_cache`
+The `update_cache: yes` parameter in Ansible's `apt` module ensures that the package manager updates its cache before installing a package. This is commonly used in Ubuntu-based systems.
+
+For more detailed documentation on decision-making in Ansible playbooks, refer to the official guide:  
+[Ansible Playbook Conditionals](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_conditionals.html)
+
+---
+
+### Loops in Ansible
+
+#### Avoiding Code Duplication with Loops
+When installing multiple packages on a server, you can avoid code duplication by using loops. The `loop` feature allows you to iterate over items, like package names, instead of repeating the task for each package.
+
+Example of installing multiple packages on CentOS:
+```yaml
+- name: Provisioning servers
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install packages on CentOS
+      yum:
+        name: "{{item}}"
+        state: present
+      when: ansible_distribution == "CentOS"
+      loop:
+        - chrony
+        - wget
+        - git
+        - zip
+        - unzip
+```
+
+Similarly, for Ubuntu:
+```yaml
+- name: Install packages on Ubuntu
+  apt:
+    name: "{{item}}"
+    state: present
+    update_cache: yes
+  when: ansible_distribution == "Ubuntu"
+  loop:
+    - ntp
+    - wget
+    - git
+    - zip
+    - unzip
+```
+
+#### Looping Through Dictionaries
+You can also loop through lists of dictionaries. For example, adding multiple users with specific groups:
+```yaml
+- name: Add several users
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    state: present
+    groups: "{{ item.groups }}"
+  loop:
+    - { name: 'testuser1', groups: 'wheel' }
+    - { name: 'testuser2', groups: 'root' }
+```
+
+For more on loops, refer to the official documentation:  
+[Ansible Loops](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_loops.html)
+
+---
+
+### File, Copy, and Template Modules in Ansible
+
+#### Copying Files to Remote Hosts
+The `copy` module in Ansible allows you to copy files from your local machine to a remote location. You can either provide the content directly or reference a source file.
+
+Example of copying content to the `/etc/motd` file on a remote server:
+```yaml
+- name: Banner file
+  copy:
+    content: '# This server is managed by Ansible. No manual changes please.'
+    dest: /etc/motd
+```
+
+For dealing with file modules, you can find more detailed information in the official documentation:  
+[Ansible File Modules](https://docs.ansible.com/ansible/2.8/modules/list_of_files_modules.html)
+
+### Ansible 202: File, Copy, and Template Modules
+
+Ansible provides powerful modules for transferring files to remote servers: the **copy** and **template** modules. Each serves a unique purpose depending on whether the file content is static or dynamic.
+
+---
+
+#### 1. **Copy Module**
+The **copy** module is used to copy a file from the local host to a remote server. It is ideal for files that are consistent across all systems, such as login banners, messages of the day (MOTD), or static configuration files.
+
+**Example Playbook Using the Copy Module:**
+```yaml
+---
+- hosts: nyc1-webserver-1.example.com
+  gather_facts: no
+  tasks:
+    - name: Copy MOTD into place
+      copy:
+        src: etc/motd
+        dest: /etc/motd
+        owner: root
+        group: root
+        mode: '0644'
+```
+This module copies files as they are, with no templating or dynamic content generation.
+
+---
+
+#### 2. **Template Module**
+The **template** module is similar to the copy module but uses **Jinja2 templating** to replace variables within the file. This allows dynamic content generation based on the server or environment-specific data.
+
+**Example Playbook Using the Template Module:**
+```yaml
+---
+- hosts: nyc1-webserver-1.example.com
+  gather_facts: no
+  tasks:
+    - name: Install and configure keepalived
+      template:
+        src: templates/etc/keepalived/keepalived.conf.j2
+        dest: /etc/keepalived/keepalived.conf
+        owner: root
+        group: root
+        mode: '0644'
+```
+Here, the `keepalived.conf.j2` file contains placeholders that are replaced by actual values during execution.
+
+---
+
+### Using Jinja2 Templating
+
+Jinja2 is a templating language used to insert dynamic content within configuration files. The template module reads files with placeholders (written in Jinja2 syntax) and replaces them with provided values.
+
+**Jinja2 Syntax Example:**
+```nginx
+# nginx.conf.j2
+server {
+    listen {{ nginx_port }};
+    server_name {{ server_name }};
+    location / {
+        root {{ web_root }};
+        index index.html;
+    }
+}
+```
+- **Placeholders**: `{{ nginx_port }}`, `{{ server_name }}`, and `{{ web_root }}`.
+- During execution, these placeholders are replaced by the values specified in the playbook.
+
+---
+
+### Providing Variables for Templates
+
+Variables can be defined within the playbook or in external files (e.g., `group_vars/all`) to dynamically configure templates.
+
+**Example Playbook with Variables:**
+```yaml
+---
+- hosts: web_servers
+  vars:
+    nginx_port: 80
+    server_name: example.com
+    web_root: /var/www/html
+  tasks:
+    - name: Configure Nginx
+      template:
+        src: templates/nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+```
+When the playbook runs, it substitutes the placeholders in `nginx.conf.j2` with the values defined in the `vars` section.
+
+---
+
+### Dynamic Configuration with the Template Module
+
+The template module excels in generating different configurations for different servers. For instance, using the same template file, you can create unique Nginx configurations by varying the `nginx_port`, `server_name`, and `web_root` values across different hosts.
+
+---
+
+### Example: NTP Configuration with Template Module
+
+In this example, we define a configuration for NTP (Network Time Protocol) based on the operating system (CentOS or Ubuntu) using the **template** module.
+
+```yaml
+---
+- name: Deploy ntp agent conf on CentOS
+  template:
+    src: templates/ntpconf_centos
+    dest: /etc/chrony.conf
+    backup: yes
+  when: ansible_distribution == "CentOS"
+
+- name: Deploy ntp agent conf on Ubuntu
+  template:
+    src: templates/ntpconf_ubuntu
+    dest: /etc/ntp.conf
+    backup: yes
+  when: ansible_distribution == "Ubuntu"
+```
+This configuration file will include NTP pool servers, and the placeholders are replaced dynamically.
+
+```text
+# ntpconf_centos (template example)
+pool "{{ ntp0 }}" iburst
+pool "{{ ntp1 }}" iburst
+pool "{{ ntp2 }}" iburst
+pool "{{ ntp3 }}" iburst
+```
+The placeholders `{{ ntp0 }}`, `{{ ntp1 }}`, etc., will be replaced by the actual pool server addresses defined in a variables file (`group_vars/all`).
+
+---
+
+### Restarting Services After Configuration Change
+
+Once the configuration files are updated, it is important to restart the respective services to apply the changes.
+
+```yaml
+---
+- name: Restart service on CentOS
+  service:
+    name: chronyd
+    state: restarted
+    enabled: yes
+  when: ansible_distribution == "CentOS"
+
+- name: Restart service on Ubuntu
+  service:
+    name: ntp
+    state: restarted
+    enabled: yes
+  when: ansible_distribution == "Ubuntu"
+```
+
+---
+
+### Summary: Choosing Between Copy and Template Modules
+
+- **Copy Module**: Use when files are consistent and do not require dynamic content.
+- **Template Module**: Use when files need to be dynamically generated using Jinja2 templating (e.g., configuration files that differ per host).
+
+By using the appropriate module, Ansible makes it easy to manage and deploy configuration files across multiple systems.
+
+### Ansible 203: Handlers
+
+Handlers in Ansible are tasks that run **only when notified** by other tasks. They are typically used for actions like restarting services after configuration changes.
+
+#### Defining Handlers
+
+Handlers are declared at the same level as tasks in a playbook and are triggered using the `notify` directive.
+
+**Example of Handlers:**
+```yaml
+handlers:
+  - name: reStart service on centos
+    service:
+      name: chronyd
+      state: restarted
+      enabled: yes
+    when: ansible_distribution == "CentOS"
+
+  - name: reStart service on ubuntu
+    service:
+      name: ntp
+      state: restarted
+      enabled: yes
+    when: ansible_distribution == "Ubuntu"
+```
+
+#### Linking Handlers to Tasks
+
+To trigger a handler, you must notify it within a task. Handlers are only run if the task changes the state of the system (e.g., if a configuration file is modified).
+
+**Example of Tasks with Notify:**
+```yaml
+tasks:
+  - name: Deploy ntp agent conf on centos
+    template:
+      src: templates/ntpconf_centos
+      dest: /etc/chrony.conf
+      backup: yes
+    when: ansible_distribution == "CentOS"
+    notify:
+      - reStart service on centos
+
+  - name: Deploy ntp agent conf on ubuntu
+    template:
+      src: templates/ntpconf_ubuntu
+      dest: /etc/ntp.conf
+      backup: yes
+    when: ansible_distribution == "Ubuntu"
+    notify:
+      - reStart service on ubuntu
+```
+Multiple handlers can be notified by the same task, if needed.
+
+---
+
+### Ansible 204: Roles
+
+Roles in Ansible allow for **modular and reusable** playbook structures. They help you organize and scale your infrastructure automation.
+
+#### Key Concepts of Roles
+
+1. **Modularity**: Break down playbooks into smaller, self-contained units. Each role can handle a specific task, such as installing software or configuring a service.
+
+2. **File Structure**: Roles follow a predefined directory structure that includes folders for tasks, variables, handlers, templates, and more.
+
+3. **Reusability**: Roles can be reused across multiple playbooks, reducing code duplication and improving maintainability.
+
+4. **Dependencies**: Roles can depend on other roles. Ansible resolves these dependencies automatically.
+
+5. **Variables**: Roles define their own variables, which can be overridden at the playbook level to customize behavior.
+
+6. **Handlers**: Roles can include handlers that are triggered when certain tasks change the system state.
+
+#### Role Directory Structure
+
+A typical role structure looks like this:
+
+```text
+roles/
+  common-server/
+    defaults/
+      main.yml
+    files/
+    handlers/
+      main.yml
+    meta/
+      main.yml
+    tasks/
+      main.yml
+    templates/
+    vars/
+      main.yml
+    tests/
+      inventory
+      test.yml
+```
+- **defaults/main.yml**: Default variables for the role.
+- **tasks/main.yml**: Tasks to be executed by the role.
+- **handlers/main.yml**: Handlers to be triggered by tasks.
+- **vars/main.yml**: Additional variables for the role.
+- **templates/**: Jinja2 templates used in tasks.
+
+This structure provides modularity, reusability, and ease of management.
+
+#### Example of Role with Tasks and Variables
+
+**Playbook with a Role:**
+```yaml
+---
+- hosts: web_servers
+  roles:
+    - common-server
+  vars:
+    mydir: /opt/dir22
+```
+
+**Role Task Example:**
+```yaml
+tasks:
+  - name: Dump file
+    copy:
+      src: files/myfile.txt
+      dest: /tmp/myfile.txt
+
+  - name: Create a folder
+    file:
+      path: "{{ mydir }}"
+      state: directory
+```
+
+In this example:
+- A file is copied to the server.
+- A folder is created at a location specified by the `mydir` variable, which is defined at the playbook level.
+
+---
+
+### Summary
+
+- **Handlers**: Triggered only when notified by tasks. Used for actions like restarting services after changes.
+- **Roles**: Provide a modular way to organize playbooks, making them reusable and scalable. Roles have a predefined directory structure to organize tasks, handlers, templates, and variables.
+
+By adopting roles and handlers, you can build more structured, maintainable, and scalable playbooks for infrastructure automation.
+
+### Ansible 204: Roles
+
+Ansible roles provide a way to **organize** and **reuse** playbooks efficiently, making it easier to manage and scale automation.
+
+#### Installing `tree` to View Directory Structures
+
+You can view a directory's structure in tree format by installing the `tree` package:
+
+```bash
+sudo apt install tree -y
+```
+
+Then, list the directory structure using the `tree` command:
+
+```bash
+tree exercise14
+```
+
+This shows a visual hierarchy of files and directories in the specified path.
+
+---
+
+### Creating Roles from Ansible Playbooks
+
+Converting an Ansible playbook into a role simplifies managing configurations. The structure of a role allows modular organization of variables, tasks, handlers, and templates.
+
+#### Creating a Role with `ansible-galaxy`
+
+To create a role, use the `ansible-galaxy` command:
+
+```bash
+ansible-galaxy init post-install
+```
+
+This command creates the basic structure of an Ansible role under a directory called `post-install`.
+
+#### Moving Playbook Components to the Role
+
+Move files, templates, variables, and tasks from your playbook into the respective directories within the role.
+
+- Copy files from the project directory to the role's files folder:
+  ```bash
+  cp files/* roles/post-install/files/
+  ```
+
+- Copy templates from the project directory to the role's templates folder:
+  ```bash
+  cp templates/* roles/post-install/templates/
+  ```
+
+- Move variables to `vars/main.yml`:
+  ```yaml
+  # vars file for post-install
+  USRNM: commonuser
+  COMM: variable from groupvars_all file
+  ntp0: 0.north-america.pool.ntp.org
+  ntp1: 1.north-america.pool.ntp.org
+  ntp2: 2.north-america.pool.ntp.org
+  ntp3: 3.north-america.pool.ntp.org
+  mydir: /opt/dir22
+  ```
+
+---
+
+### Defining Handlers in Roles
+
+Move handlers to `handlers/main.yml` under the role directory:
+
+```yaml
+# handlers file for post-install
+- name: reStart service on centos
+  service:
+    name: chronyd
+    state: restarted
+    enabled: yes
+  when: ansible_distribution == "CentOS"
+
+- name: reStart service on ubuntu
+  service:
+    name: ntp
+    state: restarted
+    enabled: yes
+  when: ansible_distribution == "Ubuntu"
+```
+
+---
+
+### Using the Role in an Ansible Playbook
+
+Once the role is defined, the playbook becomes simple. Use the `roles` directive to reference the role.
+
+**Example Playbook:**
+
+```yaml
+- name: Provisioning servers
+  hosts: all
+  become: yes
+  roles:
+    - post-install
+```
+
+In this playbook:
+- The `post-install` role is executed, and all tasks, handlers, and variables defined in the role will be applied.
+
+#### Overriding Role Variables in a Playbook
+
+Variables defined in a role can be overridden at the playbook level. For example:
+
+```yaml
+- name: Provisioning servers
+  hosts: all
+  become: yes
+  roles:
+    - role: post-install
+      vars:
+        ntp0: 0.in.pool.ntp.org
+        ntp1: 1.in.pool.ntp.org
+        ntp2: 2.in.pool.ntp.org
+        ntp3: 3.in.pool.ntp.org
+```
+
+Here, the `ntp` variables defined in the playbook override those in the role.
+
+---
+
+### Predefined Roles from Ansible Galaxy
+
+Instead of manually creating roles, you can use predefined roles available in the Ansible Galaxy community.
+
+**Example:**
+
+```yaml
+- name: Provisioning servers
+  hosts: all
+  become: yes
+  roles:
+    - geerlingguy.java
+    - role: post-install
+      vars:
+        ntp0: 0.in.pool.ntp.org
+        ntp1: 1.in.pool.ntp.org
+        ntp2: 2.in.pool.ntp.org
+        ntp3: 3.in.pool.ntp.org
+```
+
+In this example, the `geerlingguy.java` role from Ansible Galaxy is executed first, followed by the `post-install` role. Predefined roles are helpful but may offer less customization than user-defined roles.
+
+---
+
+### Organizing Variables in `defaults/main.yml`
+
+While variables can be placed in `vars/main.yml`, it's a good practice to put default variables in `defaults/main.yml` for better modularity. Variables in `defaults/main.yml` have lower precedence compared to those in `vars/main.yml`.
+
+**Example Structure:**
+
+```text
+roles/
+  post-install/
+    defaults/
+      main.yml
+    vars/
+      main.yml
+    tasks/
+      main.yml
+    handlers/
+      main.yml
+    files/
+    templates/
+```
+
+Use `include_vars` to import variables from other files into your main role.
+
+---
+
+### Summary
+
+- **Roles** allow for modular and reusable playbook structures.
+- You can easily convert a playbook into a role using `ansible-galaxy init`.
+- **Handlers** and **tasks** are organized under role directories.
+- Variables can be overridden at the playbook level or declared in `defaults/main.yml` for best practices.
+- Predefined roles from **Ansible Galaxy** are available, though user-defined roles offer more customization.
+
+### Ansible 205: Ansible for AWS
+
+Ansible can effectively manage AWS services by automating tasks such as creating key pairs and launching EC2 instances. This section covers how to configure Ansible to interact with AWS, install necessary dependencies, and execute AWS-related tasks using Ansible playbooks.
+
+---
+
+#### 1. **Configuring Ansible to Connect to AWS**
+
+To enable Ansible to manage AWS resources, you need to provide AWS credentials and ensure Ansible has the necessary libraries to interact with AWS APIs.
+
+##### **a. Create an IAM User with Access Keys**
+
+1. **Create IAM User:**
+   - Navigate to the AWS Management Console.
+   - Go to **IAM** > **Users** > **Add user**.
+   - Assign a username and select **Programmatic access**.
+
+2. **Generate Access Keys:**
+   - Under **Security credentials**, create an access key.
+   - **Download** the access keys as a CSV file for safekeeping.
+
+##### **b. Export AWS Credentials**
+
+Set the AWS Access Key ID and Secret Access Key as environment variables so Ansible can use them to authenticate with AWS.
+
+```bash
+export AWS_ACCESS_KEY_ID='AK123'
+export AWS_SECRET_ACCESS_KEY='abc123'
+```
+
+**Note:** These variables are session-specific. To make them persistent across sessions, add them to your `.bashrc` or `.bash_profile`:
+
+```bash
+echo "export AWS_ACCESS_KEY_ID='AK123'" >> ~/.bashrc
+echo "export AWS_SECRET_ACCESS_KEY='abc123'" >> ~/.bashrc
+source ~/.bashrc
+```
+
+---
+
+#### 2. **Installing Required Python Libraries**
+
+Ansible relies on the `boto3` library to interact with AWS services. Install `boto3` using `pip`.
+
+```bash
+sudo apt update
+sudo apt install python3-pip -y
+pip3 install boto3
+```
+
+---
+
+#### 3. **Installing Ansible AWS Collection**
+
+To access AWS modules, install the `amazon.aws` collection from Ansible Galaxy.
+
+```bash
+ansible-galaxy collection install amazon.aws
+```
+
+This collection includes modules for managing various AWS services, such as EC2 instances, S3 buckets, and more.
+
+---
+
+#### 4. **Creating an AWS Key Pair with Ansible**
+
+Use Ansible to create an AWS key pair and save the private key locally.
+
+```yaml
+---
+- name: Create AWS Key Pair
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create key pair
+      amazon.aws.ec2_key:
+        name: sample
+        region: us-east-1
+      register: keyout
+
+    - name: Save private key
+      copy:
+        content: "{{ keyout.key.private_key }}"
+        dest: ./sample.pem
+        mode: '0600'
+      when: keyout.changed
+```
+
+**Explanation:**
+- **Create key pair:** Uses the `ec2_key` module to create a key pair named `sample` in the `us-east-1` region.
+- **Save private key:** If a new key pair is created (`keyout.changed` is `true`), the private key is saved to `sample.pem` with restricted permissions.
+
+---
+
+#### 5. **Launching an EC2 Instance with Ansible**
+
+Deploy an EC2 instance using the `amazon.aws.ec2_instance` module.
+
+```yaml
+---
+- name: Launch EC2 Instance
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Start an EC2 instance
+      amazon.aws.ec2_instance:
+        name: "public-compute-instance"
+        key_name: "sample"
+        instance_type: t2.micro
+        security_groups: ["default"]
+        image_id: ami-02d8bad0a1da4b6fd
+        exact_count: 1
+        region: us-west-2
+        tags:
+          Environment: Testing
+      register: ec2
+```
+
+**Explanation:**
+- **name:** Assigns a name to the EC2 instance.
+- **key_name:** Associates the instance with the previously created key pair (`sample`).
+- **instance_type:** Specifies the instance type (`t2.micro`).
+- **security_groups:** Associates the instance with the `default` security group.
+- **image_id:** Specifies the Amazon Machine Image (AMI) ID to use for the instance.
+- **exact_count:** Ensures that exactly one instance is running. Re-running the playbook won't create additional instances.
+- **region:** Specifies the AWS region (`us-west-2`) where the instance will be launched.
+- **tags:** Adds metadata to the instance for easier identification and management.
+
+---
+
+#### 6. **Best Practices**
+
+- **Persisting AWS Credentials:**
+  - Instead of exporting credentials in `.bashrc`, consider using AWS credentials files (`~/.aws/credentials`) for better security and manageability.
+
+- **Using Variables:**
+  - Define AWS-related variables (e.g., `region`, `ami_id`, `instance_type`) in Ansible variables files or inventories for flexibility.
+
+- **Handling Sensitive Data:**
+  - Use Ansible Vault to encrypt sensitive information like AWS access keys.
+
+- **Idempotency:**
+  - Utilize `exact_count` and other idempotent parameters to ensure playbooks can be safely re-run without unintended side effects.
+
+---
+
+#### 7. **Example Complete Playbook**
+
+Combining the key pair creation and EC2 instance launch into a single playbook:
+
+```yaml
+---
+- name: Provision AWS Resources
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create key pair
+      amazon.aws.ec2_key:
+        name: sample
+        region: us-east-1
+      register: keyout
+
+    - name: Save private key
+      copy:
+        content: "{{ keyout.key.private_key }}"
+        dest: ./sample.pem
+        mode: '0600'
+      when: keyout.changed
+
+    - name: Start an EC2 instance
+      amazon.aws.ec2_instance:
+        name: "public-compute-instance"
+        key_name: "sample"
+        instance_type: t2.micro
+        security_groups: ["default"]
+        image_id: ami-02d8bad0a1da4b6fd
+        exact_count: 1
+        region: us-west-2
+        tags:
+          Environment: Testing
+      register: ec2
+```
+
+**Usage:**
+1. **Run the Playbook:**
+   ```bash
+   ansible-playbook provision_aws.yml
+   ```
+2. **Verify Resources:**
+   - Check the AWS Management Console to ensure the key pair and EC2 instance have been created as specified.
+
+---
+
+### Summary
+
+- **AWS Integration:** Configure Ansible with AWS credentials to manage AWS resources.
+- **Dependencies:** Install `boto3` and the `amazon.aws` Ansible collection for AWS module support.
+- **Key Pair Management:** Use Ansible to create and manage AWS key pairs securely.
+- **EC2 Instance Management:** Automate the deployment of EC2 instances with specified configurations.
+- **Best Practices:** Ensure idempotency, secure handling of credentials, and modular playbook design for scalable and maintainable infrastructure automation.
+
+By leveraging Ansible's capabilities to interact with AWS, you can streamline and automate the provisioning and management of your cloud infrastructure efficiently.
+
+### Containerization with Docker
+
+Containerization is the process of packaging an application along with its dependencies, configurations, and environment settings into a single container, making deployment consistent across environments (e.g., dev, QA, prod). This approach simplifies resource management, reduces deployment errors, and supports microservice architectures by using Docker as the primary tool for containerization.
+
+---
+
+### 1. **Introduction to Containerization**
+
+Containerization addresses several issues that arise from traditional VM-based deployments:
+
+- **Manual Deployment Issues:**
+  - High CAPEX/OPEX due to manual resource setup.
+  - Deployment inconsistency due to human errors.
+  - Resource wastage from hosting multiple services, each requiring its own operating system.
+
+- **Microservice Architecture Support:**
+  - Containers share the same OS kernel, minimizing resource usage compared to running VMs for each service.
+  - Containerized applications maintain synchronization across different environments (e.g., dev, prod, QA), avoiding deployment failures.
+
+---
+
+### 2. **Why Docker?**
+
+Docker simplifies the containerization process by allowing developers to package applications into Docker images, which can then be deployed consistently across different environments.
+
+- **Docker Images:** Self-contained units that include all necessary components (application code, libraries, environment variables).
+- **Docker Containers:** Instances of Docker images running on any machine with Docker installed.
+- **Docker Compose:** A tool to manage multi-container applications by defining services in a `docker-compose.yml` file.
+  
+#### Example Workflow:
+1. **Pull code from GitHub**: Retrieve the application code, which includes a `Dockerfile` for building the Docker image.
+2. **Build Docker Image**:
+   ```bash
+   docker build -t imranvisualpath/vproapp .
+   ```
+3. **Push Image to DockerHub**:
+   ```bash
+   docker push imranvisualpath/vproapp
+   ```
+4. **Run Containers on Multiple Servers**: Use `docker-compose` to spin up containers across multiple servers.
+
+---
+
+### 3. **Using Dockerfile for Customization**
+
+A `Dockerfile` defines the steps to build a custom Docker image by pulling base images and installing additional dependencies.
+
+#### Example of a Simple Dockerfile:
+
+```dockerfile
+# Use base image
+FROM ubuntu:latest
+
+# Install necessary packages
+RUN apt-get update && apt-get install -y \
+    python3 \
+    pip
+
+# Copy application code
+COPY . /app
+
+# Set the working directory
+WORKDIR /app
+
+# Run the application
+CMD ["python3", "app.py"]
+```
+
+---
+
+### 4. **Docker Compose for Multi-Container Deployment**
+
+`docker-compose.yml` is used to define and manage multiple containers that work together as part of a larger application.
+
+#### Example `docker-compose.yml`:
+
+```yaml
+version: '3'
+services:
+  web:
+    image: myapp/web
+    ports:
+      - "8080:8080"
+  database:
+    image: postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+```
+
+---
+
+### 5. **DockerHub Setup**
+
+DockerHub is a platform to host and share Docker images publicly or privately. Organizations often use DockerHub for collaboration and version control.
+
+- **Benefits of DockerHub Organization:**
+  - Collaboration features for team-based Docker image development.
+  - Unlimited private repositories.
+  - Up to 5000 image pulls per day.
+  - Enhanced container isolation and security.
+
+You can link DockerHub repositories with GitHub or Bitbucket to automatically trigger Docker image builds upon code changes.
+
+---
+
+### 6. **Setting Up Docker Engine on Vagrant**
+
+Vagrant is used to manage virtual environments, and you can configure it to run Docker containers by setting up a virtual machine (VM) and installing Docker on it.
+
+#### a. **Configure Vagrantfile**
+
+To set up networking for the VM, edit the `Vagrantfile` to define private and public network settings:
+
+```ruby
+# Configure private network
+config.vm.network "private_network", ip: "192.168.56.38"
+
+# Configure public network (bridged)
+config.vm.network "public_network"
+```
+
+#### b. **Allocate RAM for VirtualBox**
+
+```ruby
+config.vm.provider "virtualbox" do |vb|
+  vb.memory = "2048"
+end
+```
+
+Allocating 2GB of RAM ensures better VM performance compared to 1GB, which may result in a slower experience.
+
+#### c. **Launching Vagrant VM**
+
+1. Initialize the Vagrant environment:
+   ```bash
+   vagrant init bento/ubuntu-22.04
+   ```
+2. Launch the VM:
+   ```bash
+   vagrant up
+   ```
+
+#### d. **Install Docker on Vagrant VM**
+
+After launching the VM, follow Docker's installation guide for Ubuntu:
+
+- [Docker Engine on Ubuntu Installation](https://docs.docker.com/engine/install/ubuntu/)
+
+#### e. **Add Vagrant User to Docker Group**
+
+To run Docker commands inside the VM, add the Vagrant user to the Docker group:
+
+```bash
+usermod -aG docker vagrant
+```
+
+Then, logout and re-login to apply the changes. Verify Docker installation by running:
+
+```bash
+docker images
+```
+
+---
+
+### 7. **Base Image Setup**
+
+For some services, DockerHub provides ready-made images, while others might require customization. For example, to run a Java application on Tomcat, you might need to create a custom Docker image that includes your application artifact.
+
+---
+
+### Summary
+
+- **Containerization** allows consistent, scalable, and resource-efficient deployment across multiple environments.
+- **Docker** is the go-to tool for building and running containers using Docker images.
+- **Docker Compose** simplifies multi-container setups by managing services with configuration files.
+- **Vagrant** can be used to create virtual environments for Docker testing and deployment.
+- **DockerHub** offers a platform for sharing Docker images, enabling collaboration among developers. 
+
+Containerization is a powerful technique for modern application development, enabling microservice architectures and continuous deployment strategies.
+
+### DockerHub & Dockerfile Overview
+
+In this section, we explore the key concepts of DockerHub, Dockerfile, and multi-stage builds, essential for building and optimizing Docker images.
+
+---
+
+### 1. **DockerHub and Image Management**
+
+DockerHub is the primary registry for storing and sharing Docker images. To store images in DockerHub, you first create a repository under your username or organization name. When pulling or pushing images, the format used is:
+
+```bash
+docker pull namespace/repository_name:tagname
+```
+
+- **Namespace**: Generally, your DockerHub username or organization name.
+- **Repository Name**: The name of the image (e.g., `vprofileweb`).
+- **Tag Name**: Used to reference different versions of the image (default is `latest`).
+
+#### Forking in GitHub
+
+Forking copies an entire repository, including all branches, from one GitHub account to another. This is useful for making independent modifications.
+
+---
+
+### 2. **Key Dockerfile Instructions**
+
+A `Dockerfile` is a set of instructions for building Docker images. Here are the most important instructions used:
+
+- **FROM**: Defines the base image for the Docker image.
+- **RUN**: Executes commands during the image build process (e.g., installing software).
+- **COPY**: Copies files from the local machine into the container.
+- **CMD**: Specifies the default command to run when a container starts.
+- **LABEL**: Adds metadata to the image in key-value format.
+- **EXPOSE**: Informs Docker that the container listens on specific ports (does not publish the port).
+- **ENV**: Sets environment variables in the image.
+- **ADD**: Similar to `COPY`, but with additional features like fetching files from URLs or extracting compressed files.
+- **ENTRYPOINT**: Specifies the executable that will always run, and takes precedence over `CMD`.
+
+#### Example Dockerfile:
+
+```dockerfile
+FROM ubuntu:latest
+RUN apt-get update && apt-get install -y python3
+COPY . /app
+WORKDIR /app
+EXPOSE 5000
+CMD ["python3", "app.py"]
+```
+
+- **EXPOSE vs `-p`**: The `EXPOSE` command documents the ports, while the `-p` flag in `docker run` is required to make the port accessible outside the container.
+
+#### Difference Between `ADD` and `COPY`
+
+- **COPY** is simpler and just copies files or directories.
+- **ADD** provides extra functionality, such as extracting archives and fetching files from URLs.
+
+---
+
+### 3. **Multi-Stage Builds**
+
+Multi-stage builds allow the creation of smaller, more efficient Docker images by separating the build process into different stages. This approach is beneficial for:
+
+- **Smaller Final Images**: Only essential components are included in the final image, reducing its size.
+- **Parallel Build Steps**: Build steps can be executed in parallel, improving efficiency.
+
+#### Example Multi-Stage Dockerfile:
+
+```dockerfile
+# Stage 1: Build the application
+FROM openjdk:11 AS BUILD_IMAGE
+RUN apt update && apt install maven -y
+RUN git clone https://github.com/devopshydclub/vprofile-project.git
+RUN cd vprofile-project && git checkout docker && mvn install
+
+# Stage 2: Deploy the application on Tomcat
+FROM tomcat:9-jre11
+RUN rm -rf /usr/local/tomcat/webapps/*
+COPY --from=BUILD_IMAGE vprofile-project/target/vprofile-v2.war /usr/local/tomcat/webapps/ROOT.war
+EXPOSE 8080
+CMD ["catalina.sh", "run"]
+```
+
+- **Stage 1**: Uses `openjdk` as the base image to build the Java application with Maven. This stage generates the artifact (`vprofile-v2.war`).
+- **Stage 2**: Uses `tomcat:9-jre11` as the base image to deploy the artifact. The default Tomcat web app is removed, and the new artifact is copied into the appropriate location.
+
+The multi-stage build helps eliminate unnecessary build tools and dependencies from the final image, making it smaller and faster to deploy.
+
+---
+
+### 4. **Dockerfile Best Practices**
+
+- **Smaller Images**: Use multi-stage builds to minimize the size of the final image.
+- **Layer Caching**: Place commands that change infrequently (e.g., installing system packages) near the top of the Dockerfile to take advantage of Docker's layer caching.
+- **Organized Commands**: Keep the Dockerfile clean and organized by grouping related commands together.
+
+---
+
+### Summary
+
+- **DockerHub** allows you to store, manage, and share Docker images.
+- A **Dockerfile** is a set of instructions to build images, including commands like `FROM`, `RUN`, `COPY`, `CMD`, `EXPOSE`, `ENV`, and `ADD`.
+- **Multi-stage builds** optimize Docker images by separating the build process into multiple stages, reducing the final image size and improving efficiency.
+- Best practices include using smaller base images, taking advantage of layer caching, and organizing the Dockerfile for better maintainability.
+
+### Web, App, and Database Dockerfiles
+
+In this section, we define Dockerfiles for the web, application, and database services. These Dockerfiles are essential components in containerizing the different parts of an application.
+
+#### **Web Dockerfile (`web/Dockerfile`)**
+
+This Dockerfile is used to configure the web server (Nginx) for the application.
+
+```dockerfile
+# Use Nginx as the base image
+FROM nginx
+
+# Add labels for project and author information
+LABEL "Project"="Vprofile"
+LABEL "Author"="Imran"
+
+# Remove the default Nginx configuration
+RUN rm -rf /etc/nginx/conf.d/default.conf
+
+# Copy custom Nginx configuration into the container
+COPY nginvproapp.conf /etc/nginx/conf.d/vproapp.conf
+```
+
+#### **App Dockerfile (`app/Dockerfile`)**
+
+This Dockerfile sets up a Tomcat-based application server with the necessary web application artifact.
+
+```dockerfile
+# Use Tomcat as the base image
+FROM tomcat:8-jre11
+
+# Add labels for project and author information
+LABEL "Project"="Vprofile"
+LABEL "Author"="Imran"
+
+# Remove the default Tomcat web applications
+RUN rm -rf /usr/local/tomcat/webapps/*
+
+# Copy the WAR file to the Tomcat webapps directory
+COPY target/vprofile-v2.war /usr/local/tomcat/webapps/ROOT.war
+
+# Expose the application on port 8080
+EXPOSE 8080
+
+# Start Tomcat
+CMD ["catalina.sh", "run"]
+
+# Set working directory and define a volume
+WORKDIR /usr/local/tomcat/
+VOLUME /usr/local/tomcat/webapps
+```
+
+#### **Database Dockerfile (`db/Dockerfile`)**
+
+This Dockerfile sets up a MySQL database container with an initial database and credentials.
+
+```dockerfile
+# Use MySQL as the base image
+FROM mysql:5.7.25
+
+# Add labels for project and author information
+LABEL "Project"="Vprofile"
+LABEL "Author"="Imran"
+
+# Set environment variables for MySQL
+ENV MYSQL_ROOT_PASSWORD="vprodbpass"
+ENV MYSQL_DATABASE="accounts"
+
+# Add the database backup to the initialization directory
+ADD db_backup.sql docker-entrypoint-initdb.d/db_backup.sql
+```
+
+---
+
+### Docker Compose: Managing Multiple Containers
+
+Docker Compose allows you to build and run multiple containers simultaneously. This is useful for running complex applications that require multiple services, such as a web server, app server, and database.
+
+#### **Basic Docker Compose File**
+
+Here is an example `docker-compose.yml` file that builds and runs several containers for a typical application setup.
+
+```yaml
+version: '3.8'
+services:
+  vprodb:
+    build:
+      context: ./Docker-files/db
+    image: vprocontainers/vprofiledb
+    container_name: vprodb
+    ports:
+      - "3306:3306"
+    volumes:
+      - vprodbdata:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=vprodbpass
+
+  vprocache01:
+    image: memcached
+    ports:
+      - "11211:11211"
+
+  vpromq01:
+    image: rabbitmq
+    ports:
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+
+  vproapp:
+    build:
+      context: ./Docker-files/app
+    image: vprocontainers/vprofileapp
+    container_name: vproapp
+    ports:
+      - "8080:8080"
+    volumes:
+      - vproappdata:/usr/local/tomcat/webapps
+
+  vproweb:
+    build:
+      context: ./Docker-files/web
+    image: vprocontainers/vprofileweb
+    container_name: vproweb
+    ports:
+      - "80:80"
+      
+volumes:
+  vprodbdata: {}
+  vproappdata: {}
+```
+
+- **Services**: Defines individual containers such as `vprodb` (MySQL), `vprocache01` (Memcached), `vpromq01` (RabbitMQ), `vproapp` (Tomcat), and `vproweb` (Nginx).
+- **Ports**: Maps internal container ports to external ports on the host machine.
+- **Volumes**: Maps host directories or data volumes to directories within the container.
+- **Environment Variables**: Passes environment variables into the containers, such as database credentials.
+
+---
+
+### Docker Compose Commands
+
+- **Start Services**: To build and start all services in the `docker-compose.yml` file, use the following command:
+  
+  ```bash
+  docker-compose up -d
+  ```
+
+  The `-d` flag runs the services in detached mode (in the background).
+
+- **Stop Services**: To stop and remove all containers defined in the compose file:
+  
+  ```bash
+  docker-compose down
+  ```
+
+- **View Running Containers**: To see which containers are running:
+  
+  ```bash
+  docker-compose ps
+  ```
+
+  This only shows containers created using Docker Compose. For all running containers, use:
+
+  ```bash
+  docker ps
+  ```
+
+---
+
+### Building and Running the Application
+
+- **Build Images**: To build all the images from the Dockerfiles specified in the compose file:
+  
+  ```bash
+  docker-compose build
+  ```
+
+- **Run the Application**: After building, use the `docker-compose up` command to start the application:
+  
+  ```bash
+  docker-compose up -d
+  ```
+
+- **Push Images to DockerHub**: To push a Docker image to DockerHub:
+  
+  ```bash
+  docker login
+  docker push <your-image-name>
+  ```
+
+- **Clean Up**: To remove stopped containers, unused networks, and dangling images, use:
+  
+  ```bash
+  docker system prune -a
+  ```
+
+---
+
+### Summary
+
+- The **Web, App, and Database Dockerfiles** define the configuration and setup for Nginx, Tomcat, and MySQL containers, respectively.
+- **Docker Compose** simplifies the management of multi-container applications, allowing for easy builds, network setup, volume management, and environment configuration.
+- Using **docker-compose commands** such as `up`, `down`, and `build`, you can efficiently manage the lifecycle of containers and optimize the deployment process.
+
