@@ -535,3 +535,202 @@ aws s3 ls s3://metrics-streams-streamdemo
 ---
 
 This setup allows organizations to leverage CloudWatch streaming for customizable and actionable business insights, providing flexibility in choosing destinations and maximizing the value of their data.
+
+### **Working with Metric Math Expressions in CloudWatch**
+
+Amazon CloudWatch offers a feature called **Metric Math**, enabling the calculation and real-time analysis across multiple metrics using mathematical expressions. This feature helps derive insights from existing metrics and create new time series data streams.
+
+#### **Steps to Implement Metric Math in CloudWatch**
+
+1. **Navigate to All Metrics**
+   - Go to CloudWatch, select **All Metrics**, and choose the metrics you want to process. For example, select the **Lambda function by function name**.
+   - Find the **PutItem function** and select the **Error metric**.
+
+2. **Viewing Graph Metrics**
+   - After selecting the metrics, expand the graph. If no data is visible, adjust the timeframe (e.g., latest four weeks).
+   - Add math expressions to further process the metrics by selecting **Add Math**.
+
+#### **Using Rate Function for Error Metrics**
+
+- The **Rate function** calculates the rate of change between the latest and previous data points.
+
+   ```plaintext
+   Add Math -> Find Rate Function -> Select Rate Function
+   ```
+
+- This adds a second graph showing the rate of errors. You can modify the metric ID for clarity. For instance, change the aggregation of error metrics from **Average** to **Sum** to get a clearer picture of error rates.
+
+   ```plaintext
+   Change Aggregation: Average -> Sum
+   ```
+
+#### **Editing Metric Math Expressions**
+
+- You can edit the math expressions to customize calculations. For example, to focus on errors only:
+  
+   ```plaintext
+   Edit the expression -> Use metric ID (e.g., M1 for errors)
+   ```
+
+   This filters the graph to show only errors, removing other unwanted metrics like invocations.
+
+#### **Using Day Function for Filtering Errors by Weekdays/Weekends**
+
+- To filter metrics by days of the week, use the **Day function**.
+
+   ```plaintext
+   Add Math -> All Functions -> Day Function
+   ```
+
+   - The **Day function** returns the day number (1–7). Days 6 and 7 represent the weekend (Saturday and Sunday).
+   - You can filter errors that occurred on weekends using an **if statement** in the expression.
+
+   ```plaintext
+   if(day >= 6) // Show errors during weekends
+   ```
+
+#### **Filling Missing Data Points with the Fill Function**
+
+- If the graph has missing data points (due to infrequent errors), you can use the **Fill function** to make the graph more readable by filling in missing points with zeros.
+
+   ```plaintext
+   Add Math -> Common -> Fill Function
+   ```
+
+   - This fills missing data points with the value you specify. For example, fill missing points in the error metric (M1) with `0`:
+
+   ```plaintext
+   fill(M1, 0)
+   ```
+
+   After applying this, the graph will show continuous lines, even when errors are absent.
+
+#### **Conclusion**
+
+In this demo, we explored various ways to process and analyze metrics in CloudWatch using **metric math expressions**, including:
+- Using the **rate function** to calculate error rates.
+- Filtering metrics using the **day function**.
+- Enhancing graph readability with the **fill function**.
+
+These tools help improve real-time data visualization and analysis within CloudWatch.
+
+### **Creating Custom Metric Math Expressions in CloudWatch**
+
+In this section, we explore how to create custom math expressions using multiple metrics to generate new data points in Amazon CloudWatch. This allows for more detailed analysis by performing mathematical operations on existing metrics.
+
+#### **Selecting Metrics**
+To begin, we need to select multiple metrics, such as:
+- **Errors**
+- **Invocations**
+- **Duration**
+
+Navigate to the metrics selection and choose these for further analysis.
+
+#### **Average Duration per Invocation**
+
+We can calculate the **average duration per invocation** by dividing the **duration** by the **invocations**.
+
+- **Duration** is identified as `M3` and **Invocations** as `M2`.
+
+The formula for average duration is:
+```plaintext
+M3 / M2
+```
+
+1. Add a new math expression.
+2. Input the expression: `M3 / M2`.
+3. Apply the expression to view the average duration in milliseconds.
+
+#### **Calculating Error Rate**
+
+To calculate the **error rate**, divide the **errors** by the **invocations**. Errors are labeled as `M1`.
+
+- **Error Rate Formula**:
+```plaintext
+M1 / M2
+```
+
+- **Converting to Percentage**:
+Multiply the error rate by 100 to get the percentage:
+```plaintext
+(M1 / M2) * 100
+```
+
+Once applied, this shows the error rate, which may vary (e.g., 100%, 33%) depending on application behavior.
+
+#### **Filtering Error Rate with IF Function**
+
+We can further filter the data by using an **IF function** to display only data where the error rate is above a specified threshold, such as 25%.
+
+- **IF Function Syntax**:
+```plaintext
+IF(E1 >= 25, E1, 0)
+```
+Here, `E1` represents the error rate percentage.
+
+1. Add a new math expression using the `IF` function.
+2. Replace `E1` with the metric ID for error rate.
+3. Set the condition `E1 >= 25` to display error rates 25% or higher. Values below 25% will be shown as `0`.
+
+#### **Example Code Snippet**
+For an error rate of 25% or higher:
+```plaintext
+IF(E1 >= 25, E1, 0)
+```
+
+To modify this threshold, for example to 75%, you can update the expression:
+```plaintext
+IF(E1 >= 75, E1, 0)
+```
+
+#### **Summary**
+
+- **Average Duration**: `M3 / M2`
+- **Error Rate (Percentage)**: `(M1 / M2) * 100`
+- **Conditional Error Rate (Above 25%)**: `IF(E1 >= 25, E1, 0)`
+
+These custom math expressions allow for more detailed, real-time insights into system performance and can be tailored based on specific needs.
+
+Next, we will explore how to save these graphs and add them to a CloudWatch dashboard.
+
+### **Adding Metrics to CloudWatch Dashboards**
+
+In this section, we explore how to add and save custom metrics to a CloudWatch dashboard for easy access and monitoring.
+
+#### **Creating a Dashboard**
+
+To avoid losing your metrics and charts when you close the browser, you can save them by adding them to a CloudWatch dashboard. Dashboards allow you to visualize key metrics and manage them across different devices or sessions.
+
+1. Navigate to **Dashboards** in CloudWatch.
+2. Create a new dashboard by selecting **Create Dashboard** or edit an existing one.
+3. For this demo, name the dashboard `Metrics`.
+
+#### **Adding Widgets to the Dashboard**
+
+Once the dashboard is created, you can add different types of widgets to display your data:
+- Line Graphs
+- Alarm Statuses
+- Custom Widgets
+- Text
+- Logs
+
+In this case, we will add a **Line Graph** for our metrics.
+
+#### **Steps to Add Metrics to the Dashboard**
+
+1. Select the **Line Graph** widget and click **Next**.
+2. Choose the desired **metrics** for the graph.
+   - This is similar to how metrics were selected earlier: navigate to **Graph Metrics**, select the metrics, and add math expressions as needed.
+3. After setting up the metrics, select **Actions** > **Add to Dashboard**.
+4. Select the dashboard, which in this case is `Metrics`.
+5. Choose the **widget type** (e.g., Line Graph).
+6. Assign a **title** to the widget, such as `MathExpression`, and then add it to the dashboard.
+
+#### **Editing and Managing Widgets**
+
+Once the widget is added, you can easily view and edit the metrics in your dashboard at any time.
+
+- Navigate back to the dashboard to view the graph and make necessary changes.
+- Depending on your use case, you can add multiple widgets for various metrics, tailoring the dashboard to your firm's specific business needs.
+
+This process allows for continuous monitoring and real-time analysis of important data without needing to reconfigure the metrics every time.
