@@ -138,3 +138,35 @@ Through the certifications I’ve completed, I have gained in-depth knowledge an
 **Monitoring AWS with CloudWatch:** Through this certification, I gained expertise in using AWS CloudWatch to monitor, log, and visualize cloud resources. This knowledge allowed me to set up better monitoring systems, track application performance, and identify issues early on, which ultimately helped optimize system performance and reduce downtime.
 
 Overall, these certifications have significantly strengthened my skills in automation, cloud infrastructure management, CI/CD pipelines, and monitoring, directly contributing to my ability to streamline operations and enhance efficiency in my current role.
+
+## Why should we hire you?
+
+You should hire me because I bring a strong combination of technical skills, hands-on experience, and a continuous drive to improve efficiency and deliver results. With over 2 years of experience as a DevOps Engineer at NielsenIQ India, I have successfully led initiatives to optimize deployment processes, automate infrastructure management, and improve team productivity.
+
+I have expertise in areas critical to this role, including:
+
+**CI/CD Pipelines:** I’ve optimized Jenkins and GitLab pipelines, reducing deployment misalignments and improving automation efficiency.
+
+**Containerization and Cloud Infrastructure:** I spearheaded the Docker containerization initiative, significantly streamlining deployment across multiple environments. I also have extensive experience managing cloud resources on AWS using Terraform and Ansible, which has resulted in reduced provisioning time and operational costs.
+
+**Automation:** I’ve written Python and Shell scripts to automate tasks, such as cloud management and system-level processes, ensuring smooth operations and minimizing manual intervention.
+
+**Leadership:** I’ve mentored junior engineers, helping improve team skills and productivity, which contributed to better DevOps practices across the team.
+
+In addition to these technical skills, my certifications in DevOps, AWS CloudFormation, Jenkins, and CloudWatch monitoring have further strengthened my ability to manage and optimize infrastructure and processes. I am passionate about driving improvements, learning new technologies, and continuously adapting to the evolving DevOps landscape.
+
+Ultimately, I believe my technical expertise, hands-on experience with cloud and DevOps tools, and ability to lead and mentor make me an ideal candidate for this role. I am confident that I can bring value to your team and contribute to the success of your projects.
+
+## What's your expected package?
+
+Given my experience and expertise as a DevOps Engineer, along with my certifications and hands-on work in optimizing CI/CD pipelines, containerization, cloud infrastructure, and automation, I would expect a competitive package in line with industry standards for someone with my skills and background.
+
+Considering my 2+ years of experience at NielsenIQ India, where I have contributed to improving team productivity, reducing operational costs, and streamlining deployment processes, my expected package would be in the range of 17 to 18 lakhs per annum. However, I am open to discussion and can be flexible based on the overall compensation package, growth opportunities, and the company's goals.
+
+## Sorry , we don't have ,  enough budget for the role
+
+I understand. While I’m passionate about this role and believe I can contribute significantly to your team, I also understand budget constraints. If the compensation is a concern, I’m open to discussing other aspects such as growth opportunities, learning potential, work culture, and other benefits that can make this opportunity worthwhile. Ultimately, I’m looking for a role where I can make a meaningful impact and continue to grow professionally.
+
+## What's your salary expectation?
+
+Considering my current compensation and the experience I bring to the table, my salary expectation would be in the range of **17 to 18 lakhs per annum**, based on my role as a DevOps Engineer with over 2 years of experience, including expertise in CI/CD pipelines, cloud infrastructure management, automation, and containerization. However, I am open to discussion depending on the overall package and growth potential offered in the role.
