@@ -170,3 +170,117 @@ I understand. While I’m passionate about this role and believe I can contribut
 ## What's your salary expectation?
 
 Considering my current compensation and the experience I bring to the table, my salary expectation would be in the range of **17 to 18 lakhs per annum**, based on my role as a DevOps Engineer with over 2 years of experience, including expertise in CI/CD pipelines, cloud infrastructure management, automation, and containerization. However, I am open to discussion depending on the overall package and growth potential offered in the role.
+
+## Have you completed any relevant certifications or training in DevOps tools or technologies? If yes, please provide details.
+
+Yes, I have completed the following relevant certifications in DevOps tools and technologies:
+
+**DevOps Beginners to Advanced with Projects (2023):** Gained comprehensive knowledge of DevOps practices, including CI/CD, containerization, and infrastructure automation.
+
+**Jenkins, From Zero to Hero:** Become A DevOps Jenkins Master: Learned to design and manage Jenkins pipelines for automated CI/CD workflows.
+
+**Continuous Integration and Continuous Delivery with GitLab:** Acquired expertise in GitLab CI/CD for seamless code integration, testing, and deployment.
+
+**AWS Cloud Formation for Beginners:** Mastered the basics of Infrastructure as Code using AWS CloudFormation to automate resource provisioning.
+
+**Monitoring AWS with CloudWatch:** Developed skills in setting up monitoring, custom metrics, and alarms using AWS CloudWatch for efficient system observability.
+
+## Describe a challenging technical issue you encountered in a previous role or project. How did you approach and resolve it?
+
+In my previous role, I faced a challenging issue with deployment misalignments across multiple environments, leading to frequent downtime and inconsistencies. The root cause was a lack of synchronization between application images and pipeline configurations.  
+
+To address this, I optimized the Jenkins pipelines and implemented a process to automatically synchronize application images across all stages—development, QA, and production. I also used Docker for containerization to ensure consistency in the application runtime environment.  
+
+As a result, deployment misalignments were reduced by 30%, and overall deployment efficiency improved significantly, minimizing downtime and enhancing system reliability.
+
+## How do you ensure the security and reliability of infrastructure and deployment pipelines in a DevOps environment?
+
+To ensure the security and reliability of infrastructure and deployment pipelines, I follow these practices:  
+
+- Implement Infrastructure as Code (IaC) using tools like Terraform and AWS CloudFormation to maintain consistency and enable version control.  
+- Use security best practices, including encrypted secrets management and role-based access control (RBAC) for tools like AWS, Jenkins, and Kubernetes.  
+- Continuously monitor infrastructure using AWS CloudWatch and set up alerts for anomalies or failures.  
+- Conduct regular vulnerability scans and updates for container images and dependencies.  
+- Integrate automated testing, including security checks, into CI/CD pipelines to detect issues early in the development cycle.  
+- Ensure backups and disaster recovery plans are in place for critical systems to minimize downtime.  
+
+This approach ensures a robust, secure, and scalable environment for deployments.
+
+## Have you been involved in setting up continuous integration/continuous deployment (CI/CD) pipelines? If yes, describe your role and the tools and processes you used.
+
+Yes, I have been extensively involved in setting up CI/CD pipelines. In my role as a DevOps Engineer, I led the design and implementation of automated CI/CD pipelines using **Jenkins** and **GitLab CI/CD**.  
+
+My responsibilities included:  
+- Setting up **Jenkins** pipelines to automate build, test, and deployment processes, ensuring efficient code integration and delivery across multiple environments (development, QA, and production).  
+- Configuring **GitLab CI/CD** for seamless integration with version control and automating workflows for continuous integration and delivery.  
+- Integrating automated tests, including unit and security tests, into the pipeline to catch issues early.  
+- Managing deployment scripts and configurations, ensuring smooth rollouts across different platforms.  
+- Implementing version control with **Git** and ensuring that all configurations and pipeline scripts were stored and maintained in versioned repositories.  
+
+These efforts helped streamline development processes, improve deployment consistency, and reduce manual intervention, making our deployment cycles more reliable and efficient.
+
+## Describe a time when you had to collaborate with cross-functional teams to implement a DevOps solution. What challenges did you face, and how did you overcome them?
+
+In my previous role, I collaborated with cross-functional teams, including developers, QA engineers, and the Release Management team, to implement a Docker-based containerization solution for application deployments. The goal was to standardize environments across development, QA, and production to minimize deployment issues.
+
+One of the main challenges we faced was the initial resistance from developers who were unfamiliar with Docker and the changes it would bring to their workflow. To overcome this, I organized knowledge-sharing sessions and hands-on workshops to demonstrate Docker's benefits, such as consistent environments and faster deployments.  
+
+We also encountered issues with integrating Docker into the existing CI/CD pipeline. To resolve this, I worked closely with the Release Management team to update the Jenkins pipelines, ensuring smooth image builds and deployments.
+
+By maintaining clear communication, providing adequate training, and aligning everyone on the shared goal, we successfully implemented the solution, reducing deployment misalignments by 30% and improving team collaboration and efficiency.
+
+## What motivated you to pursue a career in DevOps, and what do you find most rewarding about working in this field?
+
+I’ve always been passionate about improving workflows and optimizing how systems perform, which is what drew me to DevOps. The idea of connecting development and operations really appealed to me because it allows me to make processes smoother, more automated, and ultimately more efficient.
+
+What I find most rewarding about DevOps is the direct impact it has on improving how teams work and how quickly and reliably software can be delivered. I love the challenge of constantly refining deployment pipelines, automating repetitive tasks, and ensuring systems scale efficiently. It’s incredibly satisfying to see how my efforts result in faster, more reliable releases, which helps the business run better and ultimately leads to a better experience for users.
+
+## How do you stay updated with the latest trends and best practices in DevOps and cloud technologies?
+
+To stay updated with the latest trends in DevOps and cloud technologies, I make it a habit to keep learning in different ways:
+
+- I regularly take online courses on platforms like Udemy and LinkedIn Learning to pick up new skills and tools.
+- I follow blogs and read articles on sites like AWS, DevOps.com, and Cloud Academy to keep up with what's trending in the industry.
+- I attend webinars and virtual events whenever I can, to learn from experts and get fresh perspectives.
+- I also keep my certifications up to date, like with AWS CloudFormation and CloudWatch, to make sure I’m familiar with the latest practices.
+- Engaging with communities on GitHub and following industry influencers on social media also helps me stay in the loop.
+
+All these methods help me stay current and make sure I'm always learning and adapting in this fast-paced field.
+
+## Please describe your experience with Amazon Web Services (AWS). Include details about any projects or tasks you have completed using AWS services. Additionally, highlight any AWS certifications you hold, if applicable.
+
+I have extensive experience working with **Amazon Web Services (AWS)**, particularly in areas such as infrastructure management, automation, and monitoring. Some of the key AWS services I’ve worked with include **EC2** for compute, **S3** for storage, **RDS** for database management, and **VPC** for networking and security.  
+
+In my role as a DevOps Engineer at NielsenIQ, I utilized **AWS CloudFormation** for Infrastructure as Code (IaC) to automate resource provisioning, which significantly reduced deployment times. I also integrated **AWS CloudWatch** for monitoring and setting up custom metrics and alarms to track system health and performance.  
+
+A notable project I worked on involved using **Terraform** to provision AWS resources, ensuring consistency across environments. Additionally, I automated the configuration and management of our infrastructure using **Ansible**, which improved efficiency by 20%.  
+
+I hold certifications such as **AWS CloudFormation for Beginners** and **Monitoring AWS with CloudWatch**, which have helped deepen my expertise in using AWS effectively for cloud infrastructure management.
+
+## Can you give me an example of maintenance of SQL ?
+
+One example of SQL maintenance I handled was optimizing database performance and ensuring data integrity. At NielsenIQ, I was responsible for maintaining a **Snowflake SQL** database, where I performed the following tasks:
+
+1. **Query Optimization**: I regularly reviewed and optimized slow-running queries by analyzing query execution plans and adding appropriate indexes to improve performance.
+2. **Database Backup & Restoration**: I set up automated backup schedules to ensure that critical data was backed up regularly and could be restored in case of failure.
+3. **Data Archiving**: To manage database size, I implemented an archiving process for older data, moving it to separate storage, thus keeping the active database performant.
+4. **Routine Health Checks**: I ran regular health checks to monitor for potential issues like deadlocks or fragmentation, and I took corrective actions like rebuilding indexes or updating statistics.
+5. **Security Updates**: I ensured that the database was regularly updated with the latest security patches to prevent vulnerabilities.
+
+This approach helped in maintaining smooth database operations, improving query performance, and ensuring data security and availability.
+
+## Any production issue you have faced? and what was the issue?
+
+Yes, we did face a production issue where one of our critical applications started experiencing significant downtime. The issue turned out to be a misalignment between the deployment images across different environments, causing discrepancies between development and production setups.
+
+To fix it, I dove into the deployment pipeline, reviewed the Docker configurations, and discovered that the images weren't being properly synced. I worked with the team to update the Jenkins pipeline, ensuring that the images were consistent across all environments. After testing the updated pipeline in staging, we redeployed to production, and the issue was resolved.  
+
+It was a bit of a challenge, but we managed to restore stability and prevent future deployment misalignments by improving the synchronization process.
+
+## Can you give me an example that you have collaborated with external team members to resolve one of the issues, and what was the issue?
+
+Sure! One time, I had to collaborate with an external team from our third-party service provider to resolve a performance issue we were facing in production. The application was experiencing slow response times, and we couldn’t pinpoint the problem internally.
+
+After some investigation, it became clear that the issue was related to how the third-party service was integrated with our system. I reached out to their team and worked with them to analyze the logs and debug the integration. Together, we discovered a bottleneck in the way data was being processed between our system and theirs.
+
+We then worked closely to adjust the configuration and optimize the integration. Once the changes were made and tested, we saw a significant improvement in performance. It was a great example of how cross-team collaboration helped resolve the issue and improve the overall system efficiency.
