@@ -88,23 +88,21 @@ By leveraging these version control systems, I ensured a smooth collaboration pr
 
 ## How good , you are with coding? Do you have any relevant experience?
 
-Here’s the updated response, with the changes you mentioned:
-
-"I have a strong coding foundation, particularly with Python and Shell scripting, which I’ve actively applied in my role as a DevOps Engineer at NielsenIQ India. My coding skills are focused on automating tasks, writing scripts for infrastructure management, and integrating tools within CI/CD pipelines.
+I have a strong coding foundation, particularly with Python and Shell scripting, which I’ve actively applied in my role as a DevOps Engineer at NielsenIQ India. My coding skills are focused on automating tasks, writing scripts for infrastructure management, and integrating tools within CI/CD pipelines.
 
 Here are some relevant examples of my coding experience:
 
-- **Python**: I have written numerous automation scripts in Python to manage cloud resources, automate repetitive tasks, and interact with APIs. This includes automating processes for cloud services like AWS and orchestrating system-level tasks to improve operational efficiency.
+- Python: Written many automation scripts using Python to manage cloud resources, automate repetitive tasks, and to interact with APIs. Automating processes in the Cloud for services such as AWS and orchestrating system-level tasks to increase the operational efficiency.
 
-- **Shell Scripting**: I’ve used Shell scripting extensively to automate system-level tasks such as managing Linux environments, configuring servers, and automating application deployments. These scripts have significantly reduced manual intervention and improved overall efficiency.
+- Shell Scripting: I’ve used Shell scripting extensively to automate system-level tasks such as managing Linux environments, configuring servers, and automating application deployments. These scripts have significantly reduced manual intervention and improved overall efficiency.
 
-- **CI/CD Pipelines**: I integrated Python and Shell scripts into Jenkins and GitLab CI/CD pipelines to automate build, test, and deployment processes. This coding experience helped optimize our pipelines, ensuring that code was automatically tested and deployed consistently.
+- CI/CD Pipelines: I incorporated Python and Shell scripts in Jenkins and GitLab CI/CD pipelines to automate the build, test, and deployment process. This coding experience optimized our pipelines by automatically testing and deploying the code in a consistent manner.
 
-- **Infrastructure as Code (IaC)**: With tools like Terraform and Ansible, I’ve written and managed configuration scripts to automate cloud infrastructure provisioning. This required precise coding to maintain syntax, logic, and versioning of infrastructure templates.
+- Infrastructure as Code (IaC): With tools like Terraform and Ansible, I’ve written and managed configuration scripts to automate cloud infrastructure provisioning. This required precise coding to maintain syntax, logic, and versioning of infrastructure templates.
 
-- **Snowflake SQL**: I have extensive experience writing and optimizing Snowflake SQL queries for data manipulation, reporting, and integration with other tools. This included crafting complex queries for data extraction, transformation, and loading (ETL), as well as optimizing query performance for large datasets.
+- Snowflake SQL: I have a long history of writing and optimizing Snowflake SQL queries for data manipulation, reporting, and integration with other tools. This included crafting complex queries for ETL, as well as optimizing query performance on large datasets.
 
-Overall, I have practical experience in coding, primarily focused on automation, infrastructure management, data handling, and DevOps processes. While my expertise lies in scripting and SQL, I continuously work to improve my coding skills in Python and other programming languages."
+Overall, I have hands-on experience in coding, mainly on automation, infrastructure management, data handling, and DevOps processes. My skills are basically in scripting and SQL; however, I am continually improving my coding skills with Python and other programming languages.
 
 ## What's your total experience of these 3 years?
 
@@ -284,3 +282,30 @@ Sure! One time, I had to collaborate with an external team from our third-party 
 After some investigation, it became clear that the issue was related to how the third-party service was integrated with our system. I reached out to their team and worked with them to analyze the logs and debug the integration. Together, we discovered a bottleneck in the way data was being processed between our system and theirs.
 
 We then worked closely to adjust the configuration and optimize the integration. Once the changes were made and tested, we saw a significant improvement in performance. It was a great example of how cross-team collaboration helped resolve the issue and improve the overall system efficiency.
+
+## In just a few words please tell us about your experience related to this position, and why you feel you'd be a great fit for us in this role?
+
+With over 2.5 years of experience as a DevOps Engineer, I’ve worked extensively with Kubernetes to manage and scale containerized applications effectively. I’ve successfully implemented Docker containerization across various environments and seamlessly integrated Kubernetes to ensure smooth workload orchestration, high availability, and scalability. From optimizing deployments to managing resources and troubleshooting Kubernetes clusters, I’ve ensured that operations run efficiently across development, QA, and production stages.
+
+I’ve also used AWS services like EC2, S3, RDS, and VPC to design and maintain reliable cloud infrastructure tailored for Kubernetes environments. By automating the provisioning and configuration of Kubernetes clusters with Terraform and Ansible, I’ve cut down setup times significantly while maintaining consistency. Using AWS CloudWatch, I’ve established robust monitoring and alerting systems for Kubernetes clusters, allowing for proactive issue resolution and enhanced system reliability.
+
+Beyond the technical side, I’ve optimized CI/CD pipelines with tools like Jenkins and GitLab, ensuring streamlined Kubernetes deployments with minimal errors. I’ve also mentored junior team members, helping them build expertise in Kubernetes and cloud technologies. My hands-on experience with scalable containerized applications and cloud infrastructure makes me confident that I can excel as a Cloud Engineer specializing in Kubernetes.
+
+## What is the reason for job change? 
+
+I am looking for a role that will allow me to further develop my expertise in cloud technologies, particularly Kubernetes and AWS, while taking on new challenges in a dynamic and growth-oriented environment. I look forward to contributing to innovative projects and expanding my skill set to align with my long-term career goals in cloud engineering and DevOps.
+
+## What is your availability to start in this position if selected?
+
+I have a notice period of 60 days and can join immediately after serving it.
+
+## Your message to the hiring manager
+
+Dear Hiring Manager,  
+
+I am excited to apply for the Cloud Engineer - Kubernetes position. With over 2.5 years of experience as a DevOps Engineer, I have a solid foundation in Kubernetes and Docker for containerization and orchestration, as well as Jenkins for CI/CD pipeline management. My expertise extends to AWS CloudFormation, CloudWatch, EC2, S3, VPCs, subnets, and load balancers, allowing me to design and implement secure, scalable cloud infrastructure. Additionally, I have hands-on experience with Terraform, Ansible, Snowflake SQL, and automation using Shell scripting and Python, enabling me to optimize workflows and boost efficiency.
+
+I am confident that my comprehensive skills in cloud technologies, containerization, automation, and monitoring will enable me to contribute effectively to your team. I look forward to the opportunity to discuss how my experience aligns with the goals of your organization.
+
+Best regards,  
+Jeevan Sai Kanaparthi
