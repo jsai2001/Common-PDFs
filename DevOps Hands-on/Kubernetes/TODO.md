@@ -116,3 +116,104 @@
 - [Kubernetes the Hard Way](https://github.com/kelseyhightower/kubernetes-the-hard-way)
 
 By following this structured approach and completing the hands-on exercises, you'll gain a solid understanding of Kubernetes and be well-prepared for interviews. Integrating Kubernetes with your current project will also demonstrate your ability to manage and deploy applications in a modern, containerized environment.
+
+## Day 1: Introduction to Kubernetes and Setting Up a Local Cluster
+
+**Objective:** Understand Kubernetes basics and set up a local Kubernetes cluster.
+
+**Tasks:**
+- Read about Kubernetes architecture and key components (Pods, Nodes, Services, Deployments).
+- Install Minikube or Kind on your local machine.
+- Deploy a simple application (e.g., Nginx) using Kubernetes manifests (YAML files).
+- Verify the deployment and access the application.
+
+## Day 2: Setting Up a Kubernetes Cluster on AWS (EKS)
+
+**Objective:** Set up a managed Kubernetes cluster on AWS using EKS.
+
+**Tasks:**
+- Read about Amazon EKS and its benefits.
+- Create an EKS cluster using the AWS Management Console or AWS CLI.
+- Install and configure kubectl to interact with your EKS cluster.
+- Deploy a sample application to the EKS cluster.
+
+## Day 3: Deploying Applications on Kubernetes
+
+**Objective:** Deploy your current project (e.g., static website) to the Kubernetes cluster.
+
+**Tasks:**
+- Create Kubernetes manifests for your application (Deployment, Service).
+- Deploy the application to your EKS cluster.
+- Verify the deployment and access the application.
+
+## Day 4: Configuring Networking in Kubernetes
+
+**Objective:** Set up Services and Ingress to expose your application.
+
+**Tasks:**
+- Create a Service to expose your application (ClusterIP, NodePort, LoadBalancer).
+- Set up an Ingress controller (e.g., Nginx Ingress) and create an Ingress resource.
+- Configure DNS within the cluster using CoreDNS.
+
+## Day 5: Managing Storage in Kubernetes
+
+**Objective:** Set up persistent storage for stateful applications.
+
+**Tasks:**
+- Read about Persistent Volumes (PVs) and Persistent Volume Claims (PVCs).
+- Create a PV and PVC using AWS EBS (Elastic Block Store).
+- Deploy a stateful application (e.g., MySQL) that uses the persistent storage.
+
+## Day 6: Scaling Applications in Kubernetes
+
+**Objective:** Implement autoscaling for your application.
+
+**Tasks:**
+- Read about Horizontal Pod Autoscaler (HPA) and Cluster Autoscaler.
+- Configure HPA to scale your application based on CPU/memory usage.
+- Set up Cluster Autoscaler to automatically adjust the number of nodes in your cluster.
+
+## Day 7: Setting Up Monitoring and Logging
+
+**Objective:** Monitor and log your Kubernetes cluster and applications.
+
+**Tasks:**
+- Deploy Prometheus and Grafana for monitoring.
+- Set up the EFK stack (Elasticsearch, Fluentd, Kibana) for logging.
+- Create dashboards and alerts in Grafana.
+
+## Day 8: Securing Your Cluster
+
+**Objective:** Implement security best practices in your Kubernetes cluster.
+
+**Tasks:**
+- Read about Role-Based Access Control (RBAC) and Network Policies.
+- Implement RBAC to manage permissions.
+- Use Network Policies to control traffic between Pods.
+- Secure sensitive information using Secrets.
+
+## Day 9: Integrating CI/CD
+
+**Objective:** Automate the deployment of your application using a CI/CD pipeline.
+
+**Tasks:**
+- Set up a CI/CD pipeline using Jenkins, GitLab CI, or GitHub Actions.
+- Automate the build, test, and deployment process for your application.
+- Deploy the application to your Kubernetes cluster as part of the CI/CD pipeline.
+
+## Day 10: Exploring Advanced Topics
+
+**Objective:** Learn about advanced Kubernetes topics and tools.
+
+**Tasks:**
+- Read about Helm and its benefits for package management.
+- Use Helm to manage your application deployments.
+- Learn about Kubernetes Operators and their use cases.
+- Explore Service Mesh (e.g., Istio) for advanced networking and observability.
+
+# Resources
+
+- [Kubernetes Documentation](https://kubernetes.io/docs/)
+- [Amazon EKS Documentation](https://docs.aws.amazon.com/eks/)
+- [Kubernetes Hands-On Labs](https://www.katacoda.com/courses/kubernetes)
+- [Kubernetes the Hard Way](https://github.com/kelseyhightower/kubernetes-the-hard-way)
