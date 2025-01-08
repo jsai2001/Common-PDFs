@@ -542,3 +542,175 @@ After the cluster is created, you can use various `aws ec2 describe` commands to
 By running the `eksctl create cluster` command, you will create an EKS cluster with the specified configuration. You can then use the AWS CLI commands to verify the creation of various resources such as VPCs, subnets, Internet Gateways, NAT Gateways, Route Tables, Elastic IPs, Security Groups, AutoScaling Groups, and Load Balancers.
 
 This approach ensures that you have a comprehensive view of all the resources created by `eksctl` for your EKS cluster.
+
+When you create an EKS cluster using `eksctl` without specifying the AMI (Amazon Machine Image) type, `eksctl` defaults to using the Amazon EKS-optimized Amazon Linux 2 AMI for the node group. This is the recommended AMI for EKS nodes as it is optimized for performance and security.
+
+## Creating an EKS Cluster with Default Node Group
+
+Here is the command to create an EKS cluster with a node group using the default Amazon Linux 2 AMI:
+
+```sh
+eksctl create cluster --name=my-cluster --region=ap-south-1 --node-type=t3.small --nodes=2 --nodes-min=1 --nodes-max=3 --managed --spot --asg-access
+```
+
+### Explanation of the Command
+
+- `--name=my-cluster`: Specifies the name of the EKS cluster.
+- `--region=ap-south-1`: Specifies the AWS region where the cluster will be created.
+- `--node-type=t3.small`: Specifies the EC2 instance type for the nodes.
+- `--nodes=2`: Specifies the desired number of nodes in the node group.
+- `--nodes-min=1`: Specifies the minimum number of nodes in the node group.
+- `--nodes-max=3`: Specifies the maximum number of nodes in the node group.
+- `--managed`: Specifies that the node group should be a managed node group.
+- `--spot`: Specifies that the node group should use spot instances.
+- `--asg-access`: Grants the necessary IAM permissions for the Auto Scaling Group.
+
+## Verifying the Node Group
+
+After creating the cluster, you can verify the node group using the AWS CLI:
+
+```sh
+aws eks describe-nodegroup --cluster-name my-cluster --nodegroup-name ng-1 --region ap-south-1
+```
+
+### Example Output
+
+The output will show details about the node group, including the AMI type:
+
+```json
+{
+    "nodegroup": {
+        "nodegroupName": "ng-1",
+        "nodegroupArn": "arn:aws:eks:ap-south-1:123456789012:nodegroup/my-cluster/ng-1/abcd1234-5678-90ef-ghij-klmnopqrstuv",
+        "clusterName": "my-cluster",
+        "version": "1.21",
+        "releaseVersion": "1.21.2-20210901",
+        "createdAt": "2021-09-01T12:34:56.789Z",
+        "status": "ACTIVE",
+        "capacityType": "SPOT",
+        "scalingConfig": {
+            "minSize": 1,
+            "maxSize": 3,
+            "desiredSize": 2
+        },
+        "instanceTypes": [
+            "t3.small"
+        ],
+        "subnets": [
+            "subnet-12345678",
+            "subnet-23456789",
+            "subnet-34567890"
+        ],
+        "amiType": "AL2_x86_64",  // Amazon Linux 2 AMI
+        "nodeRole": "arn:aws:iam::123456789012:role/eksctl-my-cluster-nodegroup-ng-1-NodeInstanceRole-1A2B3C4D5E6F",
+        "labels": {
+            "alpha.eksctl.io/cluster-name": "my-cluster",
+            "alpha.eksctl.io/nodegroup-name": "ng-1"
+        },
+        "tags": {
+            "eksctl.cluster.k8s.io/v1alpha1/cluster-name": "my-cluster",
+            "eksctl.io/v1alpha2/nodegroup-name": "ng-1"
+        }
+    }
+}
+```
+
+## Summary
+
+When you create an EKS cluster using `eksctl` without specifying the AMI type, it defaults to using the Amazon EKS-optimized Amazon Linux 2 AMI for the node group. This ensures that the nodes are optimized for performance and security. You can verify the node group and its configuration using the AWS CLI.
+
+When you create an EKS cluster using `eksctl`, it uses AWS CloudFormation under the hood to provision and manage the necessary AWS resources. `eksctl` generates CloudFormation templates and deploys them to create and configure the EKS cluster and its associated resources.
+
+## How CloudFormation Stacks Are Created and Triggered by `eksctl`
+
+1. **Generate CloudFormation Templates**: `eksctl` generates CloudFormation templates based on the configuration specified in the `eksctl create cluster` command or configuration file.
+2. **Deploy CloudFormation Stacks**: `eksctl` deploys these CloudFormation templates to create the required AWS resources.
+3. **Manage Resources**: The CloudFormation stacks manage the lifecycle of the resources, ensuring they are created, updated, and deleted as needed.
+
+## Steps to Create an EKS Cluster and View CloudFormation Stacks
+
+### 1. Create an EKS Cluster Using `eksctl`
+
+Run the following command to create an EKS cluster:
+
+```sh
+eksctl create cluster --name=my-cluster --region=ap-south-1 --node-type=t3.small --nodes=2 --nodes-min=1 --nodes-max=3 --managed --spot --asg-access
+```
+
+### 2. View CloudFormation Stacks in the AWS Management Console
+
+Open the CloudFormation Console:
+
+- Go to the AWS CloudFormation Console.
+
+#### View Stacks:
+
+You will see multiple stacks created by `eksctl`. These stacks typically include:
+
+- A stack for the EKS cluster control plane.
+- A stack for the VPC and networking resources.
+- A stack for the node group(s).
+
+#### Stack Names:
+
+The stack names usually follow a pattern like `eksctl-my-cluster-cluster`, `eksctl-my-cluster-nodegroup-ng-1`, etc.
+
+### 3. Describe CloudFormation Stacks Using AWS CLI
+
+You can also use the AWS CLI to describe the CloudFormation stacks:
+
+```sh
+# List all CloudFormation stacks
+aws cloudformation list-stacks --region ap-south-1
+
+# Describe a specific stack
+aws cloudformation describe-stacks --stack-name eksctl-my-cluster-cluster --region ap-south-1
+```
+
+#### Example Output
+
+The output will show details about the CloudFormation stack, including the resources it manages:
+
+```json
+{
+    "Stacks": [
+        {
+            "StackId": "arn:aws:cloudformation:ap-south-1:123456789012:stack/eksctl-my-cluster-cluster/abcd1234-5678-90ef-ghij-klmnopqrstuv",
+            "StackName": "eksctl-my-cluster-cluster",
+            "Description": "EKS cluster stack",
+            "Parameters": [
+                {
+                    "ParameterKey": "ClusterName",
+                    "ParameterValue": "my-cluster"
+                },
+                {
+                    "ParameterKey": "VpcId",
+                    "ParameterValue": "vpc-12345678"
+                }
+            ],
+            "CreationTime": "2021-09-01T12:34:56.789Z",
+            "StackStatus": "CREATE_COMPLETE",
+            "StackResources": [
+                {
+                    "LogicalResourceId": "ControlPlane",
+                    "PhysicalResourceId": "arn:aws:eks:ap-south-1:123456789012:cluster/my-cluster",
+                    "ResourceType": "AWS::EKS::Cluster",
+                    "Timestamp": "2021-09-01T12:34:56.789Z",
+                    "ResourceStatus": "CREATE_COMPLETE"
+                },
+                {
+                    "LogicalResourceId": "Vpc",
+                    "PhysicalResourceId": "vpc-12345678",
+                    "ResourceType": "AWS::EC2::VPC",
+                    "Timestamp": "2021-09-01T12:34:56.789Z",
+                    "ResourceStatus": "CREATE_COMPLETE"
+                }
+            ]
+        }
+    ]
+}
+```
+
+## Summary
+
+When you create an EKS cluster using `eksctl`, it generates and deploys CloudFormation templates to provision and manage the necessary AWS resources. You can view and manage these CloudFormation stacks using the AWS Management Console or AWS CLI. This approach ensures that all resources are created and managed in a consistent and automated manner.
