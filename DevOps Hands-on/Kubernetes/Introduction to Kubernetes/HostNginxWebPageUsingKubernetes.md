@@ -162,7 +162,7 @@ Look for the `EXTERNAL-IP` field in the output. This is the public IP address of
 ```sh
 $ kubectl get service nginx-service
 NAME            TYPE           CLUSTER-IP       EXTERNAL-IP                                                              PORT(S)        AGE
-nginx-service   LoadBalancer   10.100.200.100   a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6-1234567890.us-west-2.elb.amazonaws.com   80:31234/TCP   5m
+nginx-service   LoadBalancer   10.100.200.100   a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6-1234567890.ap-south-1.elb.amazonaws.com   80:31234/TCP   5m
 ```
 
 Open a web browser and navigate to the `EXTERNAL-IP` address to see the Nginx welcome page.
@@ -298,13 +298,13 @@ This will create a cluster in your default region with default parameters like t
 **Specify Name and Region:**
 
 ```bash
-eksctl create cluster --name=my-cluster --region=us-west-2
+eksctl create cluster --name=my-cluster --region=ap-south-1
 ```
 
 **Specify Node Type and Count:**
 
 ```bash
-eksctl create cluster --name=my-cluster --region=us-west-2 --node-type=t3.medium --nodes=3 --nodes-min=2 --nodes-max=4
+eksctl create cluster --name=my-cluster --region=ap-south-1 --node-type=t3.medium --nodes=3 --nodes-min=2 --nodes-max=4
 ```
 
 **Using YAML Configuration:**
@@ -316,7 +316,7 @@ apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 metadata:
   name: my-cluster
-  region: us-west-2
+  region: ap-south-1
 nodeGroups:
   - name: ng-1
     instanceType: m5.large
@@ -340,7 +340,7 @@ kubectl get nodes
 **Delete Cluster:** If you need to delete the cluster later:
 
 ```bash
-eksctl delete cluster --name=my-cluster --region=us-west-2
+eksctl delete cluster --name=my-cluster --region=ap-south-1
 ```
 
 **References:**
@@ -394,3 +394,151 @@ After all operations, the `kubeconfig` file is saved, allowing interaction with 
 The process concludes with a message indicating the EKS cluster `kube-cluster-demo` has been created, and suggests using `kubectl` commands to interact with the cluster.
 
 This detailed process showcases the complexity of setting up a Kubernetes cluster on AWS using eksctl, involving AWS services like EC2, VPC, CloudFormation, and Kubernetes components. Each step ensures the cluster is properly configured with the right networking, scaling, and node management settings.
+
+When you run the `eksctl create cluster` command, `eksctl` automates the creation of several AWS resources necessary for a fully functional EKS cluster. Here is a comprehensive list of the resources typically created by `eksctl`:
+
+### 1. VPC (Virtual Private Cloud)
+- **VPC**: A new VPC is created to host the EKS cluster.
+
+### 2. Subnets
+- **Public Subnets**: Typically, three public subnets are created, one in each of three different availability zones (if available).
+- **Private Subnets**: Similarly, three private subnets are created, one in each of three different availability zones (if available).
+
+### 3. Internet Gateway
+- **Internet Gateway**: An Internet Gateway is attached to the VPC to allow internet access for resources in the public subnets.
+
+### 4. NAT Gateway
+- **NAT Gateway**: One or more NAT Gateways are created in the public subnets to allow instances in the private subnets to access the internet.
+
+### 5. Route Tables
+- **Public Route Table**: Routes traffic to the Internet Gateway.
+- **Private Route Table**: Routes traffic to the NAT Gateway.
+
+### 6. Elastic IPs
+- **Elastic IPs**: Elastic IPs are allocated for the NAT Gateways.
+
+### 7. Security Groups
+- **Security Groups**: Security Groups are created to control inbound and outbound traffic for the EKS cluster and its nodes.
+
+### 8. IAM Roles and Policies
+- **IAM Roles**: IAM roles are created for the EKS cluster control plane and worker nodes.
+- **IAM Policies**: Necessary IAM policies are attached to the IAM roles to grant required permissions.
+
+### 9. EKS Cluster
+- **EKS Cluster**: The EKS cluster itself is created, which includes the control plane.
+
+### 10. Node Groups
+- **Managed Node Groups**: One or more managed node groups are created, which include the EC2 instances (worker nodes) that run the Kubernetes workloads.
+
+### 11. AutoScaling Groups
+- **AutoScaling Groups**: AutoScaling Groups are created to manage the EC2 instances in the node groups, ensuring the desired number of instances are running and can scale up or down based on demand.
+
+### 12. Load Balancers
+- **Load Balancers**: When you create a Kubernetes Service of type `LoadBalancer`, AWS automatically provisions an Elastic Load Balancer (ELB) to distribute traffic to your application.
+
+### 13. EKS Add-ons
+- **EKS Add-ons**: Depending on the configuration, `eksctl` may also install and configure EKS add-ons such as the VPC CNI plugin, CoreDNS, and kube-proxy.
+
+### Summary of Resources Created by `eksctl create cluster`
+
+- **VPC**
+- **Public Subnets** (typically 3)
+- **Private Subnets** (typically 3)
+- **Internet Gateway**
+- **NAT Gateway**
+- **Route Tables** (public and private)
+- **Elastic IPs** (for NAT Gateways)
+- **Security Groups**
+- **IAM Roles and Policies**
+- **EKS Cluster**
+- **Managed Node Groups**
+- **AutoScaling Groups**
+- **Load Balancers** (when creating a Service of type `LoadBalancer`)
+- **EKS Add-ons** (e.g., VPC CNI plugin, CoreDNS, kube-proxy)
+
+These resources ensure that your EKS cluster is properly networked, secured, and scalable, providing a robust environment for running your Kubernetes workloads on AWS.
+
+To create an EKS cluster with `eksctl` and verify all the created resources using AWS CLI, follow these steps:
+
+### Step 1: Create the EKS Cluster
+Use the `eksctl create cluster` command to create the EKS cluster with the desired configuration:
+
+```sh
+eksctl create cluster --name=my-cluster --region=ap-south-1 --node-type=t3.small --nodes=2 --nodes-min=1 --nodes-max=3 --managed --spot --asg-access
+```
+
+### Step 2: Verify the Created Resources
+After the cluster is created, you can use various `aws ec2 describe` commands to verify the resources.
+
+1. **Describe VPCs**
+
+    ```sh
+    aws ec2 describe-vpcs --region ap-south-1
+    ```
+
+2. **Describe Subnets**
+    First, get the VPC ID associated with your cluster:
+
+    ```sh
+    VPC_ID=$(aws ec2 describe-vpcs --region ap-south-1 --query 'Vpcs[?Tags[?Key==`alpha.eksctl.io/cluster-name` && Value==`my-cluster`]].VpcId' --output text)
+    ```
+
+    Then, describe the subnets in the VPC:
+
+    ```sh
+    aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" --region ap-south-1
+    ```
+
+3. **Describe Internet Gateways**
+
+    ```sh
+    aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=$VPC_ID" --region ap-south-1
+    ```
+
+4. **Describe NAT Gateways**
+
+    ```sh
+    aws ec2 describe-nat-gateways --filter "Name=vpc-id,Values=$VPC_ID" --region ap-south-1
+    ```
+
+5. **Describe Route Tables**
+
+    ```sh
+    aws ec2 describe-route-tables --filters "Name=vpc-id,Values=$VPC_ID" --region ap-south-1
+    ```
+
+6. **Describe Elastic IPs**
+
+    ```sh
+    aws ec2 describe-addresses --region ap-south-1
+    ```
+
+7. **Describe Security Groups**
+
+    ```sh
+    aws ec2 describe-security-groups --filters "Name=vpc-id,Values=$VPC_ID" --region ap-south-1
+    ```
+
+8. **Describe AutoScaling Groups**
+
+    ```sh
+    aws autoscaling describe-auto-scaling-groups --region ap-south-1
+    ```
+
+9. **Describe Load Balancers**
+    For Classic Load Balancers (ELB):
+
+    ```sh
+    aws elb describe-load-balancers --region ap-south-1
+    ```
+
+    For Application Load Balancers (ALB) and Network Load Balancers (NLB):
+
+    ```sh
+    aws elbv2 describe-load-balancers --region ap-south-1
+    ```
+
+### Summary
+By running the `eksctl create cluster` command, you will create an EKS cluster with the specified configuration. You can then use the AWS CLI commands to verify the creation of various resources such as VPCs, subnets, Internet Gateways, NAT Gateways, Route Tables, Elastic IPs, Security Groups, AutoScaling Groups, and Load Balancers.
+
+This approach ensures that you have a comprehensive view of all the resources created by `eksctl` for your EKS cluster.
