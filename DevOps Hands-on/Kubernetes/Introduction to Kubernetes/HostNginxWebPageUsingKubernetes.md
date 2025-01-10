@@ -36,7 +36,7 @@ Follow the instructions to install `eksctl` for your operating system: [eksctl I
 **Create an EKS Cluster:**
 
 ```sh
-eksctl create cluster --name=my-cluster --region=ap-south-1 --node-type=t3.small --nodes=3 --nodes-min=2 --nodes-max=4
+eksctl create cluster --name=cluster-demo --region=ap-south-1 --node-type=t3.small --nodes=3 --nodes-min=2 --nodes-max=4
 ```
 
 ### Create an EKS Cluster with Cost-Effective Settings
@@ -44,7 +44,7 @@ eksctl create cluster --name=my-cluster --region=ap-south-1 --node-type=t3.small
 **Create a Cluster Using Cost-Effective Instance Types and Spot Instances:**
 
 ```sh
-eksctl create cluster --name=my-cluster --region=ap-south-1 --node-type=t3.small --nodes=2 --nodes-min=1 --nodes-max=3 --managed --spot --asg-access
+eksctl create cluster --name=cluster-demo --region=ap-south-1 --node-type=t3.small --nodes=2 --nodes-min=1 --nodes-max=3 --managed --spot --asg-access
 ```
 
 * `--asg-access` allows for better integration with Auto Scaling groups for fine-tuned resource management.
@@ -57,7 +57,7 @@ Create a YAML file (`cluster-config.yaml`) with your cluster configuration:
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 metadata:
-  name: my-cluster
+  name: cluster-demo
   region: ap-south-1
 nodeGroups:
   - name: ng-1
@@ -78,6 +78,20 @@ nodeGroups:
       withAddonPolicies:
         autoScaler: true
 ```
+
+### List all EKS clusters
+
+```bash
+aws eks list-clusters
+```
+
+### Benefits of Using Multiple Instance Types
+
+**Cost Optimization:** By specifying multiple instance types, you can take advantage of spot instances, which can be significantly cheaper than on-demand instances. If one instance type is not available at a lower price, another instance type can be used.
+
+**Availability:** Specifying multiple instance types increases the chances of finding available instances, especially in regions with high demand.
+
+**Flexibility:** It allows the node group to use different instance types based on availability and pricing, providing more flexibility in managing the cluster.
 
 **Apply the Configuration:**
 
@@ -166,6 +180,72 @@ nginx-service   LoadBalancer   10.100.200.100   a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
 ```
 
 Open a web browser and navigate to the `EXTERNAL-IP` address to see the Nginx welcome page.
+
+# AWS Resources Created by eksctl
+
+## VPC (Virtual Private Cloud)
+
+- **1 VPC**
+
+## Subnets
+
+- **3 Public Subnets** (one in each of three different availability zones, if available)
+- **3 Private Subnets** (one in each of three different availability zones, if available)
+
+## Internet Gateway
+
+- **1 Internet Gateway**
+
+## NAT Gateway
+
+- **1 or more NAT Gateways** (typically one per public subnet) (In our case , it's 1)
+
+## Route Tables
+
+- **1 Public Route Table** (routes traffic to the Internet Gateway)(Attached 3 Public Subnets internally)
+- **1 or more Private Route Tables** (routes traffic to the NAT Gateway)(In our case , we have 3 Private Route Tables , targetting to NAT Gateway)
+
+## Elastic IPs
+
+- **1 or more Elastic IPs** (for the NAT Gateways) (In our case , it's only one)
+
+## Security Groups
+
+- Security Groups for the EKS cluster control plane
+- Security Groups for the worker nodes
+
+### Different Security Groups that are created
+
+- **ControlPlaneSecurityGroup:** Communication between the control plane and worker nodegroups
+- **ClusterSharedNodeSecurityGroup:** Communication between all nodes in the cluster
+- **nodegroup-ng-1:** Communication between the control plane and worker nodes in group ng-1
+- **k8s-elb:** Security group for Kubernetes ELB (default/nginx-service)
+- **eks-cluster-sg:** EKS created security group applied to ENI that is attached to EKS Control Plane master nodes, as well as any managed workloads.
+
+## IAM Roles and Policies
+
+- IAM Role for the EKS cluster control plane
+  - AmazonEKSClusterPolicy
+  - AmazonEKSVPCResourceController
+- IAM Role for the worker nodes (node groups)
+  - AmazonEC2ContainerRegistryReadOnly
+  - AmazonEKS_CNI_Policy
+  - AmazonEKSWorkerNodePolicy
+  - AmazonSSMManagedInstanceCore
+
+- IAM Policies attached to the IAM Roles
+
+## EKS Cluster
+
+- **1 EKS Cluster** (control plane)
+
+## Node Groups
+
+- **1 or more Managed Node Groups** (with EC2 instances as worker nodes)
+
+## AutoScaling Groups
+
+- **1 or more AutoScaling Groups** (to manage the EC2 instances in the node groups) (In our case, 2 instances is desired , one is minimum and 3 is maximum)
 
 ## Summary
 
@@ -298,13 +378,13 @@ This will create a cluster in your default region with default parameters like t
 **Specify Name and Region:**
 
 ```bash
-eksctl create cluster --name=my-cluster --region=ap-south-1
+eksctl create cluster --name=cluster-demo --region=ap-south-1
 ```
 
 **Specify Node Type and Count:**
 
 ```bash
-eksctl create cluster --name=my-cluster --region=ap-south-1 --node-type=t3.medium --nodes=3 --nodes-min=2 --nodes-max=4
+eksctl create cluster --name=cluster-demo --region=ap-south-1 --node-type=t3.medium --nodes=3 --nodes-min=2 --nodes-max=4
 ```
 
 **Using YAML Configuration:**
@@ -315,7 +395,7 @@ Create a YAML file (e.g., `cluster.yaml`) with your cluster configuration:
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 metadata:
-  name: my-cluster
+  name: cluster-demo
   region: ap-south-1
 nodeGroups:
   - name: ng-1
@@ -340,7 +420,7 @@ kubectl get nodes
 **Delete Cluster:** If you need to delete the cluster later:
 
 ```bash
-eksctl delete cluster --name=my-cluster --region=ap-south-1
+eksctl delete cluster --name=cluster-demo --region=ap-south-1
 ```
 
 **References:**
@@ -464,7 +544,7 @@ To create an EKS cluster with `eksctl` and verify all the created resources usin
 Use the `eksctl create cluster` command to create the EKS cluster with the desired configuration:
 
 ```sh
-eksctl create cluster --name=my-cluster --region=ap-south-1 --node-type=t3.small --nodes=2 --nodes-min=1 --nodes-max=3 --managed --spot --asg-access
+eksctl create cluster --name=cluster-demo --region=ap-south-1 --node-type=t3.small --nodes=2 --nodes-min=1 --nodes-max=3 --managed --spot --asg-access
 ```
 
 ### Step 2: Verify the Created Resources
@@ -480,7 +560,7 @@ After the cluster is created, you can use various `aws ec2 describe` commands to
     First, get the VPC ID associated with your cluster:
 
     ```sh
-    VPC_ID=$(aws ec2 describe-vpcs --region ap-south-1 --query 'Vpcs[?Tags[?Key==`alpha.eksctl.io/cluster-name` && Value==`my-cluster`]].VpcId' --output text)
+    VPC_ID=$(aws ec2 describe-vpcs --region ap-south-1 --query 'Vpcs[?Tags[?Key==`alpha.eksctl.io/cluster-name` && Value==`cluster-demo`]].VpcId' --output text)
     ```
 
     Then, describe the subnets in the VPC:
@@ -550,12 +630,12 @@ When you create an EKS cluster using `eksctl` without specifying the AMI (Amazon
 Here is the command to create an EKS cluster with a node group using the default Amazon Linux 2 AMI:
 
 ```sh
-eksctl create cluster --name=my-cluster --region=ap-south-1 --node-type=t3.small --nodes=2 --nodes-min=1 --nodes-max=3 --managed --spot --asg-access
+eksctl create cluster --name=cluster-demo --region=ap-south-1 --node-type=t3.small --nodes=2 --nodes-min=1 --nodes-max=3 --managed --spot --asg-access
 ```
 
 ### Explanation of the Command
 
-- `--name=my-cluster`: Specifies the name of the EKS cluster.
+- `--name=cluster-demo`: Specifies the name of the EKS cluster.
 - `--region=ap-south-1`: Specifies the AWS region where the cluster will be created.
 - `--node-type=t3.small`: Specifies the EC2 instance type for the nodes.
 - `--nodes=2`: Specifies the desired number of nodes in the node group.
@@ -570,7 +650,7 @@ eksctl create cluster --name=my-cluster --region=ap-south-1 --node-type=t3.small
 After creating the cluster, you can verify the node group using the AWS CLI:
 
 ```sh
-aws eks describe-nodegroup --cluster-name my-cluster --nodegroup-name ng-1 --region ap-south-1
+aws eks describe-nodegroup --cluster-name cluster-demo --nodegroup-name ng-1 --region ap-south-1
 ```
 
 ### Example Output
@@ -581,8 +661,8 @@ The output will show details about the node group, including the AMI type:
 {
     "nodegroup": {
         "nodegroupName": "ng-1",
-        "nodegroupArn": "arn:aws:eks:ap-south-1:123456789012:nodegroup/my-cluster/ng-1/abcd1234-5678-90ef-ghij-klmnopqrstuv",
-        "clusterName": "my-cluster",
+        "nodegroupArn": "arn:aws:eks:ap-south-1:123456789012:nodegroup/cluster-demo/ng-1/abcd1234-5678-90ef-ghij-klmnopqrstuv",
+        "clusterName": "cluster-demo",
         "version": "1.21",
         "releaseVersion": "1.21.2-20210901",
         "createdAt": "2021-09-01T12:34:56.789Z",
@@ -602,13 +682,13 @@ The output will show details about the node group, including the AMI type:
             "subnet-34567890"
         ],
         "amiType": "AL2_x86_64",  // Amazon Linux 2 AMI
-        "nodeRole": "arn:aws:iam::123456789012:role/eksctl-my-cluster-nodegroup-ng-1-NodeInstanceRole-1A2B3C4D5E6F",
+        "nodeRole": "arn:aws:iam::123456789012:role/eksctl-cluster-demo-nodegroup-ng-1-NodeInstanceRole-1A2B3C4D5E6F",
         "labels": {
-            "alpha.eksctl.io/cluster-name": "my-cluster",
+            "alpha.eksctl.io/cluster-name": "cluster-demo",
             "alpha.eksctl.io/nodegroup-name": "ng-1"
         },
         "tags": {
-            "eksctl.cluster.k8s.io/v1alpha1/cluster-name": "my-cluster",
+            "eksctl.cluster.k8s.io/v1alpha1/cluster-name": "cluster-demo",
             "eksctl.io/v1alpha2/nodegroup-name": "ng-1"
         }
     }
@@ -634,7 +714,7 @@ When you create an EKS cluster using `eksctl`, it uses AWS CloudFormation under 
 Run the following command to create an EKS cluster:
 
 ```sh
-eksctl create cluster --name=my-cluster --region=ap-south-1 --node-type=t3.small --nodes=2 --nodes-min=1 --nodes-max=3 --managed --spot --asg-access
+eksctl create cluster --name=cluster-demo --region=ap-south-1 --node-type=t3.small --nodes=2 --nodes-min=1 --nodes-max=3 --managed --spot --asg-access
 ```
 
 ### 2. View CloudFormation Stacks in the AWS Management Console
@@ -653,7 +733,7 @@ You will see multiple stacks created by `eksctl`. These stacks typically include
 
 #### Stack Names:
 
-The stack names usually follow a pattern like `eksctl-my-cluster-cluster`, `eksctl-my-cluster-nodegroup-ng-1`, etc.
+The stack names usually follow a pattern like `eksctl-cluster-demo-cluster`, `eksctl-cluster-demo-nodegroup-ng-1`, etc.
 
 ### 3. Describe CloudFormation Stacks Using AWS CLI
 
@@ -664,7 +744,7 @@ You can also use the AWS CLI to describe the CloudFormation stacks:
 aws cloudformation list-stacks --region ap-south-1
 
 # Describe a specific stack
-aws cloudformation describe-stacks --stack-name eksctl-my-cluster-cluster --region ap-south-1
+aws cloudformation describe-stacks --stack-name eksctl-cluster-demo-cluster --region ap-south-1
 ```
 
 #### Example Output
@@ -675,13 +755,13 @@ The output will show details about the CloudFormation stack, including the resou
 {
     "Stacks": [
         {
-            "StackId": "arn:aws:cloudformation:ap-south-1:123456789012:stack/eksctl-my-cluster-cluster/abcd1234-5678-90ef-ghij-klmnopqrstuv",
-            "StackName": "eksctl-my-cluster-cluster",
+            "StackId": "arn:aws:cloudformation:ap-south-1:123456789012:stack/eksctl-cluster-demo-cluster/abcd1234-5678-90ef-ghij-klmnopqrstuv",
+            "StackName": "eksctl-cluster-demo-cluster",
             "Description": "EKS cluster stack",
             "Parameters": [
                 {
                     "ParameterKey": "ClusterName",
-                    "ParameterValue": "my-cluster"
+                    "ParameterValue": "cluster-demo"
                 },
                 {
                     "ParameterKey": "VpcId",
@@ -693,7 +773,7 @@ The output will show details about the CloudFormation stack, including the resou
             "StackResources": [
                 {
                     "LogicalResourceId": "ControlPlane",
-                    "PhysicalResourceId": "arn:aws:eks:ap-south-1:123456789012:cluster/my-cluster",
+                    "PhysicalResourceId": "arn:aws:eks:ap-south-1:123456789012:cluster/cluster-demo",
                     "ResourceType": "AWS::EKS::Cluster",
                     "Timestamp": "2021-09-01T12:34:56.789Z",
                     "ResourceStatus": "CREATE_COMPLETE"
@@ -714,3 +794,144 @@ The output will show details about the CloudFormation stack, including the resou
 ## Summary
 
 When you create an EKS cluster using `eksctl`, it generates and deploys CloudFormation templates to provision and manage the necessary AWS resources. You can view and manage these CloudFormation stacks using the AWS Management Console or AWS CLI. This approach ensures that all resources are created and managed in a consistent and automated manner.
+
+```bash
+Dell@DESKTOP-7ASPC74 MINGW64 ~/Common-PDFs/DevOps Hands-on/Kubernetes/Introduction to Kubernetes (main)
+$ kubectl get nodes
+NAME                                            STATUS   ROLES    AGE   VERSION
+ip-192-168-17-245.ap-south-1.compute.internal   Ready    <none>   79m   v1.30.7-eks-59bf375
+ip-192-168-94-150.ap-south-1.compute.internal   Ready    <none>   79m   v1.30.7-eks-59bf375
+
+Dell@DESKTOP-7ASPC74 MINGW64 ~/Common-PDFs/DevOps Hands-on/Kubernetes/Introduction to Kubernetes (main)
+$ kubectl get deployments
+NAME               READY   UP-TO-DATE   AVAILABLE   AGE
+nginx-deployment   2/2     2            2           74m
+
+Dell@DESKTOP-7ASPC74 MINGW64 ~/Common-PDFs/DevOps Hands-on/Kubernetes/Introduction to Kubernetes (main)
+$ kubectl get services
+NAME            TYPE           CLUSTER-IP       EXTERNAL-IP                                                             PORT(S)        AGE
+kubernetes      ClusterIP      10.100.0.1       <none>                                                                  443/TCP        86m
+nginx-service   LoadBalancer   10.100.218.201   ae53203884da04e27b53b50ff1d87e07-5426425.ap-south-1.elb.amazonaws.com   80:30349/TCP   74m
+
+Dell@DESKTOP-7ASPC74 MINGW64 ~/Common-PDFs/DevOps Hands-on/Kubernetes/Introduction to Kubernetes (main)
+$ kubectl get pods
+NAME                               READY   STATUS    RESTARTS   AGE
+nginx-deployment-576c6b7b6-8r6xp   1/1     Running   0          75m
+nginx-deployment-576c6b7b6-lfvml   1/1     Running   0          75m
+```
+
+## Example Commands to Verify Resources
+
+### Verify EKS Cluster and Node Groups
+
+```sh
+aws eks describe-cluster --name cluster-demo --region ap-south-1
+aws eks list-nodegroups --cluster-name cluster-demo --region ap-south-1
+```
+
+### Verify Kubernetes Resources
+
+```sh
+kubectl get nodes
+kubectl get deployments
+kubectl get services
+kubectl get pods
+```
+
+### Verify AWS Resources
+
+```sh
+VPC_ID=$(aws ec2 describe-vpcs --region ap-south-1 --query 'Vpcs[?Tags[?Key==`alpha.eksctl.io/cluster-name` && Value==`cluster-demo`]].VpcId' --output text)
+
+aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" --region ap-south-1
+aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=$VPC_ID" --region ap-south-1
+aws ec2 describe-nat-gateways --filter "Name=vpc-id,Values=$VPC_ID" --region ap-south-1
+aws ec2 describe-route-tables --filters "Name=vpc-id,Values=$VPC_ID" --region ap-south-1
+aws ec2 describe-addresses --region ap-south-1
+aws ec2 describe-security-groups --filters "Name=vpc-id,Values=$VPC_ID" --region ap-south-1
+aws autoscaling describe-auto-scaling-groups --region ap-south-1
+aws elbv2 describe-load-balancers --region ap-south-1
+```
+
+### Summary
+
+By using the `eksctl create cluster` command and deploying an application using Kubernetes manifests, you create several important Kubernetes and AWS resources. You can verify these resources using AWS CLI commands and `kubectl` commands to ensure that your EKS cluster and its associated resources are properly set up and functioning.
+
+### Kubernetes Architecture Diagram
+
+              +------------------+
+              |  Kubernetes API  |
+              |      Server      |
+              +--------+---------+
+                       |
+                       |
+                       v
+              +--------+---------+
+              |   etcd (Storage) |
+              +--------+---------+
+                       |
+                       |
+                       v
+              +------------------+
+              |  Controller      |
+              |    Manager       |
+              +------------------+
+                       |
+                       |
+                       v
+              +------------------+
+              |  Scheduler       |
+              +------------------+
+                       |
+                       |
+                       v
+              +------------------+
+              |  Kubelet         |
+              |  (on each node)  |
+              +--------+---------+
+                       |
+                       |
+                       v
+              +------------------+
+              |  Container       |
+              |    Runtime       |
+              +------------------+
+
+
+**Explanation:**
+
+- **Kubernetes API Server**: The front-end for the Kubernetes control plane. It exposes the Kubernetes API, which is used by external users, different parts of the cluster, and the cluster components to interact with Kubernetes.
+
+- **etcd**: A distributed key-value store used by Kubernetes to store all cluster data.
+
+- **Controller Manager**: Runs controller processes which handle routine tasks in the cluster, like node, replication, or endpoint controllers.
+
+- **Scheduler**: Watches for newly created pods with no node assigned, and selects a node for them to run on based on resource requirements, hardware/software policy constraints, affinity specifications, and more.
+
+- **Kubelet**: An agent that runs on each node in the cluster. It ensures that containers are running in a pod.
+
+- **Container Runtime**: The software responsible for running containers. Docker, containerd, CRI-O are examples of container runtimes.
+
+Please note, this is a simplified diagram. Kubernetes architecture can be more complex with additional components like add-ons (like DNS, Dashboards), networking plugins, etc.
+
+
+**Components:**
+
+- **Developer**: Interacts with the Kubernetes cluster via the API Server.
+- **Master Node**:
+  - **API Server**: The front end for the Kubernetes control plane.
+  - **Key Value Store (etcd)**: Stores all cluster data.
+  - **Controllers**: Manages the state of the cluster.
+  - **Scheduler**: Assigns newly created pods to nodes.
+- **Worker Node**:
+  - **Kubelet**: Ensures that containers are running in a pod.
+  - **Container Runtime (Docker)**: Runs the containers.
+  - **Network Proxy (kube-proxy)**: Maintains network rules on nodes.
+  - **Pod**: Represents a single instance of a running process in your cluster, which can contain one or more containers.
+- **Optional Add-Ons**: Can include DNS, UI, etc.
+
+**Interaction:**
+- Developers interact with the API Server to manage the cluster.
+- Users interact with the services provided by the pods on worker nodes.
+
+Please note, this is a simplified textual representation and does not capture the visual layout or color coding of the original diagram. If you would like to see an image next time, you can ask for it, but currently, I cannot generate images due to the attached image in this request.
