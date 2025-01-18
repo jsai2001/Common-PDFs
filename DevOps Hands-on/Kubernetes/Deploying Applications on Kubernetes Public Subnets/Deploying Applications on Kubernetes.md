@@ -713,3 +713,97 @@ This Terraform configuration sets up an EKS cluster with the necessary networkin
 - A node group is created for the EKS cluster with the specified IAM role, subnets, and instance types.
 
 The `map_public_ip_on_launch` attribute in the subnet configuration ensures that instances launched in these subnets are assigned public IP addresses, which is important for internet connectivity. This allows the nodes to communicate with the EKS control plane and other internet resources.
+
+In the provided Terraform configuration, the EKS cluster and its node group are created within the subnets defined by the `aws_subnet` resource. These subnets are configured to be public subnets because they have the `map_public_ip_on_launch` attribute set to `true`, which ensures that instances launched in these subnets are assigned public IP addresses.
+
+### Subnet Configuration
+
+```hcl
+resource "aws_subnet" "eks_subnet" {
+    count                   = 3
+    vpc_id                  = aws_vpc.eks_vpc.id
+    cidr_block              = cidrsubnet(aws_vpc.eks_vpc.cidr_block, 8, count.index)
+    availability_zone       = element(data.aws_availability_zones.available.names, count.index)
+    map_public_ip_on_launch = true
+}
+```
+
+### Explanation
+
+**Public Subnets:** The subnets created by the `aws_subnet` resource are public subnets because they have `map_public_ip_on_launch` set to `true`. This means that any instances (including EKS worker nodes) launched in these subnets will be assigned public IP addresses, allowing them to communicate with the internet.
+
+### Hosting Nginx
+
+When you deploy the Nginx application using the Kubernetes Deployment and Service YAML files, the pods running Nginx will be scheduled on the EKS worker nodes. Since the worker nodes are launched in the public subnets, the Nginx pods will effectively be hosted on instances within these public subnets.
+
+### Summary
+
+- **Subnets:** The EKS cluster and its node group are created within the public subnets defined by the `aws_subnet` resource.
+- **Public IPs:** The `map_public_ip_on_launch` attribute ensures that instances in these subnets have public IP addresses.
+- **Nginx Hosting:** The Nginx application is hosted on EKS worker nodes, which are instances within these public subnets.
+
+Therefore, the Nginx application is indeed hosted on instances within the public subnets created by the Terraform configuration.
+
+In a production-level architecture for applications, here's how frontend and backend components are typically hosted regarding public and private subnets:
+
+### Frontend (Client-side Application):
+**Public Subnets:**
+The frontend is generally hosted in public subnets because it needs to be directly accessible by users over the internet. This includes:
+- Web servers or load balancers that serve static content like HTML, CSS, and JavaScript.
+- CDN endpoints which distribute content closer to the end-user for better performance.
+- Security might be managed through tools like AWS CloudFront (for AWS) or similar services which act as reverse proxies, adding an extra layer of security like WAF (Web Application Firewall).
+
+### Backend (Server-side Application):
+**Private Subnets:**
+Backend services, including application servers, databases, and other critical infrastructure, are typically placed in private subnets. This setup:
+- Reduces exposure to the internet, enhancing security.
+- Uses Network Address Translation (NAT) gateways or instances for internet access when needed for updates or external API calls.
+- Employs private link services or VPC endpoints to communicate securely with AWS services or other cloud services without traversing the public internet.
+
+### Access from the Frontend to the Backend:
+- **Load Balancers:** Placed in public subnets, they forward traffic to backend services in private subnets.
+- **API Gateways:** For managing, securing, and routing API requests.
+
+### Additional Considerations:
+- **Security Groups and Network ACLs:** Control what traffic is allowed into the subnets, ensuring only the necessary communications are permitted between frontend, backend, and external services.
+- **Bastion Hosts/Jump Servers:** For secure management access to resources in private subnets without exposing them to the internet.
+
+This architecture helps maintain security by limiting external access to only what's necessary while still allowing for high availability and performance of the application. Remember, specifics can vary based on the exact requirements of your application, regulatory compliance needs, and the cloud provider's features.
+
+### Clarification on Load Balancers and Bastion Hosts:
+
+**Load Balancers:**
+- **Purpose:** Used to distribute incoming application traffic across multiple backend servers (in private subnets) to ensure no single server becomes a bottleneck, enhancing scalability, reliability, and performance.
+- **For End Users:** When an end user interacts with an application, their requests first hit the load balancer in a public subnet. The load balancer then forwards this traffic to backend services in the private subnet. The end user does not directly connect to the backend resources; they only see the load balancer's public IP or DNS name.
+
+**Bastion Hosts (Jump Servers):**
+- **Purpose:** Specifically designed for secure administrative access to instances or resources in private subnets. They act as an intermediary for SSH or RDP connections, providing a controlled and secure entry point into the network for management purposes.
+- **For End Users:** End users do not use bastion hosts to access application services. Bastion hosts are for administrators or DevOps personnel to securely manage or troubleshoot backend resources without exposing those resources directly to the internet.
+
+### Typical Workflow:
+
+**End User to Application Frontend:**
+- Users connect to the load balancer in a public subnet, which then routes their requests to the appropriate frontend server (which might also be in a public subnet for serving static content) or directly to backend services if the frontend is minimal (e.g., a single-page application where the backend serves dynamic content).
+
+**End User to Backend Services (via Application Logic):**
+- The actual data flow or API calls from the frontend to the backend go through the load balancer. The load balancer routes these requests to backend servers in private subnets. Here, no bastion host is involved; the load balancer acts as the gateway for application traffic.
+
+**Administrative Access:**
+- If an administrator or DevOps team needs to access backend resources like databases or application servers for management, they would connect through a bastion host. This is not part of the normal application traffic flow but is for infrastructure management.
+
+### Summary:
+For normal application use, end users interact with services through load balancers, not bastion hosts. Bastion hosts are used for secure administrative access to resources in private subnets, not for user application traffic.
+
+**For Application Use:**
+- When an end user is using the application, and the backend (like a database or application server) needs to be accessed as part of the application logic (e.g., to fetch or update data), the communication is managed through a load balancer. The load balancer sits in a public subnet and routes requests to backend services in private subnets. The user's interaction with the backend is abstracted through the application's frontend or API, all managed by the load balancer.
+
+**For Infrastructure Management:**
+- If you're talking about direct manipulation of the backend infrastructure, like adding new tables to a database, updating server configurations, or deploying new code directly to backend services, this is where a bastion host comes into play:
+    - A bastion host (or jump server) provides a secure way for administrators or DevOps personnel to access resources in private subnets for management tasks.
+    - You would connect to the bastion host first, typically via SSH or RDP, and then from there, you would access the backend resources. This ensures that these management activities don't expose the backend directly to the internet, enhancing security.
+
+This dual approach helps in maintaining both the operational security and performance of the application:
+- **Load Balancers** ensure that the application remains scalable and available for end-users by distributing traffic, handling SSL termination, and routing requests to the appropriate backend instances.
+- **Bastion Hosts** ensure that administrative tasks can be performed securely, keeping the management plane separate from the data plane used by end-users.
+
+This architecture follows best practices for security by limiting exposure while allowing necessary access for both users and administrators.
