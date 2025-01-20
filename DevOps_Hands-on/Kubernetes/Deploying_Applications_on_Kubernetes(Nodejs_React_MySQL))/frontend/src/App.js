@@ -6,8 +6,16 @@ function App() {
 
   useEffect(() => {
     fetch('http://backend-service:3000/items')  // Ensure this URL is correct
-      .then(response => response.json())
-      .then(data => setData(data))
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Fetched data:', data);  // Log fetched data
+        setData(data);
+      })
       .catch(error => console.error('Error fetching data:', error));
   }, []);
 
