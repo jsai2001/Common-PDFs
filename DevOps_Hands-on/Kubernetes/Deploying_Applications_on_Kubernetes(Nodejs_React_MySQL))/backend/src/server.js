@@ -4,8 +4,13 @@ const cors = require('cors');  // Import the cors middleware
 const app = express();
 const port = 3000;
 
-// Enable CORS for all routes
-app.use(cors());
+// Configure CORS to allow requests from your specific origin
+const corsOptions = {
+  origin: 'http://a0adad441938045918257721b7310b1b-2060406325.ap-south-1.elb.amazonaws.com',
+  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+}
+
+app.use(cors(corsOptions));
 
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
