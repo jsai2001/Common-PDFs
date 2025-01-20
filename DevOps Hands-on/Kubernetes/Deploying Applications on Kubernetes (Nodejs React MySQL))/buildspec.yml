@@ -6,7 +6,7 @@ phases:
       docker: 19
     commands:
       - echo Logging in to Docker Hub...
-      - echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+      - echo "Kanna@123" | docker login -u "jeevan2001" --password-stdin
   pre_build:
     commands:
       - echo Build started on `date`
@@ -14,15 +14,15 @@ phases:
   build:
     commands:
       - cd backend
-      - docker build -t your-dockerhub-username/backend:latest .
+      - docker build -t jeevan2001/backend:latest .
       - cd ../frontend
-      - docker build -t your-dockerhub-username/frontend:latest .
+      - docker build -t jeevan2001/frontend:latest .
   post_build:
     commands:
       - echo Build completed on `date`
       - echo Pushing the Docker images...
-      - docker push your-dockerhub-username/backend:latest
-      - docker push your-dockerhub-username/frontend:latest
+      - docker push jeevan2001/backend:latest
+      - docker push jeevan2001/frontend:latest
 artifacts:
   files:
     - '**/*'
