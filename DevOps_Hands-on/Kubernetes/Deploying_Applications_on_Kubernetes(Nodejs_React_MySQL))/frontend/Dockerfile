@@ -8,7 +8,9 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 # Clear npm cache and install dependencies
-RUN npm cache clean --force && npm ci
+RUN npm cache clean --force && npm install
+
+RUN npm ci
 
 # Copy local code to the container image.
 COPY . .
