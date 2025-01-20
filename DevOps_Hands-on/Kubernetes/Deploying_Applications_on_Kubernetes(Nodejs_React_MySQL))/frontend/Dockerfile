@@ -1,5 +1,5 @@
 # Use the official Node.js image
-FROM node:14
+FROM node:14 as build
 
 # Create and change to the app directory
 WORKDIR /usr/src/app
@@ -18,11 +18,14 @@ COPY . .
 # Build the app
 RUN npm run build
 
-# Install serve to serve the build
-RUN npm install -g serve
+# Stage 2: Serve the built application using Nginx
+FROM nginx:alpine
 
-# Expose the port the app runs on
-EXPOSE 5000
+# Copy the build output from the previous stage to the Nginx html directory
+COPY --from=build /usr/src/app/build /usr/share/nginx/html
 
-# Run the web service on container startup.
-CMD [ "serve", "-s", "build" ]
+# Expose the port Nginx will serve on
+EXPOSE 80
+
+# Run Nginx
+CMD ["nginx", "-g", "daemon off;"]
