@@ -2,8 +2,6 @@ version: 0.2
 
 phases:
   install:
-    runtime-versions:
-      docker: 19
     commands:
       - echo Logging in to Docker Hub...
       - echo "Kanna@123" | docker login -u "jeevan2001" --password-stdin
