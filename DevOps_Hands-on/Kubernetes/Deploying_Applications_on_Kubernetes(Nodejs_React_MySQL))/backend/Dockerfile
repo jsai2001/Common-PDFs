@@ -10,7 +10,7 @@ COPY package*.json ./
 # Clear npm cache and install dependencies
 RUN npm cache clean --force && npm install 
 
-RUN npm ci
+RUN npm ci && npm audit fix
 
 # Copy local code to the container image.
 COPY . .
