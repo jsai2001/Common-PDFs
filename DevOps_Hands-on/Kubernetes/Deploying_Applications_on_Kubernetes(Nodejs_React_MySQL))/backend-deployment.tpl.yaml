@@ -1,47 +1,46 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-    name: backend-deployment
+  name: backend
 spec:
-    replicas: 2
-    selector:
-        matchLabels:
-            app: backend
-    template:
-        metadata:
-            labels:
-                app: backend
-        spec:
-            initContainers:
-            - name: init-mysql
-                image: mysql:8.0
-                env:
-                - name: MYSQL_ROOT_PASSWORD
-                    value: "password"
-                - name: DB_HOST
-                    value: "${db_host}"
-                volumeMounts:
-                - name: init-sql
-                    mountPath: /docker-entrypoint-initdb.d
-                command: [ "sh", "-c", "mysql -h ${DB_HOST} -u admin -p${MYSQL_ROOT_PASSWORD} < /docker-entrypoint-initdb.d/init.sql" ]
-            containers:
-            - name: backend
-                image: jeevan2001/backend:latest
-                ports:
-                - containerPort: 3000
-                env:
-                - name: DB_HOST
-                    value: "${db_host}"
-                - name: DB_USER
-                    value: "admin"
-                - name: DB_PASSWORD
-                    value: "password"
-                - name: DB_NAME
-                    value: "mydatabase"
-            volumes:
-            - name: init-sql
-                configMap:
-                    name: init-sql-configmap
-                    items:
-                    - key: init.sql
-                        path: init.sql
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      initContainers:
+      - name: init-mysql
+        image: mysql:8.0
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_ROOT_PASSWORD
+        - name: DB_HOST
+          value: "${db_host}"
+        volumeMounts:
+        - name: init-sql
+          mountPath: /docker-entrypoint-initdb.d
+        command: [ "sh", "-c", "mysql -h ${db_host} -u admin -p${mysql_root_password} < /docker-entrypoint-initdb.d/init.sql" ]
+      containers:
+      - name: backend
+        image: jeevan2001/backend:latest
+        env:
+        - name: DB_HOST
+          value: "${db_host}"
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_ROOT_PASSWORD
+        ports:
+        - containerPort: 3000
+      volumes:
+      - name: init-sql
+        configMap:
+          name: init-sql-config
