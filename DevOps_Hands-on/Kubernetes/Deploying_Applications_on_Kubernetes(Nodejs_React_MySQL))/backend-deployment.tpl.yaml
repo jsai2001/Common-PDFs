@@ -26,7 +26,7 @@ spec:
                 command: [ "sh", "-c", "mysql -h ${DB_HOST} -u admin -p${MYSQL_ROOT_PASSWORD} < /docker-entrypoint-initdb.d/init.sql" ]
             containers:
             - name: backend
-                image: your-dockerhub-username/backend:latest
+                image: jeevan2001/backend:latest
                 ports:
                 - containerPort: 3000
                 env:

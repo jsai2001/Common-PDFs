@@ -1048,3 +1048,196 @@ This `main.tf` file sets up the necessary AWS infrastructure, including:
 - **Template Files**: Generates Kubernetes deployment YAML files with the correct RDS endpoint.
 
 By following these steps, you will have a complete setup where the frontend application interacts with the backend, the backend connects to the RDS instance, and the necessary table and sample data are created in the database automatically.
+
+Here is a step-by-step guide to set up AWS CodeBuild for your project, including how to configure it, create the necessary files, and ensure everything works correctly.
+
+## Step 1: Ensure Correct `package.json` Files
+
+Ensure that your `package.json` files for both the frontend and backend are correctly set up.
+
+### Backend `package.json`
+
+```json
+{
+    "name": "backend",
+    "version": "1.0.0",
+    "description": "Node.js backend for the demo application",
+    "main": "src/server.js",
+    "scripts": {
+      "start": "node src/server.js"
+    },
+    "dependencies": {
+      "express": "^4.17.1",
+      "mysql": "^2.18.1"
+    }
+  }
+```
+
+### Frontend `package.json`
+
+```json
+{
+    "name": "frontend",
+    "version": "1.0.0",
+    "description": "React frontend for the demo application",
+    "main": "src/index.js",
+    "scripts": {
+      "start": "react-scripts start",
+      "build": "react-scripts build",
+      "test": "react-scripts test",
+      "eject": "react-scripts eject"
+    },
+    "dependencies": {
+      "react": "^17.0.2",
+      "react-dom": "^17.0.2",
+      "react-scripts": "^5.0.1"
+    }
+  }
+```
+
+If you are not running `npm install` locally and want to handle everything within the Dockerfile during the AWS CodeBuild process, you need to ensure that the Dockerfile is correctly set up to handle the installation of dependencies and the generation of the `package-lock.json` file.
+
+## Updated Dockerfile for Backend
+
+Here is the updated Dockerfile for the backend application:
+
+```dockerfile
+# Use the official Node.js image
+FROM node:14
+
+# Create and change to the app directory
+WORKDIR /usr/src/app
+
+# Copy application dependency manifests to the container image.
+COPY package*.json ./
+
+# Clear npm cache and install dependencies
+RUN npm cache clean --force && npm install 
+
+RUN npm ci && npm audit fix
+
+# Copy local code to the container image.
+COPY . .
+
+# Expose the port the app runs on
+EXPOSE 3000
+
+# Run the web service on container startup.
+CMD [ "node", "src/server.js" ]
+```
+
+## Updated Dockerfile for Frontend
+
+Here is the updated Dockerfile for the frontend application:
+
+```dockerfile
+# Use the official Node.js image
+FROM node:14
+
+# Create and change to the app directory
+WORKDIR /usr/src/app
+
+# Copy application dependency manifests to the container image.
+COPY package*.json ./
+
+# Clear npm cache and install dependencies
+RUN npm cache clean --force && npm install
+
+RUN npm ci && npm audit fix
+
+# Copy local code to the container image.
+COPY . .
+
+# Build the app
+RUN npm run build
+
+# Install serve to serve the build
+RUN npm install -g serve
+
+# Expose the port the app runs on
+EXPOSE 5000
+
+# Run the web service on container startup.
+CMD [ "serve", "-s", "build" ]
+```
+
+## Example `buildspec.yml`
+
+Ensure your `buildspec.yml` file is correctly set up to handle the build process.
+
+```yaml
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo Logging in to Docker Hub...
+      - echo "Kanna@123" | docker login -u "jeevan2001" --password-stdin
+  pre_build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker images...
+  build:
+    commands:
+      - cd "DevOps_Hands-on/Kubernetes/Deploying_Applications_on_Kubernetes(Nodejs_React_MySQL))/backend"
+      - docker build -t jeevan2001/backend:latest .
+      - cd ../frontend
+      - docker build -t jeevan2001/frontend:latest .
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push jeevan2001/backend:latest
+      - docker push jeevan2001/frontend:latest
+artifacts:
+  files:
+    - '**/*'
+```
+
+## Setting Environment Variables in AWS CodeBuild
+
+### Create or Edit the CodeBuild Project:
+
+1. Go to the AWS Management Console.
+2. Navigate to CodeBuild.
+3. If you haven't created a project yet, click on "Create build project". If you already have a project, click on the project name to edit it.
+
+### Configure Environment Variables:
+
+1. In the "Environment" section of the project configuration, find the "Environment variables" subsection.
+2. Add the following environment variables:
+     - `DOCKER_USERNAME`: Your Docker Hub username.
+     - `DOCKER_PASSWORD`: Your Docker Hub password.
+
+### Example Configuration
+
+#### Create a CodeBuild Project:
+
+- **Project Name**: Enter a name for your project.
+- **Source**: Choose the source provider (e.g., GitHub) and connect your repository.
+- **Environment**:
+    - **Environment Image**: Use a managed image.
+    - **Operating System**: Ubuntu.
+    - **Runtime**: Standard.
+    - **Image**: `aws/codebuild/standard:5.0`.
+    - **Service Role**: Create a new service role or use an existing one.
+- **Buildspec**:
+    - Choose "Use a buildspec file".
+    - Ensure the `buildspec.yml` file is in the root of your repository.
+- **Environment Variables**:
+    - Add environment variables for Docker Hub credentials:
+        - `DOCKER_USERNAME`: Your Docker Hub username.
+        - `DOCKER_PASSWORD`: Your Docker Hub password.
+
+#### Example:
+
+- `DOCKER_USERNAME`: your-dockerhub-username
+- `DOCKER_PASSWORD`: your-dockerhub-password
+
+### Create the Project:
+
+Click on "Create build project".
+
+## Summary
+
+By ensuring that the Dockerfiles are correctly set up to handle the installation of dependencies and the generation of the `package-lock.json` file, you can manage the entire build process within AWS CodeBuild. The `buildspec.yml` file defines the build commands and environment for CodeBuild. Once the images are built and pushed to Docker Hub, you can update your Kubernetes manifests to use these images and deploy the applications to your Kubernetes cluster.
