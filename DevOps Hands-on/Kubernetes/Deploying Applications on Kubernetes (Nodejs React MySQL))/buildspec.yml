@@ -1,0 +1,28 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      docker: 19
+    commands:
+      - echo Logging in to Docker Hub...
+      - echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+  pre_build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker images...
+  build:
+    commands:
+      - cd backend
+      - docker build -t your-dockerhub-username/backend:latest .
+      - cd ../frontend
+      - docker build -t your-dockerhub-username/frontend:latest .
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push your-dockerhub-username/backend:latest
+      - docker push your-dockerhub-username/frontend:latest
+artifacts:
+  files:
+    - '**/*'
