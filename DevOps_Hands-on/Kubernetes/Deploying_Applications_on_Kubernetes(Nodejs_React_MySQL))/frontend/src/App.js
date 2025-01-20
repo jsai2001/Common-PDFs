@@ -5,8 +5,10 @@ function App() {
   const [data, setData] = useState([]);
 
   useEffect(() => {
+    console.log('Fetching data from backend...');
     fetch('http://backend-service:3000/items')  // Ensure this URL is correct
       .then(response => {
+        console.log('Received response:', response);
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
