@@ -251,17 +251,35 @@ resource "local_file" "website_content_configmap" {
   filename = "${path.module}/website-content-configmap.yaml"
 }
 
+variable "mysql_root_password" {
+  description = "The password for the MySQL root user"
+  type        = string
+  default     = "password"  # Assign a default value or provide it during terraform apply
+}
+
+locals {
+  db_host     = aws_db_instance.mydb.endpoint
+  db_hostname = regex("^(.*):", local.db_host)[0]
+  db_port     = regex(":(.*)$", local.db_host)[0]
+  mysql_root_password_base64 = base64encode("password")
+}
+
 data "template_file" "backend_deployment" {
   template = file("${path.module}/backend-deployment.tpl.yaml")
   vars = {
-    db_host = aws_db_instance.mydb.endpoint
-    mysql_root_password = "password"
+    db_host = local.db_hostname
+    db_port = local.db_port
+    MYSQL_ROOT_PASSWORD = local.mysql_root_password_base64
   }
 }
 
 resource "local_file" "backend_deployment" {
   content  = data.template_file.backend_deployment.rendered
   filename = "${path.module}/backend-deployment.yaml"
+}
+
+output "db_endpoint" {
+  value = aws_db_instance.mydb.endpoint
 }
 
 resource "kubernetes_config_map" "init_sql_config" {

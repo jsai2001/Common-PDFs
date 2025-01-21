@@ -22,18 +22,21 @@ spec:
               name: mysql-secret
               key: MYSQL_ROOT_PASSWORD
         - name: DB_HOST
-          value: "terraform-20250120121943617600000009.c5o4csuyg3zb.ap-south-1.rds.amazonaws.com"
+          value: "terraform-20250121051749295800000008.c5o4csuyg3zb.ap-south-1.rds.amazonaws.com"
+        - name: DB_PORT
+          value: "3306"
         volumeMounts:
         - name: init-sql
           mountPath: /docker-entrypoint-initdb.d
-        command: [ "sh", "-c", "mysql -h ${DB_HOST} -P 3306 -u admin -p${MYSQL_ROOT_PASSWORD} < /docker-entrypoint-initdb.d/init.sql" ]
+        command: [ "sh", "-c", "mysql -h terraform-20250121051749295800000008.c5o4csuyg3zb.ap-south-1.rds.amazonaws.com -P 3306 -u admin -pcGFzc3dvcmQ= < /docker-entrypoint-initdb.d/init.sql" ]
       containers:
       - name: backend
         image: jeevan2001/backend:latest
-        imagePullPolicy: Always
         env:
         - name: DB_HOST
-          value: "terraform-20250120121943617600000009.c5o4csuyg3zb.ap-south-1.rds.amazonaws.com"
+          value: "terraform-20250121051749295800000008.c5o4csuyg3zb.ap-south-1.rds.amazonaws.com"
+        - name: DB_PORT
+          value: "3306"
         - name: MYSQL_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
