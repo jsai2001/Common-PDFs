@@ -20,6 +20,8 @@ git add src/App.js
 git commit -m "Update App.js with Backend LoadBalancer DNS"
 git push origin main
 
+sleep 240
+
 cd $CURR_DIR
 
 # Apply frontend configurations
