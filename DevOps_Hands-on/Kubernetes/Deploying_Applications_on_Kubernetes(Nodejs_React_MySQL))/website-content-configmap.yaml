@@ -12,7 +12,7 @@ data:
     <body>
       <h1>Welcome to the Static Website</h1>
       <p>This website is served by an Nginx server running in a Kubernetes cluster.</p>
-      <p>Database Host: http://terraform-20250121051749295800000008.c5o4csuyg3zb.ap-south-1.rds.amazonaws.com:3306</p>
-      <a href="http://terraform-20250121051749295800000008.c5o4csuyg3zb.ap-south-1.rds.amazonaws.com:3306">RDS Endpoint</a>
+      <p>Database Host: http://terraform-20250121081643879900000008.c5o4csuyg3zb.ap-south-1.rds.amazonaws.com:3306</p>
+      <a href="http://terraform-20250121081643879900000008.c5o4csuyg3zb.ap-south-1.rds.amazonaws.com:3306">RDS Endpoint</a>
     </body>
     </html>

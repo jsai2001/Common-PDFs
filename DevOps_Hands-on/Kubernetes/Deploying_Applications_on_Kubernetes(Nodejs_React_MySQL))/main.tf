@@ -261,7 +261,7 @@ locals {
   db_host     = aws_db_instance.mydb.endpoint
   db_hostname = regex("^(.*):", local.db_host)[0]
   db_port     = regex(":(.*)$", local.db_host)[0]
-  mysql_root_password_base64 = base64encode("password")
+  mysql_root_password = "password"
 }
 
 data "template_file" "backend_deployment" {
@@ -269,7 +269,7 @@ data "template_file" "backend_deployment" {
   vars = {
     db_host = local.db_hostname
     db_port = local.db_port
-    MYSQL_ROOT_PASSWORD = local.mysql_root_password_base64
+    MYSQL_ROOT_PASSWORD = local.mysql_root_password
   }
 }
 
