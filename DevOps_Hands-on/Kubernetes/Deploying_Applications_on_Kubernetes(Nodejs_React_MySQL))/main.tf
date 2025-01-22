@@ -120,7 +120,7 @@ resource "aws_db_instance" "mydb" {
   storage_type           = "gp2"
   engine                 = "mysql"
   engine_version         = "8.0"
-  instance_class         = "db.t3.micro"
+  instance_class         = "db.t2.micro"
   db_name                = "mydatabase"
   username               = "admin"
   password               = "password"
@@ -217,12 +217,12 @@ resource "aws_eks_node_group" "my_node_group" {
   subnet_ids      = aws_subnet.eks_private_subnet[*].id
 
   scaling_config {
-    desired_size = 2
+    desired_size = 1
     max_size     = 3
     min_size     = 1
   }
 
-  instance_types = ["t3.medium"]
+  instance_types = ["t3.micro"]
 
   remote_access {
     ec2_ssh_key = "my-key"  # Ensure this key pair exists in your AWS account
