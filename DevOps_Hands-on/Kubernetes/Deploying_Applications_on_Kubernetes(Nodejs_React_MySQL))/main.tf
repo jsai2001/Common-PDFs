@@ -120,7 +120,7 @@ resource "aws_db_instance" "mydb" {
   storage_type           = "gp2"
   engine                 = "mysql"
   engine_version         = "8.0"
-  instance_class         = "db.t2.micro"
+  instance_class         = "db.t3.micro"
   db_name                = "mydatabase"
   username               = "admin"
   password               = "password"
@@ -222,7 +222,7 @@ resource "aws_eks_node_group" "my_node_group" {
     min_size     = 1
   }
 
-  instance_types = ["t3.micro"]
+  instance_types = ["t3.small"]
 
   remote_access {
     ec2_ssh_key = "my-key"  # Ensure this key pair exists in your AWS account

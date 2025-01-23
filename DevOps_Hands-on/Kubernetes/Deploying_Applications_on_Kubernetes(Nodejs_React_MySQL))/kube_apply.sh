@@ -9,6 +9,9 @@ CURR_DIR=$(pwd)
 export BACKEND_LOADBALANCER_DNS=$(kubectl get service backend-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 echo "Backend LoadBalancer DNS: $BACKEND_LOADBALANCER_DNS"
 
+# export BACKEND_LOADBALANCER_DNS=$(kubectl get service backend-service -o jsonpath='{.spec.clusterIP}')
+# echo "Backend LoadBalancer DNS: $BACKEND_LOADBALANCER_DNS"
+
 # Replace placeholder in App.js.temp and create App.js
 sed "s|BACKEND_LOADBALANCER_DNS|$BACKEND_LOADBALANCER_DNS|g" "C:/Users/Dell/Common-PDFs/DevOps_Hands-on/Kubernetes/Deploying_Applications_on_Kubernetes(Nodejs_React_MySQL))/frontend/src/App.js.temp" > "C:/Users/Dell/Common-PDFs/DevOps_Hands-on/Kubernetes/Deploying_Applications_on_Kubernetes(Nodejs_React_MySQL))/frontend/src/App.js"
 
