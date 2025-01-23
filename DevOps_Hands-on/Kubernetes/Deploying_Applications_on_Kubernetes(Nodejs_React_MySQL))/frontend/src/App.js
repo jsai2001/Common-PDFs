@@ -6,7 +6,7 @@ function App() {
 
   useEffect(() => {
     console.log('Fetching data from backend...');
-    fetch('http://:3000/items')  // Ensure this URL is correct
+    fetch('http://terraform-20250123140753979500000001.c5o4csuyg3zb.ap-south-1.rds.amazonaws.com:3000/items')  // Ensure this URL is correct
       .then(response => {
         console.log('Received response:', response);
         if (!response.ok) {
