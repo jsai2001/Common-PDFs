@@ -6,7 +6,7 @@ function App() {
 
   useEffect(() => {
     console.log('Fetching data from backend...');
-    fetch('http://172.20.98.197:3000/items')  // Ensure this URL is correct
+    fetch('http://localhost:3000/items')  // Ensure this URL is correct
       .then(response => {
         console.log('Received response:', response);
         if (!response.ok) {
