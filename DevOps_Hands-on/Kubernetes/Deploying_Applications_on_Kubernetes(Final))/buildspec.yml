@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo Logging in to Docker Hub...
+      - echo "Kanna@123" | docker login -u "jeevan2001" --password-stdin
+  pre_build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker images...
+  build:
+    commands:
+      - cd "DevOps_Hands-on/Kubernetes/Deploying_Applications_on_Kubernetes(Nodejs_React_MySQL))/backend"
+      - docker build -t jeevan2001/backend:latest .
+      - cd ../frontend
+      - docker build -t jeevan2001/frontend:latest .
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push jeevan2001/backend:latest
+      - docker push jeevan2001/frontend:latest
+artifacts:
+  files:
+    - '**/*'

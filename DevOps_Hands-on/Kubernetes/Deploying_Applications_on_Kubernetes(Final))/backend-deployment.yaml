@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      initContainers:
+      - name: init-mysql
+        image: mysql:8.0
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_ROOT_PASSWORD
+        - name: DB_HOST
+          value: "terraform-20250124092631037100000001.c5o4csuyg3zb.ap-south-1.rds.amazonaws.com"
+        - name: DB_PORT
+          value: "3306"
+        volumeMounts:
+        - name: init-sql
+          mountPath: /docker-entrypoint-initdb.d
+        command: [ "sh", "-c", "mysql -h terraform-20250124092631037100000001.c5o4csuyg3zb.ap-south-1.rds.amazonaws.com -P 3306 -u admin -ppassword < /docker-entrypoint-initdb.d/init.sql" ]
+      containers:
+      - name: backend
+        image: jeevan2001/backend:latest
+        env:
+        - name: DB_HOST
+          value: "terraform-20250124092631037100000001.c5o4csuyg3zb.ap-south-1.rds.amazonaws.com"
+        - name: DB_PORT
+          value: "3306"
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_ROOT_PASSWORD
+        ports:
+        - containerPort: 3000
+      volumes:
+      - name: init-sql
+        configMap:
+          name: init-sql-config
