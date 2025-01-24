@@ -11,7 +11,7 @@ phases:
       - echo Building the Docker images...
   build:
     commands:
-      - cd "DevOps_Hands-on/Kubernetes/Deploying_Applications_on_Kubernetes(Nodejs_React_MySQL))/backend"
+      - cd "DevOps_Hands-on/Kubernetes/Deploying_Applications_on_Kubernetes(Final))/backend"
       - docker build -t jeevan2001/backend:latest .
       - cd ../frontend
       - docker build -t jeevan2001/frontend:latest .
