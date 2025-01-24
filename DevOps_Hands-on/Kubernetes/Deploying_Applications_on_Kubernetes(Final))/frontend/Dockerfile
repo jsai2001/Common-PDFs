@@ -8,7 +8,8 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 # Clear npm cache and install dependencies
-RUN npm cache clean --force && npm install
+# RUN npm cache clean --force && 
+RUN npm install
 
 RUN npm ci && npm audit fix
 
