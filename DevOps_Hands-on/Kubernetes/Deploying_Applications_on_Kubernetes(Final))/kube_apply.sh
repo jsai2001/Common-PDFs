@@ -13,10 +13,10 @@ echo "Backend LoadBalancer DNS: $BACKEND_LOADBALANCER_DNS"
 # echo "Backend LoadBalancer DNS: $BACKEND_LOADBALANCER_DNS"
 
 # Replace placeholder in App.js.temp and create App.js
-sed "s|BACKEND_LOADBALANCER_DNS|$BACKEND_LOADBALANCER_DNS|g" "C:/Users/Dell/Common-PDFs/DevOps_Hands-on/Kubernetes/Deploying_Applications_on_Kubernetes(Nodejs_React_MySQL))/frontend/src/App.js.temp" > "C:/Users/Dell/Common-PDFs/DevOps_Hands-on/Kubernetes/Deploying_Applications_on_Kubernetes(Nodejs_React_MySQL))/frontend/src/App.js"
+sed "s|BACKEND_LOADBALANCER_DNS|$BACKEND_LOADBALANCER_DNS|g" "C:/Users/Dell/Common-PDFs/DevOps_Hands-on/Kubernetes/Deploying_Applications_on_Kubernetes(Final))/frontend/src/App.js.temp" > "C:/Users/Dell/Common-PDFs/DevOps_Hands-on/Kubernetes/Deploying_Applications_on_Kubernetes(Final))/frontend/src/App.js"
 
 # Change to the frontend directory
-cd "C:/Users/Dell/Common-PDFs/DevOps_Hands-on/Kubernetes/Deploying_Applications_on_Kubernetes(Nodejs_React_MySQL))/frontend"
+cd "C:/Users/Dell/Common-PDFs/DevOps_Hands-on/Kubernetes/Deploying_Applications_on_Kubernetes(Final))/frontend"
 
 # Commit and push the changes
 git add src/App.js
@@ -30,4 +30,10 @@ cd $CURR_DIR
 # Apply frontend configurations
 kubectl apply -f frontend-service.yaml
 kubectl apply -f frontend-deployment.yaml
-kubectl apply -f website-content-configmap.yaml
+# kubectl apply -f website-content-configmap.yaml
+
+# Apply HPA configuration
+kubectl apply -f hpa-backend.yaml
+
+# Apply Cluster Autoscaler configuration
+kubectl apply -f cluster-autoscaler.yaml
