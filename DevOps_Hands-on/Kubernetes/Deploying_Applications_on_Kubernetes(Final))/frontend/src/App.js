@@ -6,7 +6,7 @@ function App() {
 
   useEffect(() => {
     console.log('Fetching data from backend...');
-    fetch('http://172.20.81.23:3000/items')  // Ensure this URL is correct
+    fetch('http://a5f705fc01fda4f99aa66f0dee16850a-1883358406.ap-south-1.elb.amazonaws.com:3000/items')  // Ensure this URL is correct
       .then(response => {
         console.log('Received response:', response);
         if (!response.ok) {
