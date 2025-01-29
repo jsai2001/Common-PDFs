@@ -36,6 +36,8 @@ Deploying_Applications_on_Kubernetes(Nodejs_React_MySQL))/
 │── frontend-service.yaml
 ├── kube_apply.sh
 ├── kube_destroy.sh
+├── cluster-autoscaler.yaml
+├── hpa-backend.yaml
 └── main.tf
 ```
 
@@ -877,3 +879,388 @@ spec:
 
 ### Summary
 The `init-sql-configmap.yaml` file is a Kubernetes ConfigMap that stores an SQL initialization script. This script is used to set up the initial state of the MySQL database, including creating the database, creating a table, and inserting initial data. The ConfigMap can be used in a Kubernetes deployment to initialize the database using an init container.
+
+Let's go through the `cluster-autoscaler.yaml` file step by step and explain how it relates to other files and components in your Kubernetes setup.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-autoscaler
+  namespace: kube-system
+  labels:
+    app: cluster-autoscaler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cluster-autoscaler
+  template:
+    metadata:
+      labels:
+        app: cluster-autoscaler
+    spec:
+      containers:
+      - name: cluster-autoscaler
+        image: k8s.gcr.io/autoscaling/cluster-autoscaler:v1.20.0
+        command:
+        - ./cluster-autoscaler
+        - --v=4
+        - --stderrthreshold=info
+        - --cloud-provider=aws
+        - --skip-nodes-with-local-storage=false
+        - --expander=least-waste
+        - --nodes=1:10:my-node-group
+        env:
+        - name: AWS_REGION
+          value: ap-south-1
+        resources:
+          limits:
+            cpu: 100m
+            memory: 300Mi
+          requests:
+            cpu: 100m
+            memory: 300Mi
+        volumeMounts:
+        - name: ssl-certs
+          mountPath: /etc/ssl/certs/ca-certificates.crt
+          readOnly: true
+      volumes:
+      - name: ssl-certs
+        hostPath:
+          path: /etc/ssl/certs/ca-certificates.crt
+```
+
+### Step-by-Step Explanation
+
+#### apiVersion and kind
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+```
+
+- **apiVersion**: Specifies the API version used to create the resource.
+- **kind**: Specifies the type of Kubernetes resource, which is a Deployment in this case.
+
+#### metadata
+
+```yaml
+metadata:
+  name: cluster-autoscaler
+  namespace: kube-system
+  labels:
+    app: cluster-autoscaler
+```
+
+- **name**: The name of the deployment.
+- **namespace**: The namespace in which the deployment is created (kube-system is a common namespace for system components).
+- **labels**: Key-value pairs used to organize and select resources.
+
+#### spec
+
+```yaml
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cluster-autoscaler
+```
+
+- **replicas**: Specifies the number of pod replicas to run. Here, it is set to 1.
+- **selector**: Defines how to identify the pods managed by this deployment using labels.
+
+#### template
+
+```yaml
+template:
+  metadata:
+    labels:
+      app: cluster-autoscaler
+  spec:
+    containers:
+    - name: cluster-autoscaler
+      image: k8s.gcr.io/autoscaling/cluster-autoscaler:v1.20.0
+```
+
+- **template**: Describes the pods that will be created by this deployment.
+- **metadata**: Labels for the pods.
+- **spec**: Specification for the pod's containers.
+
+#### containers
+
+```yaml
+containers:
+- name: cluster-autoscaler
+  image: k8s.gcr.io/autoscaling/cluster-autoscaler:v1.20.0
+  command:
+  - ./cluster-autoscaler
+  - --v=4
+  - --stderrthreshold=info
+  - --cloud-provider=aws
+  - --skip-nodes-with-local-storage=false
+  - --expander=least-waste
+  - --nodes=1:10:my-node-group
+```
+
+- **name**: The name of the container.
+- **image**: The Docker image for the Cluster Autoscaler.
+- **command**: The command to run the Cluster Autoscaler with various flags:
+  - `--v=4`: Sets the verbosity level for logging.
+  - `--stderrthreshold=info`: Sets the logging threshold.
+  - `--cloud-provider=aws`: Specifies the cloud provider.
+  - `--skip-nodes-with-local-storage=false`: Allows scaling of nodes with local storage.
+  - `--expander=least-waste`: Chooses the node group with the least waste.
+  - `--nodes=1:10:my-node-group`: Specifies the minimum and maximum number of nodes for the node group my-node-group.
+
+#### env
+
+```yaml
+env:
+- name: AWS_REGION
+  value: ap-south-1
+```
+
+- **env**: Environment variables for the container. Here, it sets the AWS region to ap-south-1.
+
+#### resources
+
+```yaml
+resources:
+  limits:
+    cpu: 100m
+    memory: 300Mi
+  requests:
+    cpu: 100m
+    memory: 300Mi
+```
+
+- **resources**: Specifies the resource limits and requests for the container.
+
+#### volumeMounts and volumes
+
+```yaml
+volumeMounts:
+- name: ssl-certs
+  mountPath: /etc/ssl/certs/ca-certificates.crt
+  readOnly: true
+volumes:
+- name: ssl-certs
+  hostPath:
+    path: /etc/ssl/certs/ca-certificates.crt
+```
+
+- **volumeMounts**: Mounts the SSL certificates into the container.
+- **volumes**: Defines the volume from the host path.
+
+### Co-relation with Other Files
+
+#### main.tf
+
+- Defines the EKS cluster and node groups.
+- The `aws_eks_node_group` resource specifies the node group (my-node-group) that the Cluster Autoscaler will manage.
+
+#### backend-deployment.yaml
+
+- Defines the backend deployment.
+- The HPA (`hpa-backend.yaml`) targets this deployment to scale the number of pod replicas based on CPU utilization.
+
+#### hpa-backend.yaml
+
+- Configures the Horizontal Pod Autoscaler to scale the backend-deployment based on CPU utilization.
+- The HPA ensures that the number of pod replicas is within the specified range (minReplicas to maxReplicas).
+
+### Summary
+
+- **Cluster Autoscaler**: Adjusts the number of nodes in the cluster based on pod resource requests.
+- **HPA**: Scales the number of pod replicas based on observed metrics.
+- **Node Groups**: Defined in `main.tf` and managed by the Cluster Autoscaler.
+- **Pods and Services**: Defined in deployment files and scaled by the HPA.
+
+This setup ensures that your cluster can handle varying workloads efficiently by dynamically scaling both the number of pods and the number of nodes.
+
+Let's go through the `hpa-backend.yaml` file step by step and explain how it relates to other files and components in your Kubernetes setup.
+
+### `hpa-backend.yaml`
+
+```yaml
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend-deployment
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 50
+```
+
+### Step-by-Step Explanation
+
+#### `apiVersion` and `kind`
+
+```yaml
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+```
+
+- **apiVersion**: Specifies the API version used to create the resource. Here, it is `autoscaling/v1`.
+- **kind**: Specifies the type of Kubernetes resource, which is a `HorizontalPodAutoscaler` in this case.
+
+#### `metadata`
+
+```yaml
+metadata:
+  name: hpa-backend
+```
+
+- **name**: The name of the Horizontal Pod Autoscaler. This is used to identify the HPA resource.
+
+#### `spec`
+
+```yaml
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend-deployment
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 50
+```
+
+- **scaleTargetRef**: Specifies the target resource that the HPA will scale.
+  - **apiVersion**: The API version of the target resource, which is `apps/v1` for a Deployment.
+  - **kind**: The kind of the target resource, which is `Deployment`.
+  - **name**: The name of the target deployment, which is `backend-deployment`.
+- **minReplicas**: The minimum number of pod replicas that the HPA will maintain.
+- **maxReplicas**: The maximum number of pod replicas that the HPA can scale up to.
+- **targetCPUUtilizationPercentage**: The target average CPU utilization across all pods. The HPA will scale the number of replicas to maintain this target.
+
+### Co-relation with Other Files
+
+#### `backend-deployment.yaml`
+
+Defines the backend deployment that the HPA will scale. The `name` field in `scaleTargetRef` refers to this deployment.
+
+Example: `backend-deployment.yaml`
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: my-backend-image
+        ports:
+        - containerPort: 8080
+```
+
+#### `main.tf`
+
+Defines the EKS cluster and node groups. The node groups provide the worker nodes where the backend pods will run.
+
+Example: `main.tf`
+
+```hcl
+resource "aws_eks_node_group" "my_node_group" {
+  cluster_name    = aws_eks_cluster.my_cluster.name
+  node_group_name = "my-node-group"
+  node_role_arn   = aws_iam_role.eks_node_role.arn
+  subnet_ids      = aws_subnet.eks_private_subnet[*].id
+
+  scaling_config {
+    desired_size = 1
+    max_size     = 10
+    min_size     = 1
+  }
+
+  instance_types = ["t3.small"]
+
+  remote_access {
+    ec2_ssh_key = "my-key"
+  }
+
+  tags = {
+    ...
+  }
+}
+```
+
+#### `cluster-autoscaler.yaml`
+
+Configures the Cluster Autoscaler to automatically adjust the number of nodes in the cluster based on pod resource requests. Ensures there are enough nodes to run the pods scaled by the HPA.
+
+Example: `cluster-autoscaler.yaml`
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-autoscaler
+  namespace: kube-system
+  labels:
+    app: cluster-autoscaler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cluster-autoscaler
+  template:
+    metadata:
+      labels:
+        app: cluster-autoscaler
+    spec:
+      containers:
+      - name: cluster-autoscaler
+        image: k8s.gcr.io/autoscaling/cluster-autoscaler:v1.20.0
+        command:
+        - ./cluster-autoscaler
+        - --v=4
+        - --stderrthreshold=info
+        - --cloud-provider=aws
+        - --skip-nodes-with-local-storage=false
+        - --expander=least-waste
+        - --nodes=1:10:my-node-group
+        env:
+        - name: AWS_REGION
+          value: ap-south-1
+        resources:
+          limits:
+            cpu: 100m
+            memory: 300Mi
+          requests:
+            cpu: 100m
+            memory: 300Mi
+        volumeMounts:
+        - name: ssl-certs
+          mountPath: /etc/ssl/certs/ca-certificates.crt
+          readOnly: true
+      volumes:
+      - name: ssl-certs
+        hostPath:
+          path: /etc/ssl/certs/ca-certificates.crt
+```
+
+### Summary
+
+- **`hpa-backend.yaml`**: Configures the Horizontal Pod Autoscaler to scale the `backend-deployment` based on CPU utilization.
+- **`backend-deployment.yaml`**: Defines the backend deployment that the HPA will scale.
+- **`main.tf`**: Defines the EKS cluster and node groups where the backend pods will run.
+- **`cluster-autoscaler.yaml`**: Configures the Cluster Autoscaler to adjust the number of nodes in the cluster based on pod resource requests.
+
+This setup ensures that your backend deployment can dynamically scale based on CPU utilization, with the Cluster Autoscaler ensuring there are enough nodes to accommodate the scaled pods.
