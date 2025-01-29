@@ -210,9 +210,15 @@ resource "aws_iam_role_policy_attachment" "eks_registry_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
+resource "aws_iam_policy" "cluster_autoscaler_policy" {
+  name        = "ClusterAutoscalerPolicy"
+  description = "Policy for EKS Cluster Autoscaler"
+  policy      = file("cluster-autoscaler-policy.json")
+}
+
 resource "aws_iam_role_policy_attachment" "eks_autoscaler_policy" {
   role       = aws_iam_role.eks_node_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterAutoscalerPolicy"
+  policy_arn = aws_iam_policy.cluster_autoscaler_policy.arn
 }
 
 resource "aws_eks_node_group" "my_node_group" {

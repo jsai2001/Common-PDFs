@@ -37,3 +37,22 @@ kubectl apply -f hpa-backend.yaml
 
 # Apply Cluster Autoscaler configuration
 kubectl apply -f cluster-autoscaler.yaml
+
+# # Apply Prometheus and Grafana configurations
+kubectl apply -f prometheus-config.yaml
+kubectl apply -f prometheus-serviceaccount.yaml
+kubectl apply -f prometheus-clusterrole.yaml
+kubectl apply -f prometheus-clusterrolebinding.yaml
+kubectl apply -f prometheus-deployment.yaml
+kubectl apply -f prometheus-service.yaml
+
+kubectl port-forward $(kubectl get pods -l app=prometheus -o jsonpath='{.items[0].metadata.name}') 9090:9090 > /dev/null 2>&1 &
+
+# kubectl apply -f grafana-datasource.yaml
+# kubectl apply -f grafana-deployment.yaml
+
+# # Apply EFK stack configurations
+# kubectl apply -f elasticsearch-deployment.yaml
+# kubectl apply -f fluentd-config.yaml
+# kubectl apply -f fluentd-daemonset.yaml
+# kubectl apply -f kibana-deployment.yaml
