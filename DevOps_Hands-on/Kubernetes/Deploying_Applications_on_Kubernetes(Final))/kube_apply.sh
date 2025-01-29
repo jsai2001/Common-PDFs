@@ -48,11 +48,21 @@ kubectl apply -f prometheus-service.yaml
 
 kubectl port-forward $(kubectl get pods -l app=prometheus -o jsonpath='{.items[0].metadata.name}') 9090:9090 > /dev/null 2>&1 &
 
-# kubectl apply -f grafana-datasource.yaml
-# kubectl apply -f grafana-deployment.yaml
+# Apply Grafana configurations
+kubectl apply -f grafana-datasource.yaml
+kubectl apply -f grafana-deployment.yaml
+kubectl apply -f grafana-service.yaml
 
-# # Apply EFK stack configurations
-# kubectl apply -f elasticsearch-deployment.yaml
-# kubectl apply -f fluentd-config.yaml
-# kubectl apply -f fluentd-daemonset.yaml
-# kubectl apply -f kibana-deployment.yaml
+# Port-forward Grafana
+kubectl port-forward $(kubectl get pods -l app=grafana -o jsonpath='{.items[0].metadata.name}') 3000:3000 > /dev/null 2>&1 &
+
+# Apply EFK stack configurations
+kubectl apply -f elasticsearch-deployment.yaml
+kubectl apply -f elasticsearch-service.yaml
+kubectl apply -f fluentd-configmap.yaml
+kubectl apply -f fluentd-daemonset.yaml
+kubectl apply -f kibana-deployment.yaml
+kubectl apply -f kibana-service.yaml
+
+# Port-forward Kibana
+kubectl port-forward $(kubectl get pods -l app=kibana -o jsonpath='{.items[0].metadata.name}') 5601:5601 > /dev/null 2>&1 &

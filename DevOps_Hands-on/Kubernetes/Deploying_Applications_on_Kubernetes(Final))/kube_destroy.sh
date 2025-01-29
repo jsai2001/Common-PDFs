@@ -1,3 +1,8 @@
+# Delete Grafana configurations
+kubectl delete -f grafana-service.yaml
+kubectl delete -f grafana-deployment.yaml
+kubectl delete -f grafana-datasource.yaml
+
 # Delete Prometheus and Grafana configurations
 kubectl delete -f prometheus-deployment.yaml
 kubectl delete -f prometheus-service.yaml
@@ -5,6 +10,12 @@ kubectl delete -f prometheus-clusterrolebinding.yaml
 kubectl delete -f prometheus-clusterrole.yaml
 kubectl delete -f prometheus-serviceaccount.yaml
 kubectl delete -f prometheus-config.yaml
+
+# Delete EFK stack configurations
+kubectl delete -f kibana-deployment.yaml
+kubectl delete -f fluentd-daemonset.yaml
+kubectl delete -f fluentd-configmap.yaml
+kubectl delete -f elasticsearch-deployment.yaml
 
 # Uncomment if Grafana was applied
 # kubectl delete -f grafana-deployment.yaml

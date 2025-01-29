@@ -228,9 +228,9 @@ resource "aws_eks_node_group" "my_node_group" {
   subnet_ids      = aws_subnet.eks_private_subnet[*].id
 
   scaling_config {
-    desired_size = 1
-    max_size     = 3
-    min_size     = 1
+    desired_size = 5
+    max_size     = 7
+    min_size     = 3
   }
 
   instance_types = ["t3.small"]
