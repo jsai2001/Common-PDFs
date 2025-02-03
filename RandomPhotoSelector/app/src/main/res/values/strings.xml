@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Relaxation</string>
+    <string name="random">Random</string>
+    <string name="todo">TODO</string>
+    <string name="auto_random">Auto Random</string>
+    <string name="scroll_view">Scroll View</string>
+    <string name="videos">Videos</string>
+    <string name="auto_random_str">Auto Random</string>
+    <string name="stop_auto_random">Stop Auto Random</string>
+</resources>
