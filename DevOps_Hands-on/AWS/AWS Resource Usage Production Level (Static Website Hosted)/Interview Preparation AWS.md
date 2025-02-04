@@ -2384,3 +2384,462 @@ aws ec2 wait instance-status-ok --instance-ids ${instance_ids} --region ${region
     - It uses the `aws ec2 wait instance-running` and `aws ec2 wait instance-status-ok` commands to wait for the instances to be in the running state and to pass status checks.
 - **How does the script store the instance IDs?**
     - It combines the instance IDs and appends them to the `resource_ids_centos.txt` file using the `echo` command with the `>>` operator.
+
+## Load Balancers
+
+### 1. Understanding the Script Purpose
+**Objective:** The script creates an Application Load Balancer (ALB) and a target group in a specified AWS region. It ensures that the load balancer and target group are created successfully and stores their ARNs.
+
+### 2. Key Components of the Script
+**Shebang:** `#!/bin/bash`  
+Indicates that the script should be run using the Bash shell.
+
+### 3. Variables
+**Region:** `region=$1`  
+The AWS region is passed as an argument to the script.
+
+**Source File:** `source resource_ids_centos.txt`  
+Sources the `resource_ids_centos.txt` file to import variables defined in it (e.g., `public_subnet_id_1`, `public_subnet_id_2`, `app_security_group_id`, `vpc_id`).
+
+### 4. Creating Load Balancer
+**Create Load Balancer:**
+```bash
+load_balancer_arn=$(aws elbv2 create-load-balancer \
+    --name my-load-balancer \
+    --subnets ${public_subnet_id_1} ${public_subnet_id_2} \
+    --security-groups ${app_security_group_id} \
+    --query 'LoadBalancers[0].LoadBalancerArn' --output text --region ${region})
+```
+- Uses the `aws elbv2 create-load-balancer` command to create the load balancer.
+- The `--name my-load-balancer` parameter specifies the name of the load balancer.
+- The `--subnets ${public_subnet_id_1} ${public_subnet_id_2}` parameter specifies the subnets for the load balancer.
+- The `--security-groups ${app_security_group_id}` parameter specifies the security groups for the load balancer.
+- The `--query 'LoadBalancers[0].LoadBalancerArn'` parameter extracts the ARN of the load balancer from the response.
+- The `--output text` parameter outputs the ARN in plain text format.
+- The `--region ${region}` parameter specifies the AWS region.
+
+### 5. Error Handling for Load Balancer Creation
+**Check Load Balancer ARN:**
+```bash
+if [ -z "$load_balancer_arn" ]; then
+    echo "Failed to create Load Balancer"
+    exit 1
+fi
+```
+Checks if the load balancer ARN is empty. If it is, prints an error message and exits the script.
+
+### 6. Output Message for Load Balancer
+**Print Message:**
+```bash
+echo "Created Load Balancer with ARN ${load_balancer_arn}"
+```
+Prints a message indicating that the load balancer was created successfully.
+
+### 7. Creating Target Group
+**Create Target Group:**
+```bash
+target_group_arn=$(aws elbv2 create-target-group \
+    --name my-target-group \
+    --protocol HTTP \
+    --port 80 \
+    --vpc-id ${vpc_id} \
+    --query 'TargetGroups[0].TargetGroupArn' --output text --region ${region})
+```
+- Uses the `aws elbv2 create-target-group` command to create the target group.
+- The `--name my-target-group` parameter specifies the name of the target group.
+- The `--protocol HTTP` parameter specifies the protocol for the target group.
+- The `--port 80` parameter specifies the port for the target group.
+- The `--vpc-id ${vpc_id}` parameter specifies the VPC ID for the target group.
+- The `--query 'TargetGroups[0].TargetGroupArn'` parameter extracts the ARN of the target group from the response.
+- The `--output text` parameter outputs the ARN in plain text format.
+- The `--region ${region}` parameter specifies the AWS region.
+
+### 8. Error Handling for Target Group Creation
+**Check Target Group ARN:**
+```bash
+if [ -z "$target_group_arn" ]; then
+    echo "Failed to create Target Group"
+    exit 1
+fi
+```
+Checks if the target group ARN is empty. If it is, prints an error message and exits the script.
+
+### Syntax of Various Commands
+**AWS CLI Command: Create Load Balancer**
+```bash
+aws elbv2 create-load-balancer \
+    --name my-load-balancer \
+    --subnets ${public_subnet_id_1} ${public_subnet_id_2} \
+    --security-groups ${app_security_group_id} \
+    --query 'LoadBalancers[0].LoadBalancerArn' --output text --region ${region}
+```
+**Parameters:**
+- `--name my-load-balancer`: Specifies the name of the load balancer.
+- `--subnets ${public_subnet_id_1} ${public_subnet_id_2}`: Specifies the subnets for the load balancer.
+- `--security-groups ${app_security_group_id}`: Specifies the security groups for the load balancer.
+- `--query 'LoadBalancers[0].LoadBalancerArn'`: Extracts the ARN of the load balancer from the response.
+- `--output text`: Outputs the ARN in plain text format.
+- `--region ${region}`: Specifies the AWS region.
+
+**AWS CLI Command: Create Target Group**
+```bash
+aws elbv2 create-target-group \
+    --name my-target-group \
+    --protocol HTTP \
+    --port 80 \
+    --vpc-id ${vpc_id} \
+    --query 'TargetGroups[0].TargetGroupArn' --output text --region ${region}
+```
+**Parameters:**
+- `--name my-target-group`: Specifies the name of the target group.
+- `--protocol HTTP`: Specifies the protocol for the target group.
+- `--port 80`: Specifies the port for the target group.
+- `--vpc-id ${vpc_id}`: Specifies the VPC ID for the target group.
+- `--query 'TargetGroups[0].TargetGroupArn'`: Extracts the ARN of the target group from the response.
+- `--output text`: Outputs the ARN in plain text format.
+- `--region ${region}`: Specifies the AWS region.
+
+### Example Questions
+**What is the purpose of the `aws elbv2 create-load-balancer` command in the script?**  
+It creates an Application Load Balancer (ALB) with the specified name, subnets, and security groups.
+
+**How does the script ensure that the load balancer was created successfully?**  
+It checks if the load balancer ARN is empty. If it is, the script prints an error message and exits.
+
+**What does the `--query 'LoadBalancers[0].LoadBalancerArn'` parameter do in the `aws elbv2 create-load-balancer` command?**  
+It extracts the ARN of the load balancer from the response.
+
+**How does the script create a target group for the load balancer?**  
+It uses the `aws elbv2 create-target-group` command with the specified name, protocol, port, and VPC ID.
+
+**How does the script ensure that the target group was created successfully?**  
+It checks if the target group ARN is empty. If it is, the script prints an error message and exits.
+
+## AutoScaling Group
+
+### 1. Understanding the Script Purpose
+**Objective:** The script creates a launch template and an auto scaling group in a specified AWS region. The auto scaling group ensures that the desired number of EC2 instances are running to handle the load.
+
+### 2. Key Components of the Script
+**Shebang:** `#!/bin/bash`  
+Indicates that the script should be run using the Bash shell.
+
+### 3. Variables
+- **Region:** `region=$1`  
+    The AWS region is passed as an argument to the script.
+- **Source File:** `source resource_ids_centos.txt`  
+    Sources the `resource_ids_centos.txt` file to import variables defined in it (e.g., `image_id`, `key_pair_name`, `app_security_group_id`, `instance_profile_name`).
+- **Launch Template Name:** `launch_template_name="MyLaunchTemplate"`  
+    Specifies the name of the launch template.
+- **Auto Scaling Group Name:** `auto_scaling_group_name="MyAutoScalingGroup"`  
+    Specifies the name of the auto scaling group.
+- **Scaling Parameters:**
+    - `min_size=2`
+    - `max_size=3`
+    - `desired_capacity=2`  
+    Specifies the minimum, maximum, and desired number of instances in the auto scaling group.
+
+### 4. Error Handling
+**Set -e:** `set -e`  
+Ensures that the script exits immediately if any command exits with a non-zero status.
+
+### 5. Creating Launch Template
+**Create Launch Template:**
+```bash
+launch_template_id=$(aws ec2 create-launch-template \
+        --launch-template-name ${launch_template_name} \
+        --version-description "v1" \
+        --launch-template-data '{
+                "ImageId": "'${image_id}'",
+                "InstanceType": "t3.micro",
+                "KeyName": "'${key_pair_name}'",
+                "SecurityGroupIds": ["'${app_security_group_id}'"],
+                "IamInstanceProfile": {"Name": "'${instance_profile_name}'"},
+                "UserData": "'$(base64 -w 0 ./userDataCentOsComplex.sh)'",
+                "BlockDeviceMappings": [{
+                        "DeviceName": "/dev/sdh",
+                        "Ebs": {
+                                "VolumeSize": 8,
+                                "DeleteOnTermination": true
+                        }
+                }]
+        }' --query 'LaunchTemplate.LaunchTemplateId' --output text --region ${region})
+```
+Uses the `aws ec2 create-launch-template` command to create the launch template.  
+The `--launch-template-name ${launch_template_name}` parameter specifies the name of the launch template.  
+The `--version-description "v1"` parameter provides a description for the launch template version.  
+The `--launch-template-data` parameter specifies the configuration data for the launch template, including the image ID, instance type, key pair, security group, IAM instance profile, user data, and block device mappings.  
+The `--query 'LaunchTemplate.LaunchTemplateId'` parameter extracts the launch template ID from the response.  
+The `--output text` parameter outputs the launch template ID in plain text format.  
+The `--region ${region}` parameter specifies the AWS region.
+
+### 6. Creating Auto Scaling Group
+**Create Auto Scaling Group:**
+```bash
+aws autoscaling create-auto-scaling-group \
+        --auto-scaling-group-name ${auto_scaling_group_name} \
+        --launch-template "LaunchTemplateId=${launch_template_id},Version=1" \
+        --min-size ${min_size} \
+        --max-size ${max_size} \
+        --desired-capacity ${desired_capacity} \
+        --vpc-zone-identifier "${subnet_ids}" \
+        --region ${region}
+```
+Uses the `aws autoscaling create-auto-scaling-group` command to create the auto scaling group.  
+The `--auto-scaling-group-name ${auto_scaling_group_name}` parameter specifies the name of the auto scaling group.  
+The `--launch-template "LaunchTemplateId=${launch_template_id},Version=1"` parameter specifies the launch template ID and version.  
+The `--min-size ${min_size}` parameter specifies the minimum number of instances.  
+The `--max-size ${max_size}` parameter specifies the maximum number of instances.  
+The `--desired-capacity ${desired_capacity}` parameter specifies the desired number of instances.  
+The `--vpc-zone-identifier "${subnet_ids}"` parameter specifies the subnets for the auto scaling group.  
+The `--region ${region}` parameter specifies the AWS region.
+
+### Syntax of Various Commands
+**AWS CLI Command: Create Launch Template**
+```bash
+aws ec2 create-launch-template \
+        --launch-template-name ${launch_template_name} \
+        --version-description "v1" \
+        --launch-template-data '{
+                "ImageId": "'${image_id}'",
+                "InstanceType": "t3.micro",
+                "KeyName": "'${key_pair_name}'",
+                "SecurityGroupIds": ["'${app_security_group_id}'"],
+                "IamInstanceProfile": {"Name": "'${instance_profile_name}'"},
+                "UserData": "'$(base64 -w 0 ./userDataCentOsComplex.sh)'",
+                "BlockDeviceMappings": [{
+                        "DeviceName": "/dev/sdh",
+                        "Ebs": {
+                                "VolumeSize": 8,
+                                "DeleteOnTermination": true
+                        }
+                }]
+        }' --query 'LaunchTemplate.LaunchTemplateId' --output text --region ${region}
+```
+**Parameters:**
+- `--launch-template-name ${launch_template_name}`: Specifies the name of the launch template.
+- `--version-description "v1"`: Provides a description for the launch template version.
+- `--launch-template-data`: Specifies the configuration data for the launch template.
+- `--query 'LaunchTemplate.LaunchTemplateId'`: Extracts the launch template ID from the response.
+- `--output text`: Outputs the launch template ID in plain text format.
+- `--region ${region}`: Specifies the AWS region.
+
+**AWS CLI Command: Create Auto Scaling Group**
+```bash
+aws autoscaling create-auto-scaling-group \
+        --auto-scaling-group-name ${auto_scaling_group_name} \
+        --launch-template "LaunchTemplateId=${launch_template_id},Version=1" \
+        --min-size ${min_size} \
+        --max-size ${max_size} \
+        --desired-capacity ${desired_capacity} \
+        --vpc-zone-identifier "${subnet_ids}" \
+        --region ${region}
+```
+**Parameters:**
+- `--auto-scaling-group-name ${auto_scaling_group_name}`: Specifies the name of the auto scaling group.
+- `--launch-template "LaunchTemplateId=${launch_template_id},Version=1"`: Specifies the launch template ID and version.
+- `--min-size ${min_size}`: Specifies the minimum number of instances.
+- `--max-size ${max_size}`: Specifies the maximum number of instances.
+- `--desired-capacity ${desired_capacity}`: Specifies the desired number of instances.
+- `--vpc-zone-identifier "${subnet_ids}"`: Specifies the subnets for the auto scaling group.
+- `--region ${region}`: Specifies the AWS region.
+
+### Example Questions
+**What is the purpose of the `aws ec2 create-launch-template` command in the script?**
+
+It creates a launch template with the specified configuration data, including the image ID, instance type, key pair, security group, IAM instance profile, user data, and block device mappings.
+
+**How does the script ensure that the launch template was created successfully?**
+
+It extracts the launch template ID from the response using the `--query 'LaunchTemplate.LaunchTemplateId'` parameter and stores it in the `launch_template_id` variable.
+
+**What does the `--launch-template-data` parameter specify in the `aws ec2 create-launch-template` command?**
+
+It specifies the configuration data for the launch template, including the image ID, instance type, key pair, security group, IAM instance profile, user data, and block device mappings.
+
+**How does the script create an auto scaling group?**
+
+It uses the `aws autoscaling create-auto-scaling-group` command with the specified auto scaling group name, launch template ID and version, minimum size, maximum size, desired capacity, subnets, and region.
+
+**How does the script ensure that the auto scaling group maintains the desired number of instances?**
+
+It specifies the desired capacity using the `--desired-capacity ${desired_capacity}` parameter, ensuring that the auto scaling group maintains the desired number of instances.
+
+### Creating Scaling Policies
+**Scale Up Policy:**
+```bash
+scale_up_policy_arn=$(aws autoscaling put-scaling-policy \
+    --auto-scaling-group-name ${auto_scaling_group_name} \
+    --policy-name ScaleUpPolicy \
+    --scaling-adjustment 1 \
+    --adjustment-type ChangeInCapacity \
+    --region ${region} \
+    --query 'PolicyARN' --output text)
+```
+Uses the `aws autoscaling put-scaling-policy` command to create a scaling policy that increases the number of instances by 1 when triggered.  
+The `--auto-scaling-group-name ${auto_scaling_group_name}` parameter specifies the name of the auto scaling group.  
+The `--policy-name ScaleUpPolicy` parameter specifies the name of the scaling policy.  
+The `--scaling-adjustment 1` parameter specifies the adjustment to make (increase by 1 instance).  
+The `--adjustment-type ChangeInCapacity` parameter specifies the type of adjustment.  
+The `--query 'PolicyARN'` parameter extracts the ARN of the scaling policy from the response.  
+The `--output text` parameter outputs the ARN in plain text format.  
+The `--region ${region}` parameter specifies the AWS region.
+
+**Scale Down Policy:**
+```bash
+scale_down_policy_arn=$(aws autoscaling put-scaling-policy \
+    --auto-scaling-group-name ${auto_scaling_group_name} \
+    --policy-name ScaleDownPolicy \
+    --scaling-adjustment -1 \
+    --adjustment-type ChangeInCapacity \
+    --region ${region} \
+    --query 'PolicyARN' --output text)
+```
+Uses the `aws autoscaling put-scaling-policy` command to create a scaling policy that decreases the number of instances by 1 when triggered.  
+The `--auto-scaling-group-name ${auto_scaling_group_name}` parameter specifies the name of the auto scaling group.  
+The `--policy-name ScaleDownPolicy` parameter specifies the name of the scaling policy.  
+The `--scaling-adjustment -1` parameter specifies the adjustment to make (decrease by 1 instance).  
+The `--adjustment-type ChangeInCapacity` parameter specifies the type of adjustment.  
+The `--query 'PolicyARN'` parameter extracts the ARN of the scaling policy from the response.  
+The `--output text` parameter outputs the ARN in plain text format.  
+The `--region ${region}` parameter specifies the AWS region.
+
+### 5. Output Message for Scaling Policies
+**Print Message:**
+```bash
+echo "Scaling policies created: ScaleUpPolicy (${scale_up_policy_arn}), ScaleDownPolicy (${scale_down_policy_arn})"
+```
+Prints a message indicating that the scaling policies were created successfully.
+
+### 6. Creating CloudWatch Alarms for Scaling Policies
+**High CPU Utilization Alarm:**
+```bash
+aws cloudwatch put-metric-alarm \
+    --alarm-name HighCPUUtilization \
+    --metric-name CPUUtilization \
+    --namespace AWS/EC2 \
+    --statistic Average \
+    --period 300 \
+    --threshold 80 \
+    --comparison-operator GreaterThanOrEqualToThreshold \
+    --dimensions Name=AutoScalingGroupName,Value=${auto_scaling_group_name} \
+    --evaluation-periods 2 \
+    --alarm-actions ${scale_up_policy_arn} \
+    --region ${region}
+```
+Uses the `aws cloudwatch put-metric-alarm` command to create a CloudWatch alarm that triggers the scale-up policy when the average CPU utilization is greater than or equal to 80% for two consecutive periods.  
+The `--alarm-name HighCPUUtilization` parameter specifies the name of the alarm.  
+The `--metric-name CPUUtilization` parameter specifies the metric to monitor.  
+The `--namespace AWS/EC2` parameter specifies the namespace of the metric.  
+The `--statistic Average` parameter specifies the statistic to apply to the metric.  
+The `--period 300` parameter specifies the period, in seconds, over which the statistic is applied.  
+The `--threshold 80` parameter specifies the threshold value for the metric.  
+The `--comparison-operator GreaterThanOrEqualToThreshold` parameter specifies the comparison operator.  
+The `--dimensions Name=AutoScalingGroupName,Value=${auto_scaling_group_name}` parameter specifies the dimension of the metric (the auto scaling group name).  
+The `--evaluation-periods 2` parameter specifies the number of periods over which data is compared to the specified threshold.  
+The `--alarm-actions ${scale_up_policy_arn}` parameter specifies the action to take when the alarm state is triggered (invoking the scale-up policy).  
+The `--region ${region}` parameter specifies the AWS region.
+
+**Low CPU Utilization Alarm:**
+```bash
+aws cloudwatch put-metric-alarm \
+    --alarm-name LowCPUUtilization \
+    --metric-name CPUUtilization \
+    --namespace AWS/EC2 \
+    --statistic Average \
+    --period 300 \
+    --threshold 20 \
+    --comparison-operator LessThanOrEqualToThreshold \
+    --dimensions Name=AutoScalingGroupName,Value=${auto_scaling_group_name} \
+    --evaluation-periods 2 \
+    --alarm-actions ${scale_down_policy_arn} \
+    --region ${region}
+```
+Uses the `aws cloudwatch put-metric-alarm` command to create a CloudWatch alarm that triggers the scale-down policy when the average CPU utilization is less than or equal to 20% for two consecutive periods.  
+The `--alarm-name LowCPUUtilization` parameter specifies the name of the alarm.  
+The `--metric-name CPUUtilization` parameter specifies the metric to monitor.  
+The `--namespace AWS/EC2` parameter specifies the namespace of the metric.  
+The `--statistic Average` parameter specifies the statistic to apply to the metric.  
+The `--period 300` parameter specifies the period, in seconds, over which the statistic is applied.  
+The `--threshold 20` parameter specifies the threshold value for the metric.  
+The `--comparison-operator LessThanOrEqualToThreshold` parameter specifies the comparison operator.  
+The `--dimensions Name=AutoScalingGroupName,Value=${auto_scaling_group_name}` parameter specifies the dimension of the metric (the auto scaling group name).  
+The `--evaluation-periods 2` parameter specifies the number of periods over which data is compared to the specified threshold.  
+The `--alarm-actions ${scale_down_policy_arn}` parameter specifies the action to take when the alarm state is triggered (invoking the scale-down policy).  
+The `--region ${region}` parameter specifies the AWS region.
+
+### 7. Output Message for CloudWatch Alarms
+**Print Message:**
+```bash
+echo "CloudWatch alarms created for scaling policies."
+```
+Prints a message indicating that the CloudWatch alarms were created successfully.
+
+### Syntax of Various Commands
+**AWS CLI Command: Create Scaling Policy**
+```bash
+aws autoscaling put-scaling-policy \
+    --auto-scaling-group-name ${auto_scaling_group_name} \
+    --policy-name ScaleUpPolicy \
+    --scaling-adjustment 1 \
+    --adjustment-type ChangeInCapacity \
+    --region ${region} \
+    --query 'PolicyARN' --output text
+```
+**Parameters:**
+- `--auto-scaling-group-name ${auto_scaling_group_name}`: Specifies the name of the auto scaling group.
+- `--policy-name ScaleUpPolicy`: Specifies the name of the scaling policy.
+- `--scaling-adjustment 1`: Specifies the adjustment to make (increase by 1 instance).
+- `--adjustment-type ChangeInCapacity`: Specifies the type of adjustment.
+- `--query 'PolicyARN'`: Extracts the ARN of the scaling policy from the response.
+- `--output text`: Outputs the ARN in plain text format.
+- `--region ${region}`: Specifies the AWS region.
+
+**AWS CLI Command: Create CloudWatch Alarm**
+```bash
+aws cloudwatch put-metric-alarm \
+    --alarm-name HighCPUUtilization \
+    --metric-name CPUUtilization \
+    --namespace AWS/EC2 \
+    --statistic Average \
+    --period 300 \
+    --threshold 80 \
+    --comparison-operator GreaterThanOrEqualToThreshold \
+    --dimensions Name=AutoScalingGroupName,Value=${auto_scaling_group_name} \
+    --evaluation-periods 2 \
+    --alarm-actions ${scale_up_policy_arn} \
+    --region ${region}
+```
+**Parameters:**
+- `--alarm-name HighCPUUtilization`: Specifies the name of the alarm.
+- `--metric-name CPUUtilization`: Specifies the metric to monitor.
+- `--namespace AWS/EC2`: Specifies the namespace of the metric.
+- `--statistic Average`: Specifies the statistic to apply to the metric.
+- `--period 300`: Specifies the period, in seconds, over which the statistic is applied.
+- `--threshold 80`: Specifies the threshold value for the metric.
+- `--comparison-operator GreaterThanOrEqualToThreshold`: Specifies the comparison operator.
+- `--dimensions Name=AutoScalingGroupName,Value=${auto_scaling_group_name}`: Specifies the dimension of the metric (the auto scaling group name).
+- `--evaluation-periods 2`: Specifies the number of periods over which data is compared to the specified threshold.
+- `--alarm-actions ${scale_up_policy_arn}`: Specifies the action to take when the alarm state is triggered (invoking the scale-up policy).
+- `--region ${region}`: Specifies the AWS region.
+
+### Example Questions
+**What is the purpose of the `aws autoscaling put-scaling-policy` command in the script?**
+
+It creates a scaling policy that adjusts the number of instances in the auto scaling group based on specified conditions.
+
+**How does the script ensure that the scaling policies were created successfully?**
+
+It extracts the ARN of the scaling policy from the response using the `--query 'PolicyARN'` parameter and stores it in a variable.
+
+**What does the `--scaling-adjustment` parameter specify in the `aws autoscaling put-scaling-policy` command?**
+
+It specifies the adjustment to make (e.g., increase or decrease the number of instances).
+
+**How does the script create CloudWatch alarms for the scaling policies?**
+
+It uses the `aws cloudwatch put-metric-alarm` command with the specified alarm name, metric, namespace, statistic, period, threshold, comparison operator, dimensions, evaluation periods, and alarm actions.
+
+**How does the script ensure that the auto scaling group maintains the desired number of instances?**
+
+It specifies the desired capacity using the `--desired-capacity ${desired_capacity}` parameter, ensuring that the auto scaling group maintains the desired number of instances.
