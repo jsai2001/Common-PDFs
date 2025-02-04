@@ -1,6 +1,6 @@
 ## To Do
 
-### AWS Resource Usage Production Level (Static Website Hosted) (10:30 - 11:00)
+### AWS Resource Usage Production Level (Static Website Hosted) (10:30 - 11:00) (Done)
 
 ### Deploy Applications on Kubernetes (FINALLY) (11:00 - 11:30)
 
