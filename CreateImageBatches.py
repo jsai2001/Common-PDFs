@@ -15,6 +15,7 @@ def create_and_move_images(source_folder, parent_folder):
         os.makedirs(parent_folder)
 
     images = [f for f in os.listdir(source_folder) if f.lower().endswith(('png', 'jpg', 'jpeg', 'gif', 'bmp'))]
+    # images = [f for f in os.listdir(source_folder) if f.lower().endswith(('mp4', 'avi', 'mov', 'flv', 'wmv'))]
     counter = 1  # Counter for unique folder names
 
     while images:
@@ -26,7 +27,7 @@ def create_and_move_images(source_folder, parent_folder):
             os.makedirs(new_folder_path)
             
             # Move up to 100 images to the new folder
-            for _ in range(min(100, len(images))):
+            for _ in range(min(450, len(images))):
                 image = images.pop(0)  # Remove and get the first image in the list
                 shutil.move(os.path.join(source_folder, image), os.path.join(new_folder_path, image))
             counter += 1
@@ -38,6 +39,6 @@ def create_and_move_images(source_folder, parent_folder):
     print("All images have been moved.")
 
 # Example usage:
-source_folder = "D:\\Street Fight\\Mario"
-parent_folder = "D:\\Image_Batches"
+source_folder = "D:\\Pendrive (Private)\\Drafts"
+parent_folder = "D:\\Pendrive (Private)\\NewDraft"
 create_and_move_images(source_folder, parent_folder)
