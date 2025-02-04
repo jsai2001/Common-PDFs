@@ -2212,3 +2212,175 @@ The alarm sends a notification to the specified SNS topic, as indicated by the `
 **How does the script ensure that the alarm is only triggered when the CPU utilization exceeds the threshold for a certain period?**
 
 It uses the `--evaluation-periods 2` parameter to specify that the alarm is triggered only if the CPU utilization exceeds the threshold for two consecutive periods.
+
+## Launch Instances
+
+### 1. Understanding the Script Purpose
+**Objective:** The script launches EC2 instances in a specified AWS region, configures them with a user data script to install necessary software, and sets up a sample website.
+
+### 2. Key Components of the Script
+- **Shebang:** `#!/bin/bash`
+    - Indicates that the script should be run using the Bash shell.
+
+### 3. Variables
+- **Region:** `region=$1`
+    - The AWS region is passed as an argument to the script.
+- **Source File:** `source resource_ids_centos.txt`
+    - Sources the `resource_ids_centos.txt` file to import variables defined in it.
+
+### 4. Error Handling
+- **Set -e:** `set -e`
+    - Ensures that the script exits immediately if any command exits with a non-zero status.
+
+### 5. Creating User Data Script
+**User Data Script:**
+```bash
+cat > userDataCentOsComplex.sh <<EOF
+#!/bin/bash
+# Install httpd, unzip, and aws-cli
+yum update -y
+yum install -y httpd unzip aws-cli
+
+# Start httpd service
+systemctl start httpd
+
+# Enable httpd service to start on boot
+systemctl enable httpd
+
+# Create a sample log file
+echo "This is a sample log file." > ./sample_log.txt
+
+# Upload the log file to S3 bucket
+bucket_name=$(grep bucket_name ./resource_ids_centos.txt | cut -d'=' -f2)
+aws s3 cp ./sample_log.txt s3://${bucket_name}/sample_log.txt
+
+# Download and unzip the website files
+cd /var/www/html
+wget https://www.tooplate.com/download/2137_barista_cafe -O barista_cafe.zip
+EOF
+```
+- Uses the `cat` command to create a user data script named `userDataCentOsComplex.sh`.
+- The script installs `httpd`, `unzip`, and `aws-cli`, starts and enables the `httpd` service, creates a sample log file, uploads it to an S3 bucket, and downloads and unzips website files.
+
+### 6. Launching EC2 Instances
+**Launch Instances:**
+```bash
+aws ec2 run-instances \
+        --image-id ami-0abcdef1234567890 \
+        --count 2 \
+        --instance-type t3.micro \
+        --key-name ${key_pair_name} \
+        --security-group-ids ${app_security_group_id} \
+        --subnet-id ${private_subnet_id_2} \
+        --user-data file://userDataCentOsComplex.sh \
+        --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value='${instance_name}_2'}]' \
+        --region ${region} \
+        --monitoring "Enabled=false" \
+        --iam-instance-profile Name=${instance_profile_name} \
+        --block-device-mappings '[{"DeviceName":"/dev/sdh","Ebs":{"VolumeSize":8,"DeleteOnTermination":true}}]' \
+        --placement "AvailabilityZone=${available_zone_2},GroupName=${placement_group_name}" \
+        --instance-initiated-shutdown-behavior "terminate" \
+        --query 'Instances[*].InstanceId' --output text
+```
+
+### 7. Combining and Storing Instance IDs
+**Combine Instance IDs:**
+```bash
+instance_ids="${instance_ids_1} ${instance_ids_2}"
+```
+**Store Instance IDs:**
+```bash
+echo "instance_ids=(${instance_ids})" >> resource_ids_centos.txt
+```
+
+### 8. Waiting for Instances to be Running
+**Wait for Running State:**
+```bash
+aws ec2 wait instance-running --instance-ids ${instance_ids} --region ${region}
+```
+**Wait for Status Checks to Pass:**
+```bash
+aws ec2 wait instance-status-ok --instance-ids ${instance_ids} --region ${region}
+```
+
+### 9. Output Message
+**Print Message:**
+```bash
+echo "Launched EC2 instances in private subnets with IDs: ${instance_ids}"
+```
+
+### Syntax of Various Commands
+**Creating User Data Script:**
+```bash
+cat > userDataCentOsComplex.sh <<EOF
+#!/bin/bash
+# Install httpd, unzip, and aws-cli
+yum update -y
+yum install -y httpd unzip aws-cli
+
+# Start httpd service
+systemctl start httpd
+
+# Enable httpd service to start on boot
+systemctl enable httpd
+
+# Create a sample log file
+echo "This is a sample log file." > ./sample_log.txt
+
+# Upload the log file to S3 bucket
+bucket_name=$(grep bucket_name ./resource_ids_centos.txt | cut -d'=' -f2)
+aws s3 cp ./sample_log.txt s3://${bucket_name}/sample_log.txt
+
+# Download and unzip the website files
+cd /var/www/html
+wget https://www.tooplate.com/download/2137_barista_cafe -O barista_cafe.zip
+EOF
+```
+
+**AWS CLI Command: Launch EC2 Instances:**
+```bash
+aws ec2 run-instances \
+        --image-id ami-0abcdef1234567890 \
+        --count 2 \
+        --instance-type t3.micro \
+        --key-name ${key_pair_name} \
+        --security-group-ids ${app_security_group_id} \
+        --subnet-id ${private_subnet_id_2} \
+        --user-data file://userDataCentOsComplex.sh \
+        --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value='${instance_name}_2'}]' \
+        --region ${region} \
+        --monitoring "Enabled=false" \
+        --iam-instance-profile Name=${instance_profile_name} \
+        --block-device-mappings '[{"DeviceName":"/dev/sdh","Ebs":{"VolumeSize":8,"DeleteOnTermination":true}}]' \
+        --placement "AvailabilityZone=${available_zone_2},GroupName=${placement_group_name}" \
+        --instance-initiated-shutdown-behavior "terminate" \
+        --query 'Instances[*].InstanceId' --output text
+```
+
+**Combining and Storing Instance IDs:**
+```bash
+instance_ids="${instance_ids_1} ${instance_ids_2}"
+echo "instance_ids=(${instance_ids})" >> resource_ids_centos.txt
+```
+
+**AWS CLI Command: Wait for Instances to be Running:**
+```bash
+aws ec2 wait instance-running --instance-ids ${instance_ids} --region ${region}
+```
+
+**AWS CLI Command: Wait for Status Checks to Pass:**
+```bash
+aws ec2 wait instance-status-ok --instance-ids ${instance_ids} --region ${region}
+```
+
+### Example Questions
+- **What is the purpose of the `set -e` command in the script?**
+    - It ensures that the script exits immediately if any command exits with a non-zero status.
+- **What does the user data script do in this context?**
+    - The user data script installs `httpd`, `unzip`, and `aws-cli`, starts and enables the `httpd` service, creates a sample log file, uploads it to an S3 bucket, and downloads and unzips website files.
+- **How does the script launch EC2 instances?**
+    - It uses the `aws ec2 run-instances` command with various parameters to specify the instance configuration, including the image ID, instance type, key pair, security group, subnet, user data script, tags, region, monitoring, instance profile, block device mappings, placement group, and shutdown behavior.
+- **How does the script ensure that the instances are running and have passed status checks?**
+    - It uses the `aws ec2 wait instance-running` and `aws ec2 wait instance-status-ok` commands to wait for the instances to be in the running state and to pass status checks.
+- **How does the script store the instance IDs?**
+    - It combines the instance IDs and appends them to the `resource_ids_centos.txt` file using the `echo` command with the `>>` operator.
