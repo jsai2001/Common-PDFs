@@ -223,3 +223,166 @@ kubectl port-forward $(kubectl get pods -l app=kibana -o jsonpath='{.items[0].me
 - **Commit and Push Changes:** Commits and pushes the updated frontend application to the Git repository.
 - **Wait for Propagation:** Waits for the changes to propagate.
 - **Apply Frontend Configurations:** Applies the frontend configurations (implied step).
+
+## Step By Step applying Kubernetes Configurations
+
+### mysql-secret.yaml
+
+#### 1. Understanding the Purpose of the File
+**Objective:** The `mysql-secret.yaml` file is used to create a Kubernetes Secret that securely stores the MySQL root password. Secrets are used to manage sensitive information such as passwords, OAuth tokens, and SSH keys.
+
+#### 2. Key Components of the YAML File
+- **apiVersion:** Specifies the version of the Kubernetes API to use.
+    ```yaml
+    apiVersion: v1
+    ```
+- **kind:** Specifies the type of Kubernetes resource.
+    ```yaml
+    kind: Secret
+    ```
+- **metadata:** Contains metadata about the resource, such as name.
+    ```yaml
+    metadata:
+        name: mysql-secret
+    ```
+- **type:** Specifies the type of secret. In this case, it is an Opaque secret, which means it contains arbitrary user-defined data.
+    ```yaml
+    type: Opaque
+    ```
+- **data:** Contains the secret data in base64-encoded format.
+    ```yaml
+    data:
+        MYSQL_ROOT_PASSWORD: cGFzc3dvcmQ=  # base64 encoded value of "password"
+    ```
+
+#### 3. Base64 Encoding
+**Base64 Encoding:** Kubernetes requires secret data to be base64-encoded. For example, the base64-encoded value of "password" is `cGFzc3dvcmQ=`.
+
+#### 4. Creating and Managing Secrets
+- **Create Secret from YAML File:**
+    ```sh
+    kubectl apply -f mysql-secret.yaml
+    ```
+    This command creates the secret defined in the `mysql-secret.yaml` file.
+
+- **View Secrets:**
+    ```sh
+    kubectl get secrets
+    ```
+    This command lists all secrets in the current namespace.
+
+- **Describe Secret:**
+    ```sh
+    kubectl describe secret mysql-secret
+    ```
+    This command provides detailed information about the `mysql-secret`.
+
+- **Decode Secret Data:**
+    ```sh
+    echo 'cGFzc3dvcmQ=' | base64 --decode
+    ```
+    This command decodes the base64-encoded secret data.
+
+#### Example Questions
+- **What is the purpose of the `mysql-secret.yaml` file?**
+    The `mysql-secret.yaml` file is used to create a Kubernetes Secret that securely stores the MySQL root password.
+
+- **What does the `type: Opaque` field specify in the secret definition?**
+    The `type: Opaque` field specifies that the secret contains arbitrary user-defined data.
+
+- **Why is the MySQL root password base64-encoded in the secret?**
+    Kubernetes requires secret data to be base64-encoded to ensure it is stored in a secure and standardized format.
+
+- **How do you create the secret defined in the `mysql-secret.yaml` file?**
+    You can create the secret by running the command `kubectl apply -f mysql-secret.yaml`.
+
+- **How can you view the details of the `mysql-secret`?**
+    You can view the details of the secret by running the command `kubectl describe secret mysql-secret`.
+
+### backend-service.yaml
+
+#### 1. Understanding the Purpose of the File
+**Objective:** The `backend-service.yaml` file is used to create a Kubernetes Service that exposes the backend application to external traffic. The service type is `LoadBalancer`, which provisions an external load balancer to route traffic to the backend pods.
+
+#### 2. Key Components of the YAML File
+- **apiVersion:** Specifies the version of the Kubernetes API to use.
+    ```yaml
+    apiVersion: v1
+    ```
+- **kind:** Specifies the type of Kubernetes resource.
+    ```yaml
+    kind: Service
+    ```
+- **metadata:** Contains metadata about the resource, such as name.
+    ```yaml
+    metadata:
+        name: backend-service
+    ```
+- **spec:** Defines the desired state of the service.
+    ```yaml
+    spec:
+        selector:
+            app: backend
+        ports:
+            - protocol: TCP
+                port: 3000
+                targetPort: 3000
+        type: LoadBalancer
+    ```
+
+#### 3. Detailed Explanation of Key Fields
+- **selector:** Specifies the label selector used to identify the pods that the service targets. In this case, it targets pods with the label `app: backend`.
+    ```yaml
+    selector:
+        app: backend
+    ```
+- **ports:** Defines the ports that the service exposes.
+    - **protocol:** Specifies the protocol used by the service (e.g., TCP).
+    - **port:** Specifies the port on which the service is exposed.
+    - **targetPort:** Specifies the port on the backend pods to which traffic is forwarded.
+    ```yaml
+    ports:
+        - protocol: TCP
+            port: 3000
+            targetPort: 3000
+    ```
+- **type:** Specifies the type of service. The `LoadBalancer` type provisions an external load balancer to route traffic to the backend pods.
+    ```yaml
+    type: LoadBalancer
+    ```
+
+#### 4. Creating and Managing Services
+- **Create Service from YAML File:**
+    ```sh
+    kubectl apply -f backend-service.yaml
+    ```
+    This command creates the service defined in the `backend-service.yaml` file.
+- **View Services:**
+    ```sh
+    kubectl get services
+    ```
+    This command lists all services in the current namespace.
+- **Describe Service:**
+    ```sh
+    kubectl describe service backend-service
+    ```
+    This command provides detailed information about the `backend-service`.
+- **Delete Service:**
+    ```sh
+    kubectl delete -f backend-service.yaml
+    ```
+    This command deletes the service defined in the `backend-service.yaml` file.
+
+#### Example Questions
+- **What is the purpose of the `backend-service.yaml` file?**
+    - The `backend-service.yaml` file is used to create a Kubernetes Service that exposes the backend application to external traffic using a load balancer.
+- **What does the `selector` field specify in the service definition?**
+    - The `selector` field specifies the label selector used to identify the pods that the service targets. In this case, it targets pods with the label `app: backend`.
+- **What is the significance of the `type: LoadBalancer` field in the service definition?**
+    - The `type: LoadBalancer` field provisions an external load balancer to route traffic to the backend pods, making the service accessible from outside the cluster.
+- **How do you create the service defined in the `backend-service.yaml` file?**
+    - You can create the service by running the command `kubectl apply -f backend-service.yaml`.
+- **How can you view the details of the `backend-service`?**
+    - You can view the details of the service by running the command `kubectl describe service backend-service`.
+
+### backend-deployment.yaml
