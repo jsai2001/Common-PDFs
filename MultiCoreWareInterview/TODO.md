@@ -7,13 +7,13 @@
 JOB is Development based , not DevOps based
 
 ### Python Topics to review
-- **Arrays** (11:30 - 11:45)
-- **Dynamic Programming** (11:45 - 12:00)
-- **Graph Basics** (12:00 - 12:15)
-- **Greedy Algorithms** (12:15 - 12:30)
-- **Linked Lists** (12:30 - 12:45)
-- **String** (12:45 - 13:00)
-- **Tree** (13:00 - 13:30)
+- **Arrays** (11:30 - 11:45) (Done)
+- **Dynamic Programming** (11:45 - 12:00) (Done)
+- **Graph Basics** (12:00 - 12:15) (Done)
+- **Greedy Algorithms** (12:15 - 12:30) (Done)
+- **Linked Lists** (12:30 - 12:45) (Done)
+- **String** (12:45 - 13:00) (Done)
+- **Tree** (13:00 - 13:30) (Done)
 
 ### Responsibilities
 - Design Kubernetes Cluster with High Availability and Multi-Replicaset
