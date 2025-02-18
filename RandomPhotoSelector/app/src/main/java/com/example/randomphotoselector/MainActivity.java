@@ -13,10 +13,13 @@ import android.os.Environment;
 import android.os.Handler;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
@@ -29,9 +32,12 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
@@ -72,6 +78,13 @@ public class MainActivity extends AppCompatActivity {
     private String videoDirectoryPath;
     private String photoDirectoryPath;
 
+    // Add these variables to your existing declarations
+    private TextView timerTextView;
+    private TextView clockTextView;
+    private long startTime;
+    private Handler timerHandler = new Handler();
+    private SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a", Locale.getDefault());
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -82,12 +95,51 @@ public class MainActivity extends AppCompatActivity {
 
         // Check and request permissions
         checkAndRequestPermissions();
+
+        // Set up double-tap gesture detector
+        setupDoubleTapGesture();
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private void setupDoubleTapGesture() {
+        GestureDetector gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onDoubleTap(@NonNull MotionEvent e) {
+                Log.d("MainActivity", "Double tap detected");
+                playNextRandomVideo();
+                return true;
+            }
+    
+            @Override
+            public boolean onDown(MotionEvent e) {
+                // Required to ensure other gesture events are processed
+                return true;
+            }
+        });
+    
+        videoView.setOnTouchListener(new View.OnTouchListener() {
+            @SuppressLint("ClickableViewAccessibility")
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                // Return true to indicate the touch event was handled
+                return gestureDetector.onTouchEvent(event);
+            }
+        });
+    
+        // Make VideoView clickable and focusable
+        videoView.setClickable(true);
+        videoView.setFocusable(true);
     }
 
     private void initializeViews() {
         randomImageView = findViewById(R.id.randomImageView);
         videoView = findViewById(R.id.videoView);
         recyclerView = findViewById(R.id.recyclerView);
+        timerTextView = findViewById(R.id.timerTextView);
+        clockTextView = findViewById(R.id.clockTextView);
+        // Start the timer
+        startTime = System.currentTimeMillis();
+        timerHandler.post(timerRunnable);
         if (recyclerView != null) {
             recyclerView.setLayoutManager(new LinearLayoutManager(this));
         }
@@ -310,9 +362,31 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    // Add this Runnable for the timer
+    private final Runnable timerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            long millis = System.currentTimeMillis() - startTime;
+            int seconds = (int) (millis / 1000);
+            int minutes = seconds / 60;
+            int hours = minutes / 60;
+            seconds = seconds % 60;
+            minutes = minutes % 60;
+
+            timerTextView.setText(String.format(Locale.getDefault(),
+                    "%02d:%02d:%02d", hours, minutes, seconds));
+            
+            // Update current time
+            clockTextView.setText(timeFormat.format(new Date()));
+            
+            timerHandler.postDelayed(this, 1000);
+        }
+    };
+
     @Override
     protected void onPause() {
         super.onPause();
+        timerHandler.removeCallbacks(timerRunnable);
         if (isAutoRandomRunning) {
             handler.removeCallbacks(autoRandomRunnable);
         }
@@ -337,6 +411,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        timerHandler.removeCallbacks(timerRunnable);
         if (handler != null) {
             handler.removeCallbacksAndMessages(null);
         }
@@ -351,6 +426,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        timerHandler.post(timerRunnable);
         showFiles();
     }
 
