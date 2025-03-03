@@ -75,8 +75,11 @@ public class MainActivity extends AppCompatActivity {
     // Update the storage path constants
     private static final String PHOTOS_FOLDER = "Photos";
     private static final String VIDEOS_FOLDER = "Videos";
+    private static final String FILES_FOLDER = "Files";
     public static String PHOTOS_DIR;
     public static String VIDEOS_DIR;
+    public static String FILES_DIR;
+
 
     private static final int REQUEST_CODE_PERMISSIONS = 101;
     private static final String[] REQUIRED_PERMISSIONS;
@@ -116,6 +119,8 @@ public class MainActivity extends AppCompatActivity {
     private int currentPhotoIndex = 0;
     private String videoDirectoryPath;
     private String photoDirectoryPath;
+    private String filesDirectoryPath;
+
 
     // Add these variables to your existing declarations
     private TextView timerTextView;
@@ -195,6 +200,7 @@ public class MainActivity extends AppCompatActivity {
                 // Use app-specific directory paths
                 videoDirectoryPath = VIDEOS_DIR;  // Using the app-specific constant
                 photoDirectoryPath = PHOTOS_DIR;  // Using the app-specific constant
+                filesDirectoryPath = FILES_DIR;  // Using the app-specific constant
 
                 // First show the files (this operation should run on background thread)
                 showFilesInBackground();
@@ -202,7 +208,7 @@ public class MainActivity extends AppCompatActivity {
                 // Then initialize selectors and paths on UI thread
                 runOnUiThread(() -> {
                     try {
-                        initializeSelectorsAndPaths(videoDirectoryPath, photoDirectoryPath);
+                        initializeSelectorsAndPaths(videoDirectoryPath, photoDirectoryPath, filesDirectoryPath);
                         setupButtonListeners();
 
                         // Enable views after initialization
@@ -302,7 +308,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void initializeSelectorsAndPaths(String videoPath, String photoPath) {
+    private void initializeSelectorsAndPaths(String videoPath, String photoPath, String filesPath) {
         try {
             randomVideoSelector = new RandomVideoSelector(videoPath);
             randomPhotoSelector = new RandomPhotoSelector(photoPath);
@@ -393,22 +399,28 @@ public class MainActivity extends AppCompatActivity {
             // Create directories and move files
             File photosDir = new File(appDir, PHOTOS_FOLDER);
             File videosDir = new File(appDir, VIDEOS_FOLDER);
+            File filesDir = new File(appDir, FILES_FOLDER);
             photosDir.mkdirs();
             videosDir.mkdirs();
+            filesDir.mkdirs();
     
             PHOTOS_DIR = photosDir.getAbsolutePath();
             VIDEOS_DIR = videosDir.getAbsolutePath();
+            FILES_DIR = filesDir.getAbsolutePath();
     
             // Move existing files instead of copying
             String oldPhotosPath = "/storage/emulated/0/Relaxation/Photos";
             String oldVideosPath = "/storage/emulated/0/Relaxation/Videos";
+            String oldFilesPath = "/storage/emulated/0/Relaxation/Files";
     
             moveFilesFromDirectory(new File(oldPhotosPath), photosDir);
             moveFilesFromDirectory(new File(oldVideosPath), videosDir);
+            moveFilesFromDirectory(new File(oldFilesPath), filesDir);
     
             // Delete old directories after moving files
             new File(oldPhotosPath).delete();
             new File(oldVideosPath).delete();
+            new File(oldFilesPath).delete();
             new File("/storage/emulated/0/Relaxation").delete();
 
             Log.d(TAG, "Directories initialized successfully");
@@ -658,8 +670,16 @@ public class MainActivity extends AppCompatActivity {
                     case MotionEvent.ACTION_DOWN:
                         dX = view.getX() - event.getRawX();
                         dY = view.getY() - event.getRawY();
+                        // Disable pose detection logic and make preview visible
+                        if (poseDetector != null) {
+                            poseDetector.close();
+                        }
+                        if (cameraExecutor != null) {
+                            cameraExecutor.shutdown();
+                        }
+                        previewView.setVisibility(View.VISIBLE);
                         return true;
-
+    
                     case MotionEvent.ACTION_MOVE:
                         view.animate()
                             .x(event.getRawX() + dX)
@@ -667,14 +687,16 @@ public class MainActivity extends AppCompatActivity {
                             .setDuration(0)
                             .start();
                         return true;
-
+    
                     case MotionEvent.ACTION_UP:
+                        // Enable pose detection logic and make preview visible
+                        setupPalmDetection();
                         if (Math.abs(view.getX() - (event.getRawX() + dX)) < 10 &&
                             Math.abs(view.getY() - (event.getRawY() + dY)) < 10) {
                             togglePoseDetection();
                         }
                         return true;
-
+    
                     default:
                         return false;
                 }

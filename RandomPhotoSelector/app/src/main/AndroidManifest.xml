@@ -15,6 +15,16 @@
         android:fullBackupOnly="true">
 
         <!-- Add this receiver -->
+        <receiver android:name=".DeviceEventReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_SHUTDOWN" />
+                <action android:name="android.intent.action.REBOOT" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Add this receiver -->
         <receiver android:name=".PanicButtonWidget"
             android:exported="true">
             <intent-filter>
@@ -36,6 +46,7 @@
                 android:resource="@xml/device_admin" />
             <intent-filter>
                 <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+                <action android:name="android.app.action.DEVICE_ADMIN_DISABLED" />
             </intent-filter>
         </receiver>
         
@@ -43,16 +54,22 @@
             android:name=".LoginActivity"
             android:exported="true"
             android:theme="@style/Theme.RandomPhotoSelector.Fullscreen">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
 
         <activity
             android:name=".MainActivity"
             android:exported="false"
             android:theme="@style/Theme.RandomPhotoSelector.Fullscreen">
+        </activity>
+
+        <activity
+            android:name=".StopwatchActivity"
+            android:exported="true"
+            android:theme="@style/Theme.RandomPhotoSelector.Fullscreen">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
     </application>
 
@@ -71,4 +88,5 @@
     tools:ignore="ProtectedPermissions" />
     <!-- Add these permissions -->
     <uses-permission android:name="android.permission.BIND_DEVICE_ADMIN" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 </manifest>
