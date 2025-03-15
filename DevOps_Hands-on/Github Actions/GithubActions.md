@@ -1,3 +1,18 @@
+## Definitely Needed
+### Step 1: Basic Workflow Setup
+### Step 2: Checking Out Code and Running a Script
+### Step 3: Adding Testing and Branch Filters
+### Step 5: Env Vars, Secrets, and Deployment
+## Add-On Topics
+### Step 6: Matrix Builds and Custom Actions
+### Step 7: Conditionals, Caching, and Artifacts
+## Advanced Topics
+### Step 8: Docker and Self-Hosted Runners
+### Step 9: Dynamic Workflows and Reusability
+### Step 10: Error Handling, Status Checks, and Advanced Deployment
+
+## Definitely Needed
+
 GitHub Actions is a CI/CD system that automates workflows based on events in your GitHub repository, like pushing code or creating a pull request. You define these workflows in YAML files, which live in your repo under `.github/workflows/`.
 
 Here’s a simple example to get us started: a workflow that runs a basic "Hello, World!" message whenever you push code to your repository.
@@ -410,6 +425,8 @@ Enable GitHub Pages in your repo settings (branch: `gh-pages`).
 
 Today, let’s tackle matrix builds for testing across multiple environments and briefly touch on creating a custom action. These show you can handle complex, scalable workflows—stuff that screams “I know CI/CD inside out.”
 
+## Add-On Topics
+
 ### Step 6: Matrix Builds and Custom Actions
 
 Here’s the updated `.github/workflows/hello-world.yml` with a matrix for the test job:
@@ -685,6 +702,8 @@ Create `test-logs` dir if needed. Tests must output a `.log` file (adjust Jest c
 - **Caching:** “Speeds up CI by reusing dependencies—key for large projects.”
 - **Conditionals:** “Fine-tunes execution—saves resources and aids debugging.”
 - **Artifacts:** “Persists outputs for analysis—think logs or build files.”
+
+## Advanced Topics
 
 Let’s take it to the bleeding edge with Docker in GitHub Actions and a touch of self-hosted runners. This is peak interview flex: showing you can containerize workflows and customize infrastructure—stuff that separates the pros from the pack.
 
