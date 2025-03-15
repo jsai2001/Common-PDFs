@@ -2,6 +2,7 @@
 ### Step 1: Basic Workflow Setup
 ### Step 2: Checking Out Code and Running a Script
 ### Step 3: Adding Testing and Branch Filters
+### Step 4: Multiple Jobs with Dependencies
 ### Step 5: Env Vars, Secrets, and Deployment
 ## Add-On Topics
 ### Step 6: Matrix Builds and Custom Actions
