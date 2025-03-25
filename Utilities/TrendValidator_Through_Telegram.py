@@ -5,7 +5,7 @@ import json
 import requests
 import time
 
-with open("./indexstocks.json", "r") as json_file:
+with open("Utilities\indexstocks.json", "r") as json_file:
     idxstocks = json.load(json_file)
 
 
@@ -111,7 +111,7 @@ def stockDetails(response):
 
 
 client_id = "6JO4FX24PZ-100"
-access_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJhcGkuZnllcnMuaW4iLCJpYXQiOjE3MDI4NDA2NTMsImV4cCI6MTcwMjg1OTQzMywibmJmIjoxNzAyODQwNjUzLCJhdWQiOlsieDowIiwieDoxIiwieDoyIiwiZDoxIiwiZDoyIiwieDoxIiwieDowIl0sInN1YiI6ImFjY2Vzc190b2tlbiIsImF0X2hhc2giOiJnQUFBQUFCbGYwbE5EZEV1R1BZSC1QeGJ3V3FtczllY2hOZkpxREotRTRNWVN0TVVjNXMzdnFZZHNFYmc4VUkzNlRQQlVLNXlYQU1yc2QwdnhHUmNvRmNVS3lBWmJOcUhLckxlZGxFZG1zUDJyV2hOS010NWdmZz0iLCJkaXNwbGF5X25hbWUiOiJKRUVWQU4gU0FJIEtBTkFQQVJUSEkiLCJvbXMiOiJLMSIsImhzbV9rZXkiOiJiZGU4MzRmNzMwMmM0OTNkNGFmNTc5OTk5ZjkxYzhiYzg1ZjNkMzZhYmM3NTRiOWE5YTlhNDYxYyIsImZ5X2lkIjoiWUowMDI5MSIsImFwcFR5cGUiOjEwMCwicG9hX2ZsYWciOiJOIn0.dWeGS-3khypjRou4KSqfDPcvm4FC79sZFo09McLOt14"
+access_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiI2Sk80RlgyNFBaIiwidXVpZCI6IjhlYTM1NWY5Y2M4NTRlMjg5ZmJiYmVkNGVlYjAzOGNkIiwiaXBBZGRyIjoiIiwibm9uY2UiOiIiLCJzY29wZSI6IiIsImRpc3BsYXlfbmFtZSI6IllKMDAyOTEiLCJvbXMiOiJSMCIsImhzbV9rZXkiOiIwNTUyZmY0ZDQ5MDY4N2FiM2M0YmY5OWUyZTY5YmE4ZDUzNDIwNmY0NjEwMzEwOWU1ZTgxNzQ5OCIsImlzRGRwaUVuYWJsZWQiOiJOIiwiaXNNdGZFbmFibGVkIjoiTiIsImF1ZCI6IltcImQ6MVwiLFwiZDoyXCIsXCJ4OjBcIixcIng6MVwiLFwieDoyXCJdIiwiZXhwIjoxNzQyOTQxMTcwLCJpYXQiOjE3NDI5MTExNzAsImlzcyI6ImFwaS5sb2dpbi5meWVycy5pbiIsIm5iZiI6MTc0MjkxMTE3MCwic3ViIjoiYXV0aF9jb2RlIn0.Kwrd6f05cj04__fqu55U1h7D90Prg0-kuJGcB69zADQ"
 fyers = fyersModel.FyersModel(
     client_id=client_id, token=access_token, is_async=False, log_path=""
 )
@@ -128,5 +128,6 @@ data = {"symbols": watch_Stocks}
 
 while True:
     response = fyers.quotes(data=data)
+    print(response)
     stockDetails(response)
     time.sleep(60)
