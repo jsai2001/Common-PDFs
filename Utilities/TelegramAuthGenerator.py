@@ -1,8 +1,8 @@
 from fyers_apiv3 import fyersModel
 
 # Replace these with your actual credentials from the FYERS API dashboard
-client_id = "6JO4FX24PZ-100"
-secret_key = "4U4PMVG04I"
+client_id = "BNBWBARW6S-100"
+secret_key = "PUET7YGTJH"
 redirect_uri = "https://fyers.in"
 
 # Initialize the session

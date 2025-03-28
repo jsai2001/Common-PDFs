@@ -1,6 +1,7 @@
 import os
 from PIL import Image
 from collections import defaultdict
+import cv2  # Add OpenCV for video processing
 
 def is_low_quality(image_path, min_resolution=(1280, 720)):
     try:
@@ -19,6 +20,19 @@ def get_image_dimensions(image_path):
         print(f"Error getting dimensions for image {image_path}: {e}")
         return None
 
+def get_video_dimensions(video_path):
+    try:
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            raise Exception("Cannot open video file")
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        cap.release()
+        return (width, height)
+    except Exception as e:
+        print(f"Error getting dimensions for video {video_path}: {e}")
+        return None
+
 def clean_images(folder_path):
     # Dictionary to store file sizes and list of filenames
     size_dict = defaultdict(list)
@@ -27,13 +41,19 @@ def clean_images(folder_path):
 
     for filename in os.listdir(folder_path):
         file_path = os.path.join(folder_path, filename)
-        if os.path.isfile(file_path) and filename.lower().endswith(('.png', '.jpg', '.jpeg','.mp4')):
-            size = os.path.getsize(file_path)
-            dimensions = get_image_dimensions(file_path)
+        if os.path.isfile(file_path):
+            if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+                dimensions = get_image_dimensions(file_path)
+            elif filename.lower().endswith('.mp4'):
+                dimensions = get_video_dimensions(file_path)
+            else:
+                continue
+
             if dimensions:
+                size = os.path.getsize(file_path)
                 size_dict[(size, dimensions)].append(filename)
             
-            if is_low_quality(file_path):
+            if filename.lower().endswith(('.png', '.jpg', '.jpeg')) and is_low_quality(file_path):
                 low_quality_images.append(filename)
 
     # Delete duplicates, keeping only one copy of each size and dimension
@@ -51,5 +71,5 @@ def clean_images(folder_path):
     print("Image cleanup completed. Your gallery is now a masterpiece of quality and uniqueness.")
 
 # Specify your folder path here
-folder_path = 'D:\\OnePlus_Images'
+folder_path = 'D:\\Street Fight'
 clean_images(folder_path)
