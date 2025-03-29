@@ -71,5 +71,5 @@ def clean_images(folder_path):
     print("Image cleanup completed. Your gallery is now a masterpiece of quality and uniqueness.")
 
 # Specify your folder path here
-folder_path = 'D:\\Street Fight'
+folder_path = 'D:\\Celkon'
 clean_images(folder_path)

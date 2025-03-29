@@ -301,11 +301,20 @@ I have a notice period of 60 days and can join immediately after serving it.
 
 ## Your message to the hiring manager
 
-Dear Hiring Manager,  
+Subject: Application for [Job Title] – Jeevan Sai Kanaparthi
 
-I am excited to apply for the Cloud Engineer - Kubernetes position. With over 2.5 years of experience as a DevOps Engineer, I have a solid foundation in Kubernetes and Docker for containerization and orchestration, as well as Jenkins for CI/CD pipeline management. My expertise extends to AWS CloudFormation, CloudWatch, EC2, S3, VPCs, subnets, and load balancers, allowing me to design and implement secure, scalable cloud infrastructure. Additionally, I have hands-on experience with Terraform, Ansible, Snowflake SQL, and automation using Shell scripting and Python, enabling me to optimize workflows and boost efficiency.
+Dear [Hiring Manager's Name],
 
-I am confident that my comprehensive skills in cloud technologies, containerization, automation, and monitoring will enable me to contribute effectively to your team. I look forward to the opportunity to discuss how my experience aligns with the goals of your organization.
+I’m excited to apply for the [Job Title] role at [Company Name]. With 3+ years as a Software and Cloud DevOps Engineer at NielsenIQ India, I’ve honed skills in AWS, Docker, Kubernetes, Terraform, and Python, driving automation and efficiency. I’m eager to contribute to [Company Name]’s [specific goal, e.g., "cloud innovation"].
 
-Best regards,  
+At NielsenIQ, I’ve cut deployment times by 25% with CI/CD pipelines (Jenkins, Github Actions), boosted performance 30% via Python scripts for Docker/Kubernetes, and improved reporting accuracy 45% using Snowflake SQL. I’ve also reduced provisioning time 20% with Terraform and Ansible, mentoring peers to lift team productivity 15%.
+
+I’m drawn to [Company Name] for [specific reason, e.g., "its impactful projects"]. I’d love to bring my DevOps and cloud expertise to your team. Reach me at (+91) 9182004425 or jeevansaikanaparthi@gmail.com to discuss further. Thanks for your time—I’m thrilled at the prospect of joining you!
+
+Best,
 Jeevan Sai Kanaparthi
+[https://jeevansaikanaparthi.netlify.app/]
+
+## Summary of your profile
+
+Jeevan Sai Kanaparthi is a Software and Cloud DevOps Engineer with over 3 years at NielsenIQ India, skilled in AWS, Docker, Kubernetes, Terraform, and Python. He’s optimized CI/CD pipelines (25% faster deployments), automated infrastructure (20% less provisioning time), and enhanced performance (30%) via scripting. Proficient in Snowflake SQL and Linux, he’s delivered scalable solutions, mentored peers, and reduced costs 25%. B.Tech (9.31 CGPA) from SRM University.

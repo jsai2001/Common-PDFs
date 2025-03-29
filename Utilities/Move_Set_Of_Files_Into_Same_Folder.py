@@ -22,6 +22,6 @@ def move_files(parent_dir, dest_dir):
     iterate_files(parent_dir, dest_dir)
 
 # Example usage
-parent_dir = "D:\\Private\\Street Fight"
-dest_dir = "D:\\Private\\Street Fight (Batched)"
+parent_dir = "D:\\Draft_Volumes"
+dest_dir = "D:\\Celkon"
 move_files(parent_dir, dest_dir)
