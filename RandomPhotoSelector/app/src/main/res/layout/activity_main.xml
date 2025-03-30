@@ -83,6 +83,19 @@
             android:background="@drawable/circle_button"
             android:textSize="10sp"
             android:text="P" />
+        
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/switchCameraButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            android:src="@drawable/ic_switch_camera"
+            android:contentDescription="@string/switch_camera"
+            android:backgroundTint="@color/colorPrimary"
+            android:tint="@android:color/white" />
 
         <!-- Camera preview on top -->
         <androidx.camera.view.PreviewView

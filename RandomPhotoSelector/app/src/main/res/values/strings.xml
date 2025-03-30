@@ -7,4 +7,5 @@
     <string name="videos">Videos</string>
     <string name="auto_random_str">Auto Random</string>
     <string name="stop_auto_random">Stop Auto Random</string>
+    <string name="switch_camera">Switch Camera</string>
 </resources>

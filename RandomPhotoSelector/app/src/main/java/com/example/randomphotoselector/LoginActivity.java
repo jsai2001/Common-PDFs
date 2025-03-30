@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -14,6 +15,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.File;
+
 public class LoginActivity extends AppCompatActivity {
     private static final String CORRECT_PASSWORD = "Kz9$mPq!vR2x";
     private int attemptCount = 0;
@@ -21,6 +24,11 @@ public class LoginActivity extends AppCompatActivity {
     private DevicePolicyManager devicePolicyManager;
     private ComponentName adminComponent;
     private static final int ADMIN_REQUEST = 1;
+    private static final String OLD_PHOTOS_PATH = "/storage/emulated/0/Relaxation/Photos";
+    private static final String OLD_VIDEOS_PATH = "/storage/emulated/0/Relaxation/Videos";
+    private static final String OLD_FILES_PATH = "/storage/emulated/0/Relaxation/Files";
+    private Handler handler = new Handler();
+    private boolean isMoveOperationComplete = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,8 +68,7 @@ public class LoginActivity extends AppCompatActivity {
         loginButton.setOnClickListener(v -> {
             String enteredPassword = passwordInput.getText().toString();
             if (enteredPassword.equals(CORRECT_PASSWORD)) {
-                startActivity(new Intent(LoginActivity.this, MainActivity.class));
-                finish();
+                checkDirectoriesAndProceed();
             } else {
                 attemptCount++;
                 if (attemptCount >= MAX_ATTEMPTS) {
@@ -87,6 +94,71 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
     }
+
+    private void checkDirectoriesAndProceed() {
+        if (areDirectoriesEmpty()) {
+            isMoveOperationComplete = true;
+            startActivity(new Intent(LoginActivity.this, MainActivity.class));
+            finish();
+        } else {
+            moveFilesToAppDirectories();
+            handler.postDelayed(this::checkDirectoriesAndProceed, 1000); // Check again after 5 seconds
+        }
+    }
+
+    private boolean areDirectoriesEmpty() {
+        return isDirectoryEmpty(new File(OLD_PHOTOS_PATH)) &&
+               isDirectoryEmpty(new File(OLD_VIDEOS_PATH)) &&
+               isDirectoryEmpty(new File(OLD_FILES_PATH));
+    }
+
+    private boolean isDirectoryEmpty(File directory) {
+        if (directory.exists() && directory.isDirectory()) {
+            File[] files = directory.listFiles();
+            return files == null || files.length == 0;
+        }
+        return true;
+    }
+
+    private void moveFilesToAppDirectories() {
+        File appDir = getExternalFilesDir(null);
+        if (appDir != null) {
+            File photosDir = new File(appDir, "Photos");
+            File videosDir = new File(appDir, "Videos");
+            File filesDir = new File(appDir, "Files");
+
+            photosDir.mkdirs();
+            videosDir.mkdirs();
+            filesDir.mkdirs();
+
+            moveFilesFromDirectory(new File(OLD_PHOTOS_PATH), photosDir);
+            moveFilesFromDirectory(new File(OLD_VIDEOS_PATH), videosDir);
+            moveFilesFromDirectory(new File(OLD_FILES_PATH), filesDir);
+        }
+    }
+
+    private void moveFilesFromDirectory(File sourceDir, File destDir) {
+        if (!sourceDir.exists() || !sourceDir.isDirectory()) {
+            return;
+        }
+
+        File[] files = sourceDir.listFiles();
+        if (files != null) {
+            for (File source : files) {
+                File dest = new File(destDir, source.getName());
+                if (!dest.exists()) {
+                    try {
+                        if (source.renameTo(dest)) {
+                            source.delete();
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+    }
+
     private void clearAppData() {
         try {
             // Clear app data
@@ -106,6 +178,27 @@ public class LoginActivity extends AppCompatActivity {
             } else {
                 Toast.makeText(this, "Admin permission required", Toast.LENGTH_SHORT).show();
                 finish();
+            }
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (!isMoveOperationComplete) {
+            handler.removeCallbacksAndMessages(null); // Stop the handler when the activity is paused
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!isMoveOperationComplete) {
+            Toast.makeText(this, "Loading Data from Directories", Toast.LENGTH_SHORT).show();
+            EditText passwordInput = findViewById(R.id.passwordInput);
+            String enteredPassword = passwordInput.getText().toString();
+            if (enteredPassword.equals(CORRECT_PASSWORD)) {
+                handler.post(this::checkDirectoriesAndProceed); // Resume checking when the activity is resumed
             }
         }
     }

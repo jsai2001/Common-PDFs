@@ -47,6 +47,7 @@ import androidx.documentfile.provider.DocumentFile;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.pose.PoseDetection;
@@ -73,12 +74,18 @@ import android.view.ScaleGestureDetector;
 
 public class MainActivity extends AppCompatActivity {
     // Update the storage path constants
+    private static final String DESI_FOLDER = "Desi";
+    private static final String FOREIGN_FOLDER = "Foreign";
+    public static String DESI_DIR;
+    public static String FOREIGN_DIR;
     private static final String PHOTOS_FOLDER = "Photos";
     private static final String VIDEOS_FOLDER = "Videos";
     private static final String FILES_FOLDER = "Files";
     public static String PHOTOS_DIR;
     public static String VIDEOS_DIR;
     public static String FILES_DIR;
+
+    private boolean isUsingDesiFolder = true; // Start with Desi folder
 
 
     private static final int REQUEST_CODE_PERMISSIONS = 101;
@@ -190,6 +197,11 @@ public class MainActivity extends AppCompatActivity {
     //         // Removed directory.delete() to keep the root folder
     //     }
     // }
+
+    private void switchCamera() {
+        isFrontCamera = !isFrontCamera; // Toggle the camera
+        startCamera(); // Restart the camera with the new lens facing
+    }
 
     private void initializeAppAfterPermissions() {
         runOnUiThread(() -> Toast.makeText(this, "Preparing files...", Toast.LENGTH_SHORT).show());
@@ -403,24 +415,36 @@ public class MainActivity extends AppCompatActivity {
             photosDir.mkdirs();
             videosDir.mkdirs();
             filesDir.mkdirs();
+            File desiDir = new File(appDir, DESI_FOLDER);
+            File foreignDir = new File(appDir, FOREIGN_FOLDER);
+            desiDir.mkdirs();
+            foreignDir.mkdirs();
     
             PHOTOS_DIR = photosDir.getAbsolutePath();
             VIDEOS_DIR = videosDir.getAbsolutePath();
             FILES_DIR = filesDir.getAbsolutePath();
+            DESI_DIR = desiDir.getAbsolutePath();
+            FOREIGN_DIR = foreignDir.getAbsolutePath();
     
             // Move existing files instead of copying
             String oldPhotosPath = "/storage/emulated/0/Relaxation/Photos";
             String oldVideosPath = "/storage/emulated/0/Relaxation/Videos";
             String oldFilesPath = "/storage/emulated/0/Relaxation/Files";
+            String oldDesiVideosPath = "/storage/emulated/0/Relaxation/Desi";
+            String oldForeignVideosPath = "/storage/emulated/0/Relaxation/Foreign";
     
             moveFilesFromDirectory(new File(oldPhotosPath), photosDir);
             moveFilesFromDirectory(new File(oldVideosPath), videosDir);
             moveFilesFromDirectory(new File(oldFilesPath), filesDir);
+            moveFilesFromDirectory(new File(oldDesiVideosPath), desiDir);
+            moveFilesFromDirectory(new File(oldForeignVideosPath), foreignDir);
     
             // Delete old directories after moving files
             new File(oldPhotosPath).delete();
             new File(oldVideosPath).delete();
             new File(oldFilesPath).delete();
+            new File(oldDesiVideosPath).delete();
+            new File(oldForeignVideosPath).delete();
             new File("/storage/emulated/0/Relaxation").delete();
 
             Log.d(TAG, "Directories initialized successfully");
@@ -647,6 +671,10 @@ public class MainActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerView);
         timerTextView = findViewById(R.id.timerTextView);
         clockTextView = findViewById(R.id.clockTextView);
+        togglePoseButton = findViewById(R.id.togglePoseButton);
+        // Add this field
+        FloatingActionButton switchCameraButton = findViewById(R.id.switchCameraButton); // Initialize the new button
+
         // Start the timer
         startTime = System.currentTimeMillis();
         timerHandler.post(timerRunnable);
@@ -656,8 +684,11 @@ public class MainActivity extends AppCompatActivity {
 
         setupButtonListeners();
 
-        togglePoseButton = findViewById(R.id.togglePoseButton);
+        // togglePoseButton = findViewById(R.id.togglePoseButton);
         setupMovableButton();
+
+        // Set up the switch camera button
+        switchCameraButton.setOnClickListener(v -> switchCamera());
     }
 
     // Add this new method
@@ -710,7 +741,7 @@ public class MainActivity extends AppCompatActivity {
         togglePoseButton.setBackgroundTintList(ColorStateList.valueOf(
             isPoseDetectionEnabled ? Color.GREEN : Color.RED
         ));
-
+    
         if (isPoseDetectionEnabled) {
             setupPalmDetection();
             previewView.setVisibility(View.VISIBLE);
@@ -718,10 +749,8 @@ public class MainActivity extends AppCompatActivity {
             if (poseDetector != null) {
                 poseDetector.close();
             }
-            if (cameraExecutor != null) {
-                cameraExecutor.shutdown();
-            }
-            previewView.setVisibility(View.GONE);
+            // Keep the camera on but stop pose detection
+            startCamera();
         }
     }
 
@@ -731,16 +760,16 @@ public class MainActivity extends AppCompatActivity {
             Log.e("MainActivity", "PreviewView not initialized");
             return;
         }
-
+    
         // Add this line to make preview movable
         setupMovablePreview();
-
+    
         cameraExecutor = Executors.newSingleThreadExecutor();
-
+    
         AccuratePoseDetectorOptions options = new AccuratePoseDetectorOptions.Builder()
             .setDetectorMode(AccuratePoseDetectorOptions.STREAM_MODE)
             .build();
-
+    
         poseDetector = PoseDetection.getClient(options);
         startCamera();
     }
@@ -758,75 +787,76 @@ public class MainActivity extends AppCompatActivity {
     // Update startCamera() method
     @OptIn(markerClass = ExperimentalGetImage.class)
     private void startCamera() {
-        if (!isPoseDetectionEnabled) return;
-        ListenableFuture<ProcessCameraProvider> cameraProviderFuture = 
-            ProcessCameraProvider.getInstance(this);
+        ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(this);
 
-            cameraProviderFuture.addListener(() -> {
-                try {
-                    ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
+        cameraProviderFuture.addListener(() -> {
+            try {
+                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
 
-                    Preview preview = new Preview.Builder().build();
-                    preview.setSurfaceProvider(previewView.getSurfaceProvider());
+                Preview preview = new Preview.Builder().build();
+                preview.setSurfaceProvider(previewView.getSurfaceProvider());
 
-                    CameraSelector cameraSelector = new CameraSelector.Builder()
-                        .requireLensFacing(CameraSelector.LENS_FACING_FRONT)
-                        .build();
+                CameraSelector cameraSelector = new CameraSelector.Builder()
+                    .requireLensFacing(isFrontCamera ? CameraSelector.LENS_FACING_FRONT : CameraSelector.LENS_FACING_BACK)
+                    .build();
 
-                    ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .build();
+                ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .build();
 
-                        imageAnalysis.setAnalyzer(cameraExecutor, image -> {
-                            InputImage inputImage = InputImage.fromMediaImage(
-                                image.getImage(),
-                                image.getImageInfo().getRotationDegrees()
-                            );
-
-                    // Update the pose detection part in startCamera() method
-                    poseDetector.process(inputImage)
-                    .addOnSuccessListener(pose -> {
-                        // Get hand landmarks
-                        PoseLandmark leftWrist = pose.getPoseLandmark(PoseLandmark.LEFT_WRIST);
-                        PoseLandmark rightWrist = pose.getPoseLandmark(PoseLandmark.RIGHT_WRIST);
-                        PoseLandmark leftIndex = pose.getPoseLandmark(PoseLandmark.LEFT_INDEX);
-                        PoseLandmark rightIndex = pose.getPoseLandmark(PoseLandmark.RIGHT_INDEX);
-                        PoseLandmark leftThumb = pose.getPoseLandmark(PoseLandmark.LEFT_THUMB);
-                        PoseLandmark rightThumb = pose.getPoseLandmark(PoseLandmark.RIGHT_THUMB);
+                imageAnalysis.setAnalyzer(cameraExecutor, image -> {
+                    if (isPoseDetectionEnabled) {
+                        InputImage inputImage = InputImage.fromMediaImage(
+                            image.getImage(),
+                            image.getImageInfo().getRotationDegrees()
+                        );
                     
-                        // Get shoulder landmarks for reference
-                        PoseLandmark leftShoulder = pose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER);
-                        PoseLandmark rightShoulder = pose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER);
-                    
-                        // Check for hand gestures
-                        boolean leftHandRaised = leftWrist != null && leftShoulder != null && 
-                            (leftWrist.getPosition().y < leftShoulder.getPosition().y);
-                        boolean rightHandRaised = rightWrist != null && rightShoulder != null && 
-                            (rightWrist.getPosition().y < rightShoulder.getPosition().y);
-                    
-                        // Check for finger visibility
-                        boolean leftFingerVisible = leftIndex != null || leftThumb != null;
-                        boolean rightFingerVisible = rightIndex != null || rightThumb != null;
-                        boolean anyFingerVisible = leftFingerVisible || rightFingerVisible;
-                    
-                        // Check if enough time has passed since last trigger
-                        long currentTime = System.currentTimeMillis();
-                        if (currentTime - lastPoseDetectionTime >= POSE_DETECTION_COOLDOWN) {
-                            // Only trigger if hand is raised and fingers are visible
-                            if ((leftHandRaised || rightHandRaised) && anyFingerVisible) {
-                                lastPoseDetectionTime = currentTime; // Update last detection time
-                                runOnUiThread(() -> {
-                                    if (videoView.getVisibility() == View.VISIBLE) {
-                                        playNextRandomVideo();
-                                    } else {
-                                        displayNextRandomPhoto();
-                                    }
-                                });
-                            }
-                        }
-                    })
-                    .addOnFailureListener(e -> Log.e("MainActivity", "Pose detection failed", e))
-                    .addOnCompleteListener(task -> image.close());
+                        poseDetector.process(inputImage)
+                            .addOnSuccessListener(pose -> {
+                                // // Get hand landmarks
+                                // PoseLandmark leftWrist = pose.getPoseLandmark(PoseLandmark.LEFT_WRIST);
+                                // PoseLandmark rightWrist = pose.getPoseLandmark(PoseLandmark.RIGHT_WRIST);
+                                // PoseLandmark leftIndex = pose.getPoseLandmark(PoseLandmark.LEFT_INDEX);
+                                // PoseLandmark rightIndex = pose.getPoseLandmark(PoseLandmark.RIGHT_INDEX);
+                                // PoseLandmark leftThumb = pose.getPoseLandmark(PoseLandmark.LEFT_THUMB);
+                                // PoseLandmark rightThumb = pose.getPoseLandmark(PoseLandmark.RIGHT_THUMB);
+                            
+                                // // Get shoulder landmarks for reference
+                                // PoseLandmark leftShoulder = pose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER);
+                                // PoseLandmark rightShoulder = pose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER);
+                            
+                                // // Check for hand gestures
+                                // boolean leftHandRaised = leftWrist != null && leftShoulder != null &&
+                                //     (leftWrist.getPosition().y < leftShoulder.getPosition().y);
+                                // boolean rightHandRaised = rightWrist != null && rightShoulder != null &&
+                                //     (rightWrist.getPosition().y < rightShoulder.getPosition().y);
+                            
+                                // // Check for finger visibility
+                                // boolean leftFingerVisible = leftIndex != null || leftThumb != null;
+                                // boolean rightFingerVisible = rightIndex != null || rightThumb != null;
+                                // boolean anyFingerVisible = leftFingerVisible || rightFingerVisible;
+                            
+                                // // Check if enough time has passed since last trigger
+                                // long currentTime = System.currentTimeMillis();
+                                // if (currentTime - lastPoseDetectionTime >= POSE_DETECTION_COOLDOWN) {
+                                //     // Only trigger if hand is raised and fingers are visible
+                                //     if ((leftHandRaised || rightHandRaised) && anyFingerVisible) {
+                                //         lastPoseDetectionTime = currentTime; // Update last detection time
+                                //         runOnUiThread(() -> {
+                                //             if (videoView.getVisibility() == View.VISIBLE) {
+                                //                 playNextRandomVideo();
+                                //             } else {
+                                //                 displayNextRandomPhoto();
+                                //             }
+                                //         });
+                                //     }
+                                // }
+                            })
+                            .addOnFailureListener(e -> Log.e("MainActivity", "Pose detection failed", e))
+                            .addOnCompleteListener(task -> image.close());
+                    } else {
+                        image.close();
+                    }
                 });
             
                 cameraProvider.unbindAll();
@@ -925,19 +955,47 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private List<String> getVideoPathsFromFolder(String folderPath) {
+        File folder = new File(folderPath);
+        List<String> videoPaths = new ArrayList<>();
+    
+        if (folder.exists() && folder.isDirectory()) {
+            File[] files = folder.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isFile() && file.getName().endsWith(".mp4")) {
+                        videoPaths.add(file.getAbsolutePath());
+                    }
+                }
+            }
+        }
+    
+        return videoPaths;
+    }
+
     private void playNextRandomVideo() {
-        if (shuffledVideoPaths == null || shuffledVideoPaths.isEmpty()) {
-            Toast.makeText(this, "No videos found.", Toast.LENGTH_SHORT).show();
+        String currentFolderPath = isUsingDesiFolder ? DESI_DIR : FOREIGN_DIR;
+
+        // Get the video paths from the current folder
+        List<String> videoPaths = getVideoPathsFromFolder(currentFolderPath);
+
+        if (videoPaths == null || videoPaths.isEmpty()) {
+            Toast.makeText(this, "No videos found in " + (isUsingDesiFolder ? "Desi" : "Foreign") + " folder.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        if (currentVideoIndex >= shuffledVideoPaths.size()) {
+        // Shuffle the video paths if needed
+        Collections.shuffle(videoPaths);
+
+        // Play the next video
+        if (currentVideoIndex >= videoPaths.size()) {
             currentVideoIndex = 0;
         }
 
-        String videoPath = (String) shuffledVideoPaths.get(currentVideoIndex);
+        String videoPath = (String) videoPaths.get(currentVideoIndex);
         currentVideoIndex++;
         Log.d("MainActivity", "Playing video: " + videoPath);
+        
         Uri videoUri = Uri.parse(videoPath);
         videoView.setVideoURI(videoUri);
         videoView.setOnPreparedListener(mp -> {
@@ -950,6 +1008,9 @@ public class MainActivity extends AppCompatActivity {
             });
         videoView.setVisibility(View.VISIBLE);
         randomImageView.setVisibility(View.GONE);
+
+        // Toggle the folder for the next click
+        isUsingDesiFolder = !isUsingDesiFolder;
     }
 
     private void playPreviousRandomVideo() {
