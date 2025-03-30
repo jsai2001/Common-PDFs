@@ -263,8 +263,8 @@ public class MainActivity extends AppCompatActivity {
 
             // Update PreviewView size
             ViewGroup.LayoutParams params = previewView.getLayoutParams();
-            params.width = (int) (200 * mScaleFactor);
-            params.height = (int) (240 * mScaleFactor);
+            params.width = (int) (400 * mScaleFactor);
+            params.height = (int) (480 * mScaleFactor);
             previewView.setLayoutParams(params);
             return true;
         }
