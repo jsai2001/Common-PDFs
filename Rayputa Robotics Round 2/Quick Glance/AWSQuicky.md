@@ -1,4 +1,3 @@
-```markdown
 # AWS Prep Guide: 105 Questions Answered
 
 ## General Cloud Computing Concepts
@@ -371,4 +370,3 @@
 
 #### Ensured customer satisfaction?
 - Migrated app—zero downtime, cost savings, constant updates.
-```
