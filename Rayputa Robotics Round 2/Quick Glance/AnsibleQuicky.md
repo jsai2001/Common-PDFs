@@ -1,4 +1,3 @@
-```markdown
 Here’s your revised Ansible prep guide—keeping all 115 questions intact, with straightforward, impactful answers that hit the core of each query. Code blocks remain unchanged for clarity and hands-on reference. Let’s dive in.
 
 ## Basic Ansible Questions
@@ -449,7 +448,6 @@ Auto-runs unless `gather_facts: no`.
     ```
 ```
 
-```markdown
 # Ansible Variables and Facts
 
 ## What are Ansible Facts?
