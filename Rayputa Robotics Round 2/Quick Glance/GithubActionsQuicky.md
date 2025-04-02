@@ -1,4 +1,3 @@
-```markdown
 Here’s a revised version of the GitHub Actions interview preparation questions with concise, straightforward, and impactful answers. All questions remain intact, and code blocks are preserved for clarity where provided. The goal is to make the content digestible without losing depth.
 
 ## Basic Concepts
