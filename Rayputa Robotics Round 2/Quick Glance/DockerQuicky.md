@@ -1,4 +1,4 @@
-```markdown
+
 # Docker Prep Guide: 100 Questions Answered
 
 ## Docker Basics
