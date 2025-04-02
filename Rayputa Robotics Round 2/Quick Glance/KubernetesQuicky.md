@@ -1,4 +1,3 @@
-```markdown
 # Kubernetes Interview Preparation
 
 ## Kubernetes Basics
