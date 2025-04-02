@@ -324,7 +324,6 @@ Pod marked NotReady—traffic stops until it passes.
 Controls permissions—links Roles/ClusterRoles to users via Bindings.
 ```
 
-```markdown
 # Kubernetes Interview Questions and Answers
 
 ## RBAC and Security
