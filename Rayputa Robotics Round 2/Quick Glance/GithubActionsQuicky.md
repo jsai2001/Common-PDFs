@@ -351,7 +351,6 @@ jobs:
 ### GITHUB_TOKEN vs. PAT?
 - **GITHUB_TOKEN**: Auto-generated, repo-scoped, expires after run.  
 - **PAT**: User-created, customizable scope, persistent.
-```
 
 # GitHub Actions Workflow Guide
 
