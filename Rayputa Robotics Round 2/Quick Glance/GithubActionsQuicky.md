@@ -353,7 +353,6 @@ jobs:
 - **PAT**: User-created, customizable scope, persistent.
 ```
 
-```markdown
 # GitHub Actions Workflow Guide
 
 ## Debugging a Failing Workflow
