@@ -1,4 +1,3 @@
-```markdown
 # Terraform Prep Guide
 
 Revised with all 110 questions intact. Answers are concise, direct, and impactful, with code blocks unchanged for clarity. Overwhelm tackled—focus sharpened. Let’s go.
