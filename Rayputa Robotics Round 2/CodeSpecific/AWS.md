@@ -336,3 +336,91 @@ aws ecs run-task \
     --network-configuration "awsvpcConfiguration={subnets=[subnet-12345678],securityGroups=[sg-12345678],assignPublicIp=ENABLED}" \
     --region us-east-1
 ```
+## 18. Create EC2 instances with AutoScaling group
+
+Here's the text formatted in Markdown:
+
+### Here’s the clean AWS CLI code to set up an Auto Scaling group with CPU and memory utilization scaling:
+
+1. **Create Launch Template (with CloudWatch Agent)**  
+   ```bash
+   aws ec2 create-launch-template \
+     --launch-template-name MyWebServerTemplate \
+     --version-description "v1" \
+     --launch-template-data '{
+       "ImageId": "<ami-id>",
+       "InstanceType": "t2.micro",
+       "KeyName": "<key-pair-name>",
+       "NetworkInterfaces": [{"AssociatePublicIpAddress": true, "DeviceIndex": 0, "SubnetId": "<subnet-id>", "Groups": ["<security-group-id>"]}],
+       "UserData": "'$(echo -e "#!/bin/bash\nyum install -y amazon-cloudwatch-agent\n/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-config-wizard" | base64)'"
+     }'
+   ```
+
+2. **Create Auto Scaling Group**  
+   ```bash
+   aws autoscaling create-auto-scaling-group \
+     --auto-scaling-group-name MyWebServerASG \
+     --launch-template "LaunchTemplateName=MyWebServerTemplate,Version=1" \
+     --min-size 1 \
+     --max-size 4 \
+     --desired-capacity 2 \
+     --vpc-zone-identifier "<subnet-id-1>,<subnet-id-2>"
+   ```
+
+3. **Create Step Scaling Policy**  
+   Save to `step-scaling-policy.json`:  
+   ```json
+   {
+     "AdjustmentType": "ChangeInCapacity",
+     "StepAdjustments": [{"MetricIntervalLowerBound": 0, "ScalingAdjustment": 1}],
+     "Cooldown": 300
+   }
+   ```  
+   Run:  
+   ```bash
+   aws autoscaling put-scaling-policy \
+     --auto-scaling-group-name MyWebServerASG \
+     --policy-name MyStepScalingPolicy \
+     --policy-type StepScaling \
+     --step-scaling-policy-configuration file://step-scaling-policy.json
+   ```  
+   Note the `PolicyARN` from the output.
+
+4. **Create CloudWatch Alarms**  
+   **CPU Alarm (50% Threshold)**  
+   ```bash
+   aws cloudwatch put-metric-alarm \
+     --alarm-name HighCPUAlarm \
+     --metric-name CPUUtilization \
+     --namespace AWS/EC2 \
+     --statistic Average \
+     --period 300 \
+     --evaluation-periods 2 \
+     --threshold 50 \
+     --comparison-operator GreaterThanThreshold \
+     --dimensions Name=AutoScalingGroupName,Value=MyWebServerASG \
+     --alarm-actions <scaling-policy-arn>
+   ```  
+   **Memory Alarm (70% Threshold)**  
+   ```bash
+   aws cloudwatch put-metric-alarm \
+     --alarm-name HighMemoryAlarm \
+     --metric-name MemoryUtilization \
+     --namespace CWAgent \
+     --statistic Average \
+     --period 300 \
+     --evaluation-periods 2 \
+     --threshold 70 \
+     --comparison-operator GreaterThanThreshold \
+     --dimensions Name=AutoScalingGroupName,Value=MyWebServerASG \
+     --alarm-actions <scaling-policy-arn>
+   ```
+
+5. **Verify**  
+   ```bash
+   aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names MyWebServerASG
+   aws cloudwatch describe-alarms --alarm-names HighCPUAlarm HighMemoryAlarm
+   ```
+
+Replace `<ami-id>`, `<key-pair-name>`, `<subnet-id>`, `<security-group-id>`, and `<scaling-policy-arn>` with your values. Ensure the CloudWatch agent is configured to push memory metrics.
+```

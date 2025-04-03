@@ -601,3 +601,148 @@ resource "aws_instance" "my_ec2" {
 5. **EC2 Instance**: Creates an EC2 instance in the same subnet with its security group.
 
 You can connect to the RDS instance from the EC2 instance using the RDS endpoint (e.g., `my-rds-instance.abcdef123456.us-east-1.rds.amazonaws.com`) and port `3306` with the provided username and password.
+
+```markdown
+#### Terraform Code for Auto Scaling with CloudWatch Alarms
+
+##### Terraform Configuration (main.tf)
+
+```hcl
+provider "aws" {
+    region = "us-east-1" # Replace with your region
+}
+
+# VPC and Subnet (assumed pre-existing, or create them)
+data "aws_vpc" "default" {
+    default = true
+}
+
+data "aws_subnets" "default" {
+    filter {
+        name   = "vpc-id"
+        values = [data.aws_vpc.default.id]
+    }
+}
+
+# Security Group
+resource "aws_security_group" "web_sg" {
+    vpc_id = data.aws_vpc.default.id
+    ingress {
+        from_port   = 80
+        to_port     = 80
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+    ingress {
+        from_port   = 22
+        to_port     = 22
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+    egress {
+        from_port   = 0
+        to_port     = 0
+        protocol    = "-1"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+}
+
+# Launch Template with CloudWatch Agent
+resource "aws_launch_template" "web_template" {
+    name_prefix   = "MyWebServerTemplate"
+    image_id      = "<ami-id>" # Replace with your AMI ID
+    instance_type = "t2.micro"
+    key_name      = "<key-pair-name>" # Replace with your key pair
+
+    network_interfaces {
+        associate_public_ip_address = true
+        security_groups             = [aws_security_group.web_sg.id]
+    }
+
+    user_data = base64encode(<<-EOF
+                            #!/bin/bash
+                            yum install -y amazon-cloudwatch-agent
+                            echo '{"metrics":{"namespace":"CWAgent","metrics_collected":{"mem":{"measurement":["mem_used_percent"]}}}}' > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+                            /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+                            EOF
+    )
+}
+
+# Auto Scaling Group
+resource "aws_autoscaling_group" "web_asg" {
+    name                = "MyWebServerASG"
+    min_size            = 1
+    max_size            = 4
+    desired_capacity    = 2
+    vpc_zone_identifier = data.aws_subnets.default.ids
+    launch_template {
+        id      = aws_launch_template.web_template.id
+        version = "$Latest"
+    }
+}
+
+# Scaling Policy (Step Scaling)
+resource "aws_autoscaling_policy" "step_scaling" {
+    name                   = "MyStepScalingPolicy"
+    policy_type            = "StepScaling"
+    adjustment_type        = "ChangeInCapacity"
+    autoscaling_group_name = aws_autoscaling_group.web_asg.name
+
+    step_adjustment {
+        scaling_adjustment          = 1
+        metric_interval_lower_bound = 0
+    }
+}
+
+# CloudWatch Alarm for CPU (50% Threshold)
+resource "aws_cloudwatch_metric_alarm" "cpu_alarm" {
+    alarm_name          = "HighCPUAlarm"
+    comparison_operator = "GreaterThanThreshold"
+    evaluation_periods  = 2
+    metric_name         = "CPUUtilization"
+    namespace           = "AWS/EC2"
+    period              = 300
+    statistic           = "Average"
+    threshold           = 50
+    dimensions = {
+        AutoScalingGroupName = aws_autoscaling_group.web_asg.name
+    }
+    alarm_actions = [aws_autoscaling_policy.step_scaling.arn]
+}
+
+# CloudWatch Alarm for Memory (70% Threshold)
+resource "aws_cloudwatch_metric_alarm" "memory_alarm" {
+    alarm_name          = "HighMemoryAlarm"
+    comparison_operator = "GreaterThanThreshold"
+    evaluation_periods  = 2
+    metric_name         = "mem_used_percent"
+    namespace           = "CWAgent"
+    period              = 300
+    statistic           = "Average"
+    threshold           = 70
+    dimensions = {
+        AutoScalingGroupName = aws_autoscaling_group.web_asg.name
+    }
+    alarm_actions = [aws_autoscaling_policy.step_scaling.arn]
+}
+```
+
+##### Steps to Apply
+
+1. Save the code in a file named `main.tf`.
+2. Replace placeholders:
+     - `<ami-id>`: Your AMI ID (e.g., `ami-0c55b159cbfafe1f0` for Amazon Linux 2 in `us-east-1`).
+     - `<key-pair-name>`: Your EC2 key pair name.
+3. Run the following commands:
+     ```bash
+     terraform init
+     terraform apply
+     ```
+4. Confirm with `yes` when prompted.
+
+##### Result
+
+- **CPU > 50%**: Adds 1 instance.
+- **Memory > 70%**: Adds 1 instance.
+- Scales up to a maximum of 4 instances based on step scaling triggered by either alarm.
+```
