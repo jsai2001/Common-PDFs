@@ -424,7 +424,7 @@ resource "aws_instance" "nginx_ec2" {
 }
 ```
 
-#### Notes:
+##### Notes:
 - **AMI**: The AMI `ami-0e86e20dae9224db8` corresponds to Ubuntu 20.04 LTS in the `us-east-1` region. For other regions or CentOS, replace the AMI ID accordingly (e.g., CentOS 7 AMI: `ami-0b2c7a2f6f2d513d4` in `us-east-1`).
 - **User Data**: The script uses `apt-get` for Ubuntu. For CentOS, replace it with `yum install -y nginx`.
 - **SSH Key**: Replace `my-key-pair` with your actual SSH key pair name.
@@ -514,7 +514,7 @@ resource "aws_instance" "nginx_ec2" {
 }
 ```
 
-#### Notes
+##### Notes
 
 - **AMI**: The AMI ID `ami-0b2c7a2f6f2d513d4` corresponds to CentOS 7 in the `us-east-1` region. Update the AMI ID if deploying in a different region.
 - **User Data**: The script installs and starts Nginx on CentOS 7. It includes the `epel-release` package to access the EPEL repository, which provides Nginx.
