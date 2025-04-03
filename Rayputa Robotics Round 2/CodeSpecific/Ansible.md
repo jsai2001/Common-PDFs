@@ -1,4 +1,4 @@
-1. **Create an EC2 instance using Ansible**
+### 1. **Create an EC2 instance using Ansible**
 ```yaml
 - name: Create an EC2 instance
     hosts: localhost
@@ -14,7 +14,7 @@
                 security_group: "sg-12345678"
 ```
 
-2. **Create an RDS instance using Ansible**
+### 2. **Create an RDS instance using Ansible**
 ```yaml
 - name: Create an RDS instance
     hosts: localhost
@@ -32,7 +32,7 @@
                 subnet_group: "my-subnet-group"
 ```
 
-3. **Create an S3 bucket using Ansible**
+### 3. **Create an S3 bucket using Ansible**
 ```yaml
 - name: Create an S3 bucket
     hosts: localhost
@@ -43,7 +43,7 @@
                 region: "us-east-1"
 ```
 
-4. **Create a VPC using Ansible**
+### 4. **Create a VPC using Ansible**
 ```yaml
 - name: Create a VPC
     hosts: localhost
@@ -55,7 +55,7 @@
                 region: "us-east-1"
 ```
 
-5. **Create a security group using Ansible**
+### 5. **Create a security group using Ansible**
 ```yaml
 - name: Create a security group
     hosts: localhost
@@ -72,7 +72,7 @@
                         cidr_ip: "0.0.0.0/0"
 ```
 
-6. **Create an IAM role using Ansible**
+### 6. **Create an IAM role using Ansible**
 ```yaml
 - name: Create an IAM role
     hosts: localhost
@@ -85,7 +85,7 @@
                 region: "us-east-1"
 ```
 
-7. **Create an EBS volume and attach it to an EC2 instance using Ansible**
+### 7. **Create an EBS volume and attach it to an EC2 instance using Ansible**
 ```yaml
 - name: Create and attach an EBS volume
     hosts: localhost
@@ -105,7 +105,7 @@
                 region: "us-east-1"
 ```
 
-8. **Create a Lambda function using Ansible**
+### 8. **Create a Lambda function using Ansible**
 ```yaml
 - name: Create a Lambda function
     hosts: localhost
@@ -121,7 +121,7 @@
                 region: "us-east-1"
 ```
 
-9. **Create an SNS topic using Ansible**
+### 9. **Create an SNS topic using Ansible**
 ```yaml
 - name: Create an SNS topic
     hosts: localhost
@@ -132,7 +132,7 @@
                 region: "us-east-1"
 ```
 
-10. **Create an Auto Scaling group using Ansible**
+### 10. **Create an Auto Scaling group using Ansible**
 ```yaml
 - name: Create an Auto Scaling group
     hosts: localhost
@@ -150,7 +150,7 @@
                 region: "us-east-1"
 ```
 
-11. **Attach a security group to an EC2 instance using Ansible**
+### 11. **Attach a security group to an EC2 instance using Ansible**
 ```yaml
 - name: Attach a security group to an EC2 instance
     hosts: localhost
@@ -163,7 +163,7 @@
                 state: present
 ```
 
-12. **Attach an IAM role to an EC2 instance using Ansible**
+### 12. **Attach an IAM role to an EC2 instance using Ansible**
 ```yaml
 - name: Attach an IAM role to an EC2 instance
     hosts: localhost
@@ -181,7 +181,7 @@
                 state: present
 ```
 
-13. **Attach a subnet to a VPC using Ansible**
+### 13. **Attach a subnet to a VPC using Ansible**
 ```yaml
 - name: Attach a subnet to a VPC
     hosts: localhost
@@ -194,7 +194,7 @@
                 region: "us-east-1"
 ```
 
-14. **Attach an internet gateway to a VPC using Ansible**
+### 14. **Attach an internet gateway to a VPC using Ansible**
 ```yaml
 - name: Attach an internet gateway to a VPC
     hosts: localhost
@@ -206,7 +206,7 @@
                 state: present
 ```
 
-15. **Attach a route table to a subnet using Ansible**
+### 15. **Attach a route table to a subnet using Ansible**
 ```yaml
 - name: Attach a route table to a subnet
     hosts: localhost
@@ -226,7 +226,7 @@
                 region: "us-east-1"
 ```
 
-16. **Create a CloudWatch alarm for an EC2 instance using Ansible**
+### 16. **Create a CloudWatch alarm for an EC2 instance using Ansible**
 ```yaml
 - name: Create a CloudWatch alarm for an EC2 instance
     hosts: localhost
@@ -247,7 +247,7 @@
                 region: "us-east-1"
 ```
 
-17. **Create a DynamoDB table using Ansible**
+### 17. **Create a DynamoDB table using Ansible**
 
 ```yaml
 - name: Create a DynamoDB table
@@ -263,7 +263,7 @@
                 region: "us-east-1"
 ```
 
-18. **Create an Elastic IP and attach it to an EC2 instance using Ansible**
+### 18. **Create an Elastic IP and attach it to an EC2 instance using Ansible**
 
 ```yaml
 - name: Create and attach an Elastic IP
@@ -281,7 +281,7 @@
                 region: "us-east-1"
 ```
 
-19. **Create a load balancer using Ansible**
+### 19. **Create a load balancer using Ansible**
 
 ```yaml
 - name: Create a load balancer
@@ -296,7 +296,7 @@
                 region: "us-east-1"
 ```
 
-20. **Attach a security group to an RDS instance using Ansible**
+### 20. **Attach a security group to an RDS instance using Ansible**
 
 ```yaml
 - name: Attach a security group to an RDS instance
@@ -310,7 +310,7 @@
                 apply_immediately: true
 ```
 
-21. **Create an RDS snapshot using Ansible**
+### 21. **Create an RDS snapshot using Ansible**
 
 ```yaml
 - name: Create an RDS snapshot
@@ -323,7 +323,7 @@
                 region: "us-east-1"
 ```
 
-22. **Create a Route 53 record using Ansible**
+### 22. **Create a Route 53 record using Ansible**
 
 ```yaml
 - name: Create a Route 53 record
@@ -339,7 +339,7 @@
                 region: "us-east-1"
 ```
 
-23. **Attach a Lambda function to an SNS topic using Ansible**
+### 23. **Attach a Lambda function to an SNS topic using Ansible**
 
 ```yaml
 - name: Attach a Lambda function to an SNS topic
@@ -353,7 +353,7 @@
                 region: "us-east-1"
 ```
 
-24. **Create an ECS cluster using Ansible**
+### 24. **Create an ECS cluster using Ansible**
 
 ```yaml
 - name: Create an ECS cluster
@@ -365,7 +365,7 @@
                 region: "us-east-1"
 ```
 
-25. **Create a task definition and attach it to an ECS cluster using Ansible**
+### 25. **Create a task definition and attach it to an ECS cluster using Ansible**
 
 ```yaml
 - name: Create a task definition and attach it to an ECS cluster
