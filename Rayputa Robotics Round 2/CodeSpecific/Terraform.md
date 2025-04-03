@@ -1,4 +1,4 @@
-1. **Create an EC2 instance using Terraform**
+#### 1. **Create an EC2 instance using Terraform**
     ```hcl
     resource "aws_instance" "my_ec2" {
       ami           = "ami-0c55b159cbfafe1f0"
@@ -9,7 +9,7 @@
     }
     ```
 
-2. **Create an RDS instance using Terraform**
+#### 2. **Create an RDS instance using Terraform**
     ```hcl
     resource "aws_db_instance" "my_rds" {
       identifier          = "my-rds-instance"
@@ -23,14 +23,14 @@
     }
     ```
 
-3. **Create an S3 bucket using Terraform**
+#### 3. **Create an S3 bucket using Terraform**
     ```hcl
     resource "aws_s3_bucket" "my_bucket" {
       bucket = "my-unique-bucket-name"
     }
     ```
 
-4. **Create a VPC using Terraform**
+#### 4. **Create a VPC using Terraform**
     ```hcl
     resource "aws_vpc" "my_vpc" {
       cidr_block = "10.0.0.0/16"
@@ -40,7 +40,7 @@
     }
     ```
 
-5. **Create a security group using Terraform**
+#### 5. **Create a security group using Terraform**
     ```hcl
     resource "aws_security_group" "my_sg" {
       name        = "my-security-group"
@@ -56,7 +56,7 @@
     }
     ```
 
-6. **Create an IAM role using Terraform**
+#### 6. **Create an IAM role using Terraform**
     ```hcl
     resource "aws_iam_role" "my_role" {
       name = "my-iam-role"
@@ -78,7 +78,7 @@
     }
     ```
 
-7. **Create an EBS volume and attach it to an EC2 instance using Terraform**
+#### 7. **Create an EBS volume and attach it to an EC2 instance using Terraform**
     ```hcl
     resource "aws_ebs_volume" "my_volume" {
       availability_zone = "us-east-1a"
@@ -93,7 +93,7 @@
     }
     ```
 
-8. **Create a Lambda function using Terraform**
+#### 8. **Create a Lambda function using Terraform**
     ```hcl
     resource "aws_lambda_function" "my_lambda" {
       function_name = "my-lambda-function"
@@ -105,14 +105,14 @@
     }
     ```
 
-9. **Create an SNS topic using Terraform**
+#### 9. **Create an SNS topic using Terraform**
     ```hcl
     resource "aws_sns_topic" "my_topic" {
       name = "my-sns-topic"
     }
     ```
 
-10. **Create an Auto Scaling group using Terraform**
+#### 10. **Create an Auto Scaling group using Terraform**
      ```hcl
      resource "aws_launch_template" "my_lt" {
         name_prefix   = "my-lt"
@@ -133,7 +133,7 @@
      }
      ```
 
-11. **Attach a security group to an EC2 instance using Terraform**
+#### 11. **Attach a security group to an EC2 instance using Terraform**
      ```hcl
      resource "aws_instance" "my_ec2_with_sg" {
         ami           = "ami-0c55b159cbfafe1f0"
@@ -143,7 +143,7 @@
      }
      ```
 
-12. **Attach an IAM role to an EC2 instance using Terraform**
+#### 12. **Attach an IAM role to an EC2 instance using Terraform**
      ```hcl
      resource "aws_iam_instance_profile" "my_profile" {
         name = "my-instance-profile"
@@ -158,7 +158,7 @@
      }
      ```
 
-13. **Attach a subnet to a VPC using Terraform**
+#### 13. **Attach a subnet to a VPC using Terraform**
      ```hcl
      resource "aws_subnet" "my_subnet" {
         vpc_id     = aws_vpc.my_vpc.id
@@ -167,14 +167,14 @@
      }
      ```
 
-14. **Attach an Internet Gateway to a VPC using Terraform**
+#### 14. **Attach an Internet Gateway to a VPC using Terraform**
 ```hcl
 resource "aws_internet_gateway" "my_igw" {
     vpc_id = "vpc-12345678"
 }
 ```
 
-15. **Attach a Route Table to a Subnet using Terraform**
+#### 15. **Attach a Route Table to a Subnet using Terraform**
 ```hcl
 resource "aws_route_table" "my_route_table" {
     vpc_id = "vpc-12345678"
@@ -190,7 +190,7 @@ resource "aws_route_table_association" "my_route_table_assoc" {
 }
 ```
 
-16. **Create a CloudWatch Alarm for an EC2 Instance using Terraform**
+#### 16. **Create a CloudWatch Alarm for an EC2 Instance using Terraform**
 ```hcl
 resource "aws_cloudwatch_metric_alarm" "ec2_cpu_alarm" {
     alarm_name          = "ec2-cpu-alarm"
@@ -208,7 +208,7 @@ resource "aws_cloudwatch_metric_alarm" "ec2_cpu_alarm" {
 }
 ```
 
-17. **Create a DynamoDB Table using Terraform**
+#### 17. **Create a DynamoDB Table using Terraform**
 ```hcl
 resource "aws_dynamodb_table" "my_dynamodb_table" {
     name           = "my-dynamodb-table"
@@ -221,7 +221,7 @@ resource "aws_dynamodb_table" "my_dynamodb_table" {
 }
 ```
 
-18. **Create an Elastic IP and Attach it to an EC2 Instance using Terraform**
+#### 18. **Create an Elastic IP and Attach it to an EC2 Instance using Terraform**
 ```hcl
 resource "aws_eip" "my_eip" {
     vpc = true
@@ -233,7 +233,7 @@ resource "aws_eip_association" "eip_assoc" {
 }
 ```
 
-19. **Create a Load Balancer using Terraform**
+#### 19. **Create a Load Balancer using Terraform**
 ```hcl
 resource "aws_lb" "my_alb" {
     name               = "my-alb"
@@ -244,7 +244,7 @@ resource "aws_lb" "my_alb" {
 }
 ```
 
-20. **Attach a Security Group to an RDS Instance using Terraform**
+#### 20. **Attach a Security Group to an RDS Instance using Terraform**
 ```hcl
 resource "aws_db_instance" "my_rds" {
     identifier           = "my-rds-instance"
@@ -258,7 +258,7 @@ resource "aws_db_instance" "my_rds" {
 }
 ```
 
-21. **Create an RDS Snapshot using Terraform**
+#### 21. **Create an RDS Snapshot using Terraform**
 ```hcl
 resource "aws_db_snapshot" "my_rds_snapshot" {
     db_instance_identifier = "my-rds-instance"
@@ -266,7 +266,7 @@ resource "aws_db_snapshot" "my_rds_snapshot" {
 }
 ```
 
-22. **Create a Route 53 Record using Terraform**
+#### 22. **Create a Route 53 Record using Terraform**
 ```hcl
 resource "aws_route53_record" "my_record" {
     zone_id = "Z1234567890ABCDEF"
@@ -277,7 +277,7 @@ resource "aws_route53_record" "my_record" {
 }
 ```
 
-23. **Attach a Lambda Function to an SNS Topic using Terraform**
+#### 23. **Attach a Lambda Function to an SNS Topic using Terraform**
 ```hcl
 resource "aws_sns_topic" "my_sns_topic" {
     name = "my-sns-topic"
@@ -306,14 +306,14 @@ resource "aws_lambda_permission" "sns_invoke" {
 }
 ```
 
-24. **Create an ECS Cluster using Terraform**
+#### 24. **Create an ECS Cluster using Terraform**
 ```hcl
 resource "aws_ecs_cluster" "my_ecs_cluster" {
     name = "my-ecs-cluster"
 }
 ```
 
-25. **Create a Task Definition and Attach it to an ECS Cluster using Terraform**
+#### 25. **Create a Task Definition and Attach it to an ECS Cluster using Terraform**
 ```hcl
 resource "aws_ecs_task_definition" "my_task" {
     family                   = "my-task"
@@ -347,7 +347,7 @@ resource "aws_ecs_service" "my_service" {
 }
 ```
 
-**Updated Terraform Code for Launching an Nginx Application on EC2 (Ubuntu 20.04 LTS)**
+#### **Updated Terraform Code for Launching an Nginx Application on EC2 (Ubuntu 20.04 LTS)**
 
 Below is the Terraform code to deploy an Nginx application on an EC2 instance using an Ubuntu AMI. The configuration includes all necessary resources such as VPC, subnet, security group, internet gateway, and route table. Nginx is installed via user data tailored for Ubuntu.
 
@@ -424,7 +424,7 @@ resource "aws_instance" "nginx_ec2" {
 }
 ```
 
-### Notes:
+#### Notes:
 - **AMI**: The AMI `ami-0e86e20dae9224db8` corresponds to Ubuntu 20.04 LTS in the `us-east-1` region. For other regions or CentOS, replace the AMI ID accordingly (e.g., CentOS 7 AMI: `ami-0b2c7a2f6f2d513d4` in `us-east-1`).
 - **User Data**: The script uses `apt-get` for Ubuntu. For CentOS, replace it with `yum install -y nginx`.
 - **SSH Key**: Replace `my-key-pair` with your actual SSH key pair name.
@@ -434,7 +434,7 @@ Let me know if you need further adjustments!
 
 
 
-**Terraform Code to Launch Nginx on EC2 (CentOS 7)**
+#### **Terraform Code to Launch Nginx on EC2 (CentOS 7)**
 
 Below is the Terraform configuration to deploy an Nginx application on an EC2 instance using a CentOS 7 AMI. This setup includes all necessary resources such as VPC, subnet, security group, internet gateway, and route table.
 
@@ -514,7 +514,7 @@ resource "aws_instance" "nginx_ec2" {
 }
 ```
 
-### Notes
+#### Notes
 
 - **AMI**: The AMI ID `ami-0b2c7a2f6f2d513d4` corresponds to CentOS 7 in the `us-east-1` region. Update the AMI ID if deploying in a different region.
 - **User Data**: The script installs and starts Nginx on CentOS 7. It includes the `epel-release` package to access the EPEL repository, which provides Nginx.
@@ -523,7 +523,7 @@ resource "aws_instance" "nginx_ec2" {
 After running `terraform apply`, you can access the Nginx welcome page at `http://<public-ip>`.
 ```
 
-**Connecting an RDS Instance to an EC2 Instance Using Terraform**
+#### **Connecting an RDS Instance to an EC2 Instance Using Terraform**
 
 Below is the Terraform code to connect an RDS instance to an EC2 instance. This setup assumes the EC2 instance will access the RDS instance over the network using a security group and VPC configuration.
 
@@ -601,4 +601,3 @@ resource "aws_instance" "my_ec2" {
 5. **EC2 Instance**: Creates an EC2 instance in the same subnet with its security group.
 
 You can connect to the RDS instance from the EC2 instance using the RDS endpoint (e.g., `my-rds-instance.abcdef123456.us-east-1.rds.amazonaws.com`) and port `3306` with the provided username and password.
-```
