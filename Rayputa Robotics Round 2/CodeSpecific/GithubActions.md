@@ -329,7 +329,7 @@ jobs:
                         --vpc-id vpc-12345678
 ```
 
-#### 15. Attach a route table to a subnet using GitHub Actions
+### 15. Attach a route table to a subnet using GitHub Actions
 
 ```yaml
 name: Attach Route Table to Subnet
@@ -356,7 +356,7 @@ jobs:
                         --subnet-id subnet-12345678
 ```
 
-#### 16. Create a CloudWatch alarm for an EC2 instance using GitHub Actions
+### 16. Create a CloudWatch alarm for an EC2 instance using GitHub Actions
 
 ```yaml
 name: Create CloudWatch Alarm
@@ -386,7 +386,7 @@ jobs:
                         --alarm-actions arn:aws:sns:us-east-1:123456789012:my-topic
 ```
 
-#### 17. Create a DynamoDB table using GitHub Actions
+### 17. Create a DynamoDB table using GitHub Actions
 
 ```yaml
 name: Create DynamoDB Table
@@ -410,7 +410,7 @@ jobs:
                         --billing-mode PAY_PER_REQUEST
 ```
 
-#### 18. Create an Elastic IP and attach it to an EC2 instance using GitHub Actions
+### 18. Create an Elastic IP and attach it to an EC2 instance using GitHub Actions
 
 ```yaml
 name: Create and Attach Elastic IP
@@ -433,7 +433,7 @@ jobs:
                         --allocation-id $EIP_ALLOC_ID
 ```
 
-#### 19. Create a load balancer using GitHub Actions
+### 19. Create a load balancer using GitHub Actions
 
 ```yaml
 name: Create Load Balancer
@@ -458,7 +458,7 @@ jobs:
                         --type application
 ```
 
-#### 20. Attach a security group to an RDS instance using GitHub Actions
+### 20. Attach a security group to an RDS instance using GitHub Actions
 
 ```yaml
 name: Attach Security Group to RDS
@@ -481,7 +481,7 @@ jobs:
                         --apply-immediately
 ```
 
-#### 21. Create an RDS snapshot using GitHub Actions
+### 21. Create an RDS snapshot using GitHub Actions
 
 ```yaml
 name: Create RDS Snapshot
@@ -503,7 +503,7 @@ jobs:
                         --db-snapshot-identifier my-rds-snapshot
 ```
 
-#### 22. Create a Route 53 record using GitHub Actions
+### 22. Create a Route 53 record using GitHub Actions
 
 ```yaml
 name: Create Route 53 Record
@@ -525,7 +525,7 @@ jobs:
                         --change-batch '{"Changes":[{"Action":"CREATE","ResourceRecordSet":{"Name":"www.example.com","Type":"A","TTL":300,"ResourceRecords":[{"Value":"192.0.2.1"}]}}]}'
 ```
 
-#### 23. Attach a Lambda function to an SNS topic using GitHub Actions
+### 23. Attach a Lambda function to an SNS topic using GitHub Actions
 
 ```yaml
 name: Attach Lambda to SNS Topic
@@ -548,7 +548,7 @@ jobs:
                         --notification-endpoint arn:aws:lambda:us-east-1:123456789012:function:my-lambda-function
 ```
 
-#### 24. Create an ECS cluster using GitHub Actions
+### 24. Create an ECS cluster using GitHub Actions
 
 ```yaml
 name: Create ECS Cluster
@@ -569,7 +569,7 @@ jobs:
                         --cluster-name my-ecs-cluster
 ```
 
-#### 25. Create a task definition and attach it to an ECS cluster using GitHub Actions
+### 25. Create a task definition and attach it to an ECS cluster using GitHub Actions
 
 ```yaml
 name: Create Task Definition and Attach to ECS
