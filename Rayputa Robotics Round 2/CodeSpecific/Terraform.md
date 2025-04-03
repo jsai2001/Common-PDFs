@@ -590,7 +590,7 @@ resource "aws_instance" "my_ec2" {
 }
 ```
 
-#### Explanation
+**Explanation**
 
 1. **VPC and Subnet**: Creates a VPC and a subnet for the resources.
 2. **Security Groups**:
