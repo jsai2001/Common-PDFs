@@ -424,7 +424,7 @@ resource "aws_instance" "nginx_ec2" {
 }
 ```
 
-##### Notes:
+**Notes:**
 - **AMI**: The AMI `ami-0e86e20dae9224db8` corresponds to Ubuntu 20.04 LTS in the `us-east-1` region. For other regions or CentOS, replace the AMI ID accordingly (e.g., CentOS 7 AMI: `ami-0b2c7a2f6f2d513d4` in `us-east-1`).
 - **User Data**: The script uses `apt-get` for Ubuntu. For CentOS, replace it with `yum install -y nginx`.
 - **SSH Key**: Replace `my-key-pair` with your actual SSH key pair name.
@@ -514,7 +514,7 @@ resource "aws_instance" "nginx_ec2" {
 }
 ```
 
-##### Notes
+**Notes**
 
 - **AMI**: The AMI ID `ami-0b2c7a2f6f2d513d4` corresponds to CentOS 7 in the `us-east-1` region. Update the AMI ID if deploying in a different region.
 - **User Data**: The script installs and starts Nginx on CentOS 7. It includes the `epel-release` package to access the EPEL repository, which provides Nginx.
@@ -602,10 +602,9 @@ resource "aws_instance" "my_ec2" {
 
 You can connect to the RDS instance from the EC2 instance using the RDS endpoint (e.g., `my-rds-instance.abcdef123456.us-east-1.rds.amazonaws.com`) and port `3306` with the provided username and password.
 
-```markdown
 #### Terraform Code for Auto Scaling with CloudWatch Alarms
 
-##### Terraform Configuration (main.tf)
+**Terraform Configuration (main.tf)**
 
 ```hcl
 provider "aws" {
@@ -727,7 +726,7 @@ resource "aws_cloudwatch_metric_alarm" "memory_alarm" {
 }
 ```
 
-##### Steps to Apply
+**Steps to Apply**
 
 1. Save the code in a file named `main.tf`.
 2. Replace placeholders:
@@ -740,7 +739,7 @@ resource "aws_cloudwatch_metric_alarm" "memory_alarm" {
      ```
 4. Confirm with `yes` when prompted.
 
-##### Result
+**Result**
 
 - **CPU > 50%**: Adds 1 instance.
 - **Memory > 70%**: Adds 1 instance.

@@ -340,7 +340,7 @@ aws ecs run-task \
 
 Here's the text formatted in Markdown:
 
-### Here’s the clean AWS CLI code to set up an Auto Scaling group with CPU and memory utilization scaling:
+**Here’s the clean AWS CLI code to set up an Auto Scaling group with CPU and memory utilization scaling:**
 
 1. **Create Launch Template (with CloudWatch Agent)**  
    ```bash
