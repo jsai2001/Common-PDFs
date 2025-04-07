@@ -402,11 +402,7 @@ Based on your resume, you have a strong background in DevOps, Cloud (AWS), CI/CD
 - **Think Out Loud**: Interviewers often want to hear your reasoning process, not just the solution.
 - **Edge Cases**: Be prepared to discuss what you’d do if initial fixes fail or if data is unavailable.
 
-These questions test your ability to think critically and act decisively under pressure—key traits for an SRE. Let me know if you’d like to practice answering any of these with a mock scenario!
-
 ---
-
-Below is an extensive list of on-call/live interview coding and troubleshooting questions specific to AWS Cloud, focusing solely on AWS CLI commands and Terraform (no Boto3 or Python scripting included). These questions are tailored for a DevOps SRE/SME role and test your ability to manage AWS infrastructure and troubleshoot issues in real-time scenarios.
 
 ---
 
