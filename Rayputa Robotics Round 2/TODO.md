@@ -25,3 +25,19 @@
 
 6. **HR-Based Questions**  
     - Prepare common HR-related questions.  
+
+**Focus on New Directory (Rapyuta Robotics SRE Round)**
+
+1. **Resume Based Questions**
+
+2. **SRE Based Questions**
+
+3. **SRE Troubleshooting**
+
+4. **On-Call Troubleshooting (AWS & Terraform)**
+
+5. **On-Call Troubleshootig (Kubernetes & Ansible & Github Actions)**
+
+6. **Analytical and Reasoning Questions specific to SRE**
+
+7. **BrainTeaserQuestions**
