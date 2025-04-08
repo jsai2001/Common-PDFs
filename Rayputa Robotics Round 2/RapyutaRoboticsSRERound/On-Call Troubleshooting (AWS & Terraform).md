@@ -1,5 +1,3 @@
-Here are the answers to your AWS CLI-based troubleshooting questions for an on-call scenario involving AWS and Terraform. I’ll provide clear, practical commands with brief explanations. Assume standard AWS CLI setup (credentials configured) and variables like region, VPC ID, etc., are placeholders—replace them with your specifics as needed. Current date is April 07, 2025, but these commands are timeless unless AWS deprecates something.
-
 ## AWS CLI-Based Questions
 
 **How would you use AWS CLI to find all EC2 instances in a specific VPC?**
@@ -253,8 +251,6 @@ aws lambda update-function-configuration --function-name <function-name> --timeo
 Timeout is in seconds; 10 is valid (max is 900 as of now).
 
 ## Terraform-Based Questions
-
-Here are the answers to your Terraform-related questions. I’ll provide concise, functional Terraform configurations for each task, assuming AWS as the provider. Each script is standalone but assumes you’ve set up the AWS provider (e.g., with `provider "aws" { region = "us-east-1" }`) and have appropriate credentials configured. I’ll use HCL syntax (Terraform’s native language) and keep explanations brief unless you ask for more detail.
 
 **31. Terraform configuration to create an S3 bucket with public read access**
 ```hcl
@@ -1122,3 +1118,511 @@ resource "aws_s3_bucket_public_access_block" "block" {
 ```
 
 **Notes:** Uses `AES256` by default. For KMS, set `sse_algorithm = "aws:kms"` and add a `kms_key_id`. The `public_access_block` ensures security.
+
+---
+
+**56. An EC2 instance is unresponsive. Use AWS CLI to check its status and reboot it.**  
+To check the status:  
+```bash
+aws ec2 describe-instances --instance-ids <instance-id> --query "Reservations[*].Instances[*].State.Name" --output text
+```
+To reboot the instance:  
+```bash
+aws ec2 reboot-instances --instance-ids <instance-id>
+```
+
+---
+
+**57. How would you use AWS CLI to identify and terminate EC2 instances older than 30 days?**  
+List instances with their launch time, filter those older than 30 days, and terminate:  
+```bash
+aws ec2 describe-instances --query "Reservations[*].Instances[?LaunchTime<'$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ')'].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids
+```
+Note: Use with caution—test the query first to avoid unintended terminations.
+
+---
+
+**58. An S3 bucket is nearing its storage limit. Write a command to move old files to Glacier.**  
+Move objects older than 30 days to Glacier:  
+```bash
+aws s3api list-objects-v2 --bucket <bucket-name> --query "Contents[?LastModified<'$(date -u -d '30 days ago' +%Y-%m-%d')'].Key" --output text | xargs -I {} aws s3api put-object --bucket <bucket-name> --key {} --storage-class GLACIER
+```
+Note: Ensure lifecycle rules are considered for automation.
+
+---
+
+**59. Use AWS CLI to troubleshoot why an Auto Scaling group isn’t launching new instances.**  
+Check the Auto Scaling group’s status and activities:  
+```bash
+aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names <asg-name>
+aws autoscaling describe-scaling-activities --auto-scaling-group-name <asg-name> --max-items 10
+```
+Look at `DesiredCapacity`, `MinSize`, `MaxSize`, and activity details for errors (e.g., launch template issues or quota limits).
+
+---
+
+**60. How do you use AWS CLI to fetch the last 10 minutes of logs for an ECS task?**  
+Get logs from CloudWatch Logs for the task:  
+```bash
+aws logs get-log-events --log-group-name <log-group-name> --log-stream-name <log-stream-name> --start-time $(date -d '10 minutes ago' +%s000) --end-time $(date +%s000) --output text
+```
+Find the log group and stream via the ECS task definition or console.
+
+---
+
+**61. An RDS instance is down. Write a command to check its status and initiate a failover.**  
+Check status:  
+```bash
+aws rds describe-db-instances --db-instance-identifier <db-instance-id> --query "DBInstances[*].DBInstanceStatus" --output text
+```
+Initiate failover (for Multi-AZ setups):  
+```bash
+aws rds failover-db-cluster --db-cluster-identifier <db-cluster-id>
+```
+
+---
+
+**62. Use AWS CLI to identify and delete unused Elastic IPs in a region.**  
+List unused Elastic IPs (not associated with instances):  
+```bash
+aws ec2 describe-addresses --query "Addresses[?AssociationId==null].AllocationId" --output text | xargs -r aws ec2 release-address --allocation-id
+```
+
+---
+
+**63. How would you use AWS CLI to check why a Lambda function failed its last execution?**  
+Fetch the latest execution logs from CloudWatch:  
+```bash
+aws logs filter-log-events --log-group-name /aws/lambda/<function-name> --filter-pattern "ERROR" --limit 10
+```
+Check the `message` field for failure details.
+
+---
+
+**64. An ELB is reporting unhealthy instances. Write a command to investigate and deregister them.**  
+List unhealthy instances:  
+```bash
+aws elbv2 describe-target-health --target-group-arn <target-group-arn> --query "TargetHealthDescriptions[?TargetHealth.State=='unhealthy'].Target.Id" --output text
+```
+Deregister them:  
+```bash
+aws elbv2 deregister-targets --target-group-arn <target-group-arn> --targets Id=<instance-id>
+```
+
+---
+
+**65. Use AWS CLI to update the security group of an EC2 instance to allow HTTPS traffic.**  
+Add HTTPS (port 443) to the security group:  
+```bash
+aws ec2 authorize-security-group-ingress --group-id <security-group-id> --protocol tcp --port 443 --cidr 0.0.0.0/0
+```
+Verify the instance uses this security group via `describe-instances`.
+
+---
+
+**66. How do you use AWS CLI to check the status of an S3 bucket replication rule?**  
+Check replication configuration and status:  
+```bash
+aws s3api get-bucket-replication --bucket <source-bucket-name>
+```
+Look at `Status` under `Rule` to confirm it’s enabled and working.
+
+---
+
+**67. An EKS cluster isn’t responding. Write a command to check its health and node status.**  
+Check cluster status:  
+```bash
+aws eks describe-cluster --name <cluster-name> --query "cluster.status"
+```
+Check node status:  
+```bash
+aws eks list-nodegroups --cluster-name <cluster-name> && aws eks describe-nodegroup --cluster-name <cluster-name> --nodegroup-name <nodegroup-name>
+```
+
+---
+
+**68. Use AWS CLI to restore an S3 object from a specific version.**  
+Copy a specific version to the original key:  
+```bash
+aws s3api copy-object --bucket <bucket-name> --key <object-key> --copy-source <bucket-name>/<object-key>?versionId=<version-id>
+```
+
+---
+
+**69. How would you use AWS CLI to troubleshoot a CloudWatch alarm that isn’t triggering?**  
+Check alarm status and history:  
+```bash
+aws cloudwatch describe-alarms --alarm-names <alarm-name>
+aws cloudwatch describe-alarm-history --alarm-name <alarm-name> --history-item-type StateUpdate
+```
+Verify the metric (e.g., via `get-metric-statistics`) and threshold settings.
+
+---
+
+**70. Write a command to resize an RDS instance to handle increased load.**  
+Modify the instance class:  
+```bash
+aws rds modify-db-instance --db-instance-identifier <db-instance-id> --db-instance-class <new-instance-class> --apply-immediately
+```
+Example: Change to `db.m5.large`.
+
+---
+
+---
+
+**71. An EC2 instance deployed with Terraform isn’t accessible. Debug the configuration live.**  
+To debug:  
+1. Check the Terraform configuration (`main.tf`):  
+   - Ensure the `subnet_id` is in a public subnet with an internet gateway.
+   - Verify the `security_groups` allow SSH (port 22) from your IP.
+   - Confirm `associate_public_ip_address = true`.
+   Example:  
+   ```hcl
+   resource "aws_instance" "example" {
+     ami           = "ami-12345678"
+     instance_type = "t2.micro"
+     subnet_id     = aws_subnet.public.id
+     security_groups = [aws_security_group.ssh.id]
+     associate_public_ip_address = true
+   }
+   ```
+2. Run `terraform plan` to validate changes.
+3. Use `terraform apply` and check the output for the public IP.
+4. If still inaccessible, run `aws ec2 describe-instances --instance-ids <instance-id>` to verify status and network settings.
+
+---
+
+**72. How would you use Terraform to update an existing S3 bucket to enable versioning?**  
+Update the bucket resource:  
+```hcl
+resource "aws_s3_bucket" "existing_bucket" {
+  bucket = "<bucket-name>"
+}
+
+resource "aws_s3_bucket_versioning" "versioning" {
+  bucket = aws_s3_bucket.existing_bucket.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+```
+Run `terraform apply` to enable versioning.
+
+---
+
+**73. A Terraform apply fails with a ‘resource already exists’ error. Resolve it live.**  
+This happens when a resource exists in AWS but not in Terraform state.  
+1. Import the resource into the state:  
+   ```bash
+   terraform import aws_s3_bucket.my_bucket <bucket-name>
+   ```
+2. Add the resource to your configuration:  
+   ```hcl
+   resource "aws_s3_bucket" "my_bucket" {
+     bucket = "<bucket-name>"
+   }
+   ```
+3. Run `terraform plan` to confirm alignment, then `terraform apply`.
+
+---
+
+**74. Write a Terraform script to add a new subnet to an existing VPC.**  
+```hcl
+resource "aws_vpc" "existing_vpc" {
+  cidr_block = "10.0.0.0/16"
+  # Assume this exists
+}
+
+resource "aws_subnet" "new_subnet" {
+  vpc_id            = aws_vpc.existing_vpc.id
+  cidr_block        = "10.0.3.0/24"
+  availability_zone = "us-east-1c"
+  tags = {
+    Name = "new-subnet"
+  }
+}
+```
+Run `terraform apply` to create the subnet.
+
+---
+
+**75. How do you use Terraform to update an RDS instance’s storage capacity?**  
+Modify the `aws_db_instance` resource:  
+```hcl
+resource "aws_db_instance" "example" {
+  identifier          = "my-rds-instance"
+  allocated_storage   = 50  # Increase from, e.g., 20 GB
+  instance_class      = "db.t3.medium"
+  engine              = "mysql"
+  username            = "admin"
+  password            = "password"
+  apply_immediately   = true
+}
+```
+Run `terraform apply` to update storage.
+
+---
+
+**76. A Terraform configuration for an ALB isn’t routing traffic. Troubleshoot and fix it.**  
+1. Check the ALB configuration:  
+   ```hcl
+   resource "aws_lb" "example" {
+     name               = "my-alb"
+     internal           = false
+     load_balancer_type = "application"
+     security_groups    = [aws_security_group.alb.id]
+     subnets            = [aws_subnet.public1.id, aws_subnet.public2.id]
+   }
+
+   resource "aws_lb_target_group" "tg" {
+     name     = "my-tg"
+     port     = 80
+     protocol = "HTTP"
+     vpc_id   = aws_vpc.main.id
+   }
+
+   resource "aws_lb_listener" "listener" {
+     load_balancer_arn = aws_lb.example.arn
+     port              = 80
+     protocol          = "HTTP"
+     default_action {
+       type             = "forward"
+       target_group_arn = aws_lb_target_group.tg.arn
+     }
+   }
+   ```
+2. Troubleshoot:  
+   - Ensure subnets are public (route table has an internet gateway).
+   - Verify security group allows port 80 inbound.
+   - Check target group health (instances registered and healthy).
+3. Fix by adjusting subnets or security groups, then run `terraform apply`.
+
+---
+
+**77. Write a Terraform script to add a new IAM policy to an existing role.**  
+```hcl
+resource "aws_iam_role" "existing_role" {
+  name = "my-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_iam_policy" "new_policy" {
+  name   = "new-policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action   = "s3:GetObject"
+      Effect   = "Allow"
+      Resource = "arn:aws:s3:::my-bucket/*"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "attach" {
+  role       = aws_iam_role.existing_role.name
+  policy_arn = aws_iam_policy.new_policy.arn
+}
+```
+Run `terraform apply` to attach the policy.
+
+---
+
+**78. How would you use Terraform to scale an EKS node group to 3 nodes?**  
+Update the `aws_eks_node_group` resource:  
+```hcl
+resource "aws_eks_node_group" "example" {
+  cluster_name    = aws_eks_cluster.example.name
+  node_group_name = "my-node-group"
+  node_role_arn   = aws_iam_role.node.arn
+  subnet_ids      = aws_subnet.example[*].id
+  scaling_config {
+    desired_size = 3  # Scale to 3 nodes
+    max_size     = 5
+    min_size     = 1
+  }
+}
+```
+Run `terraform apply` to scale the node group.
+
+---
+
+**79. A Terraform deployment for a Lambda function fails. Debug the configuration live.**  
+1. Check the configuration:  
+   ```hcl
+   resource "aws_lambda_function" "example" {
+     function_name = "my-lambda"
+     handler       = "index.handler"
+     runtime       = "nodejs16.x"
+     role          = aws_iam_role.lambda.arn
+     filename      = "lambda.zip"
+   }
+   ```
+2. Common issues:  
+   - `filename` doesn’t exist or isn’t uploaded.
+   - IAM role lacks `AWSLambdaBasicExecutionRole`.
+   - Syntax error in the handler or runtime.
+3. Fix by ensuring the ZIP file exists and role permissions are correct, then run `terraform apply`.
+
+---
+
+**80. Write a Terraform script to update a security group with a new inbound rule.**  
+```hcl
+resource "aws_security_group" "example" {
+  name        = "my-sg"
+  vpc_id      = aws_vpc.main.id
+}
+
+resource "aws_security_group_rule" "new_rule" {
+  type              = "ingress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.example.id
+}
+```
+Run `terraform apply` to add the HTTPS rule.
+
+---
+
+---
+
+**81. An EC2 instance isn’t launching due to a Terraform misconfiguration. Fix it and verify with AWS CLI.**  
+**Debug and Fix with Terraform:**  
+1. Check the Terraform configuration:  
+   ```hcl
+   resource "aws_instance" "example" {
+     ami           = "ami-12345678"  # Invalid AMI could cause failure
+     instance_type = "t2.micro"
+     subnet_id     = aws_subnet.public.id
+     security_groups = [aws_security_group.allow_ssh.id]
+   }
+   ```
+   Common issues:  
+   - Invalid `ami` for the region.
+   - `subnet_id` not in a valid VPC or missing route to an internet gateway.
+   - `security_groups` misconfigured or missing.
+2. Fix: Update the AMI to a valid one (e.g., `ami-0c55b159cbfafe1f0` for Amazon Linux 2 in us-east-1), ensure subnet and security group exist, then run:  
+   ```bash
+   terraform apply
+   ```
+**Verify with AWS CLI:**  
+```bash
+aws ec2 describe-instances --instance-ids <instance-id> --query "Reservations[*].Instances[*].[InstanceId, State.Name]" --output text
+```
+Check if the state is `running`.
+
+---
+
+**82. Use AWS CLI to check the status of an S3 bucket created by Terraform that’s missing.**  
+**Steps:**  
+1. Check if the bucket exists:  
+   ```bash
+   aws s3 ls s3://<bucket-name>
+   ```
+   If it fails with "NoSuchBucket," the bucket wasn’t created.
+2. Verify Terraform state:  
+   ```bash
+   terraform state list | grep aws_s3_bucket
+   ```
+   If the bucket resource (e.g., `aws_s3_bucket.my_bucket`) isn’t listed, Terraform didn’t create it.
+3. Check Terraform logs or run `terraform apply` again to see errors (e.g., permission issues or naming conflicts).
+4. If it exists but isn’t in state, import it:  
+   ```bash
+   terraform import aws_s3_bucket.my_bucket <bucket-name>
+   ```
+
+---
+
+**83. How would you use Terraform to update an RDS instance and confirm the change with AWS CLI?**  
+**Terraform Update:**  
+Update storage or instance class:  
+```hcl
+resource "aws_db_instance" "example" {
+  identifier          = "my-rds-instance"
+  allocated_storage   = 30  # Increase from 20 GB
+  instance_class      = "db.t3.medium"
+  engine              = "postgres"
+  username            = "admin"
+  password            = "password"
+  apply_immediately   = true
+}
+```
+Run:  
+```bash
+terraform apply
+```
+**Confirm with AWS CLI:**  
+```bash
+aws rds describe-db-instances --db-instance-identifier my-rds-instance --query "DBInstances[*].[DBInstanceStatus, AllocatedStorage, DBInstanceClass]" --output text
+```
+Verify `available` status, `30` GB storage, and `db.t3.medium` class.
+
+---
+
+**84. A Terraform-deployed Auto Scaling group isn’t scaling. Debug with AWS CLI commands.**  
+**Terraform Config Check:**  
+```hcl
+resource "aws_autoscaling_group" "example" {
+  name                = "my-asg"
+  min_size            = 1
+  max_size            = 3
+  desired_capacity    = 2
+  vpc_zone_identifier = [aws_subnet.subnet1.id, aws_subnet.subnet2.id]
+  launch_template {
+    id      = aws_launch_template.example.id
+    version = "$Latest"
+  }
+}
+```
+**Debug with AWS CLI:**  
+1. Check ASG status:  
+   ```bash
+   aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names my-asg --query "AutoScalingGroups[*].[MinSize, MaxSize, DesiredCapacity, Instances[*].InstanceId]"
+   ```
+   Ensure `DesiredCapacity` matches running instances.
+2. View scaling activities:  
+   ```bash
+   aws autoscaling describe-scaling-activities --auto-scaling-group-name my-asg --max-items 10
+   ```
+   Look for errors (e.g., "Launch template not found" or "Quota exceeded").
+3. Check instance health:  
+   ```bash
+   aws ec2 describe-instances --instance-ids <instance-ids-from-asg> --query "Reservations[*].Instances[*].State.Name"
+   ```
+4. Fix: Adjust `max_size`, quotas, or launch template in Terraform, then `terraform apply`.
+
+---
+
+**85. Write a Terraform script to create an SNS topic and use AWS CLI to subscribe an email.**  
+**Terraform Script:**  
+```hcl
+resource "aws_sns_topic" "example" {
+  name = "my-sns-topic"
+}
+```
+Run:  
+```bash
+terraform apply
+```
+Output the ARN:  
+```hcl
+output "sns_topic_arn" {
+  value = aws_sns_topic.example.arn
+}
+```
+**AWS CLI Subscription:**  
+Subscribe an email:  
+```bash
+aws sns subscribe --topic-arn <sns-topic-arn-from-output> --protocol email --notification-endpoint user@example.com
+```
+The user will receive a confirmation email to accept the subscription.
+
+---

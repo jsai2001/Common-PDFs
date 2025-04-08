@@ -513,10 +513,6 @@ Based on your resume, you have a strong background in DevOps, Cloud (AWS), CI/CD
 
 ---
 
-This list covers a wide range of AWS-specific tasks you might be asked to perform live, focusing on practical, hands-on skills with AWS CLI and Terraform. Let me know if you’d like to narrow it down or practice specific scenarios!
-
-Below is an extensive list of on-call/live interview questions specific to **Kubernetes**, **Ansible**, and **GitHub Actions**. These questions are tailored for a DevOps SRE/SME role and focus on real-time coding, configuration, and troubleshooting tasks you might be asked to solve during an interview. I’ve excluded AWS-specific CLI and Terraform questions (per your earlier request) and avoided Boto3-related content. The questions are designed to test your practical skills with these tools in a live setting.
-
 ---
 ## Kubernetes , Ansible , Github Actions On-Call Troubleshooting
 
