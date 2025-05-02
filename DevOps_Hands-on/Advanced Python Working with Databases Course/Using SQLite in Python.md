@@ -197,3 +197,159 @@ conn.close()
 - Always use parameterized queries (`?` with tuples) for safety.
 - Close database connections after use to free resources.
 - Modularize SQL operations into functions for reusability and maintainability.
+
+
+# SQLite Database Creation Notes
+
+## Overview
+The transcript outlines the process of creating and manipulating a SQLite database using Python in three different approaches: SQLite3 module, SQLAlchemy without expression language, and SQLAlchemy with expression language. Below are detailed notes with code snippets for each version.
+
+## Version 1: SQLite3 Module
+### Key Points
+- Uses the built-in `sqlite3` module to create and manage a SQLite database.
+- Database file: `users-sqlite`.
+- Creates a `users` table with columns: `user_id` (primary key, auto-incremented), `first_name`, `last_name`, `email`.
+- Auto-increment is used for `user_id` for simplicity, though not ideal for production due to overhead.
+- Data is inserted as a list of tuples, and a `SELECT` statement retrieves all records.
+
+### Code Snippet
+```python
+import sqlite3
+
+# Connect to database (creates file if it doesn't exist)
+conn = sqlite3.connect('users-sqlite')
+cursor = conn.cursor()
+
+# Create users table
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS users (
+        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        first_name TEXT,
+        last_name TEXT,
+        email TEXT
+    )
+''')
+
+# Data to insert
+users = [
+    ('John', 'Doe', 'john.doe@example.com'),
+    ('Jane', 'Smith', 'jane.smith@example.com')
+]
+
+# Insert data
+cursor.executemany('INSERT INTO users (first_name, last_name, email) VALUES (?, ?, ?)', users)
+
+# Select and display data
+cursor.execute('SELECT * FROM users')
+print(cursor.fetchall())
+
+# Commit and close
+conn.commit()
+conn.close()
+```
+
+### Execution
+- Activate the virtual environment: `source bin/activate`.
+- Run the script in the `version1` directory: `python database.py`.
+- Output shows inserted data, and the database file (`users-sqlite`) contains the records.
+
+## Version 2: SQLAlchemy (Without Expression Language)
+### Key Points
+- Uses SQLAlchemy to interact with the SQLite database.
+- Database is created via an engine.
+- Data is structured as a list of objects (not tuples) with attributes for `first_name`, `last_name`, and `email`.
+- Table creation and data insertion are handled programmatically, with SQLAlchemy managing the primary key.
+
+### Code Snippet
+```python
+from sqlalchemy import create_engine, Table, Column, Integer, String, MetaData
+
+# Create engine and database
+engine = create_engine('sqlite:///users-sqlite', echo=True)
+metadata = MetaData()
+
+# Define users table
+users = Table('users', metadata,
+              Column('user_id', Integer, primary_key=True, autoincrement=True),
+              Column('first_name', String),
+              Column('last_name', String),
+              Column('email', String))
+
+# Create table
+metadata.create_all(engine)
+
+# Data to insert
+users_data = [
+    {'first_name': 'John', 'last_name': 'Doe', 'email': 'john.doe@example.com'},
+    {'first_name': 'Jane', 'last_name': 'Smith', 'email': 'jane.smith@example.com'}
+]
+
+# Insert data
+with engine.connect() as conn:
+    conn.execute(users.insert(), users_data)
+    # Select and display data
+    result = conn.execute(users.select())
+    for row in result:
+        print(row)
+```
+
+### Execution
+- Run the script in the `version2` directory: `python database.py`.
+- Output displays inserted records with auto-generated `user_id` values (e.g., 1, 2, 3).
+
+## Version 3: SQLAlchemy (With Expression Language)
+### Key Points
+- Uses SQLAlchemy’s expression language for table creation and data manipulation.
+- Table is defined as a Python object with metadata and column definitions.
+- Data insertion and selection use expression-based statements.
+- The insertion statement is similar to the SQLite3 module’s SQL syntax.
+
+### Code Snippet
+```python
+from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String
+from sqlalchemy.sql import insert, select
+
+# Create engine and metadata
+engine = create_engine('sqlite:///users-sqlite', echo=True)
+metadata = MetaData()
+
+# Define users table
+users = Table('users', metadata,
+              Column('user_id', Integer, primary_key=True, autoincrement=True),
+              Column('first_name', String),
+              Column('last_name', String),
+              Column('email', String))
+
+# Create table
+metadata.create_all(engine)
+
+# Data to insert
+users_data = [
+    {'first_name': 'John', 'last_name': 'Doe', 'email': 'john.doe@example.com'},
+    {'first_name': 'Jane', 'last_name': 'Smith', 'email': 'jane.smith@example.com'}
+]
+
+# Insert and select data
+with engine.connect() as conn:
+    # Insert data
+    conn.execute(insert(users), users_data)
+    # Select data
+    result = conn.execute(select(users))
+    for row in result:
+        print(row)
+```
+
+### Execution
+- Run the script in the `version3` directory: `python database.py`.
+- Output includes the SQL insertion statement and the selected records.
+
+## Summary
+- **SQLite3 Module**: Simple, direct SQL queries, ideal for lightweight applications.
+- **SQLAlchemy (No Expression Language)**: Object-oriented, abstracts SQL, suitable for complex applications.
+- **SQLAlchemy (Expression Language)**: Combines SQL-like syntax with Pythonic table definitions, offering flexibility.
+- All versions create a `users` table, insert data, and retrieve it, with SQLAlchemy handling primary key increments automatically.
+
+## Additional Notes
+- The `AUTOINCREMENT` option simplifies development but may not be suitable for production due to performance overhead.
+- SQLAlchemy’s engine abstracts database connections, making it easier to switch database backends (e.g., from SQLite to PostgreSQL).
+- Always commit changes (`conn.commit()`) and close connections (`conn.close()`) in SQLite3 to persist data.
