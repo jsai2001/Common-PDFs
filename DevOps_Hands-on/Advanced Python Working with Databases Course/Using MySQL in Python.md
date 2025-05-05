@@ -1027,3 +1027,127 @@ with Session(engine) as session:
 - **Best Practices**: Use environment variables, encapsulate queries, and handle errors to improve security and maintainability.
 - **Flexibility**: SQLAlchemy ORM simplifies Pythonic data access, but `mysql-connector` is a viable alternative for direct SQL queries.
 
+# Creating and Querying a MySQL Database with SQLAlchemy
+
+## 1. **Objective**
+- Create a MySQL database (`red30`) and query it using Python with the SQLAlchemy ORM.
+
+## 2. **Steps to Create the Database**
+- Use the MySQL shell to create the database.
+- Command: `CREATE DATABASE red30`
+- Create a table named `sales` with columns as defined in the challenge.
+  - Note: The table is created directly in MySQL (not via SQLAlchemy) because, in practice, databases are often pre-existing.
+- Role of a software engineer: Focus on querying the database (retrieve, delete, insert data).
+
+## 3. **Using SQLAlchemy ORM**
+- **Setup**:
+  - Establish a connection to the `red30` database.
+  - Define a model for an individual sale, mapping attributes to columns in the `sales` table.
+  - Use the model to create sales records and add them to the database via a session.
+- **Execution**:
+  - Exit the MySQL shell and activate the virtual environment (located in the `MySQL_SQLAlchemy` folder).
+  - Run the Python script to add sales data to the database.
+  - Verify data insertion using the MySQL shell.
+
+## 4. **Querying the Database**
+- **Objective**: Identify the largest purchase (highest `order_total`).
+- **Method 1: Using `max` Function**
+  - Use SQLAlchemy’s `max` function to select the row with the highest `order_total`.
+  - Import `select` and `func` from `sqlalchemy`.
+  - Execute the query using `session.execute()` and use `scalar()` to return a single result (the max `order_total`).
+- **Method 2: Order by Descending**
+  - Retrieve all rows from the `sales` table, ordered by `order_total` in descending order (largest first).
+  - Execute the query and run the script.
+- **Output**:
+  - Highest `order_total`: 1500.
+  - Subsequent totals in descending order (e.g., ~1000, followed by others).
+
+## 5. **Environment Management**
+- Activate/deactivate the virtual environment as needed.
+- Run the Python script using: `python3 database.py`.
+
+---
+
+# Code Snippets
+
+## 1. **Creating the Database (MySQL Shell)**
+```sql
+CREATE DATABASE red30;
+```
+
+## 2. **SQLAlchemy Setup and Model Definition**
+```python
+from sqlalchemy import create_engine, Column, Integer, String, Float
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+# Database connection
+engine = create_engine('mysql://username:password@localhost/red30')
+Base = declarative_base()
+
+# Sales model
+class Sale(Base):
+    __tablename__ = 'sales'
+    id = Column(Integer, primary_key=True)
+    product = Column(String)
+    order_total = Column(Float)
+    # Add other columns as needed
+
+# Create tables
+Base.metadata.create_all(engine)
+
+# Create session
+Session = sessionmaker(bind=engine)
+session = Session()
+```
+
+## 3. **Inserting Data**
+```python
+# Example: Adding sales records
+sale1 = Sale(product='Product A', order_total=1500.0)
+sale2 = Sale(product='Product B', order_total=1000.0)
+session.add_all([sale1, sale2])
+session.commit()
+```
+
+## 4. **Querying the Largest Order (Method 1: `max`)**
+```python
+from sqlalchemy import select, func
+
+# Query for max order_total
+query = select(func.max(Sale.order_total))
+max_total = session.execute(query).scalar()
+print(f"Highest order total: {max_total}")
+```
+
+## 5. **Querying All Orders in Descending Order (Method 2)**
+```python
+# Query for all sales, ordered by order_total descending
+query = select(Sale).order_by(Sale.order_total.desc())
+results = session.execute(query).scalars().all()
+for sale in results:
+    print(f"Product: {sale.product}, Order Total: {sale.order_total}")
+```
+
+## 6. **Running the Script**
+```bash
+# Activate virtual environment
+source MySQL_SQLAlchemy/bin/activate
+
+# Run the script
+python3 database.py
+
+# Deactivate virtual environment
+deactivate
+```
+
+---
+
+# Key Points
+- **Database Creation**: Done in MySQL shell for realism (pre-existing databases).
+- **SQLAlchemy**: Used for ORM-based interaction (modeling, inserting, querying).
+- **Queries**:
+  - `max` function for single highest value.
+  - `order_by` for sorted results.
+- **Environment**: Managed via virtual environment for dependency isolation.
+- **Verification**: Always confirm database changes using the MySQL shell.
