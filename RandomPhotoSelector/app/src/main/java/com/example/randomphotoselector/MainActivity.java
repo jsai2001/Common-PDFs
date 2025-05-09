@@ -14,6 +14,11 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.media.PlaybackParams;
+import android.media.session.MediaSession;
+import android.media.session.PlaybackState;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,6 +27,7 @@ import android.os.Handler;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.GestureDetector;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -167,6 +173,20 @@ public class MainActivity extends AppCompatActivity {
     private static final int DELETION_TIMEOUT = 5000; // 5 seconds timeout
     private static final String TAG = "MainActivity";
 
+    private MediaSession mediaSession;
+
+    private float[] playbackSpeeds = {1.0f, 1.25f, 1.5f, 1.75f, 2.0f}; // Playback speed options
+    private int currentSpeedIndex = 0; // Index to track the current speed
+    private Button playbackSpeedButton; // Reference to the playback speed button
+
+    private MediaPlayer mediaPlayer; // MediaPlayer instance for controlling playback
+
+    private Button intervalButton;
+    private int[] intervals = {1, 2, 3, 4, 5}; // Available intervals in seconds
+    private int currentIntervalIndex = 4; // Default to 5 seconds
+    private Handler photoChangeHandler = new Handler(); // Handler for changing photos
+    private Runnable photoChangeRunnable;
+
     // private void setupUninstallCleanup() {
     //     String appPath = getApplicationInfo().sourceDir;
     //     File appFile = new File(appPath);
@@ -201,6 +221,63 @@ public class MainActivity extends AppCompatActivity {
     private void switchCamera() {
         isFrontCamera = !isFrontCamera; // Toggle the camera
         startCamera(); // Restart the camera with the new lens facing
+    }
+
+    private void setupMediaSession() {
+        mediaSession = new MediaSession(this, "RandomPhotoSelector");
+    
+        // Set the callback for media button events
+        mediaSession.setCallback(new MediaSession.Callback() {
+            @Override
+            public boolean onMediaButtonEvent(Intent mediaButtonIntent) {
+                KeyEvent keyEvent = mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+                if (keyEvent != null && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
+                    switch (keyEvent.getKeyCode()) {
+                        case KeyEvent.KEYCODE_MEDIA_NEXT:
+                            Log.d("MediaSession", "Next video gesture detected");
+                            playNextRandomVideo();
+                            return true;
+    
+                        case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
+                            Log.d("MediaSession", "Previous video gesture detected");
+                            playPreviousRandomVideo();
+                            return true;
+    
+                        default:
+                            break;
+                    }
+                }
+                return super.onMediaButtonEvent(mediaButtonIntent);
+            }
+        });
+    
+        // Set the playback state to allow media button events
+        PlaybackState playbackState = new PlaybackState.Builder()
+                .setActions(PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE |
+                            PlaybackState.ACTION_SKIP_TO_NEXT | PlaybackState.ACTION_SKIP_TO_PREVIOUS)
+                .build();
+        mediaSession.setPlaybackState(playbackState);
+    
+        // Activate the media session
+        mediaSession.setActive(true);
+    }
+
+    private void changePlaybackSpeed() {
+        currentSpeedIndex = (currentSpeedIndex + 1) % playbackSpeeds.length; // Cycle through speeds
+        float newSpeed = playbackSpeeds[currentSpeedIndex];
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+                PlaybackParams params = mediaPlayer.getPlaybackParams();
+                params.setSpeed(newSpeed);
+                mediaPlayer.setPlaybackParams(params);
+            }
+        } else {
+            Toast.makeText(this, "Playback speed adjustment is not supported on this device.", Toast.LENGTH_SHORT).show();
+        }
+
+        // Update the button text to reflect the current speed
+        playbackSpeedButton.setText(String.format(Locale.getDefault(), "%.2fx", newSpeed));
     }
 
     private void initializeAppAfterPermissions() {
@@ -402,6 +479,64 @@ public class MainActivity extends AppCompatActivity {
         
         // Add motion detection
         setupMotionDetection();
+
+        setupMediaSession();
+
+        setupScrollGesture();
+
+        // Initialize the interval button
+        intervalButton = findViewById(R.id.intervalButton);
+        intervalButton.setOnClickListener(v -> changeInterval());
+
+        // Initialize the Auto Random button
+        Button autoRandomButton = findViewById(R.id.autoRandomButton);
+        autoRandomButton.setOnClickListener(v -> toggleAutoRandomMode());
+    }
+
+    private void changeInterval() {
+        currentIntervalIndex = (currentIntervalIndex + 1) % intervals.length; // Cycle through intervals
+        int newInterval = intervals[currentIntervalIndex];
+        intervalButton.setText(newInterval + "s");
+
+        // Restart the photo change timer with the new interval
+        if (photoChangeRunnable != null) {
+            photoChangeHandler.removeCallbacks(photoChangeRunnable);
+            startPhotoChangeTimer();
+        }
+    }
+
+    private void toggleAutoRandomMode() {
+        if (intervalButton.getVisibility() == View.GONE) {
+            // Enable Auto Random mode
+            intervalButton.setVisibility(View.VISIBLE);
+            startPhotoChangeTimer();
+        } else {
+            // Disable Auto Random mode
+            intervalButton.setVisibility(View.GONE);
+            stopPhotoChangeTimer();
+        }
+    }
+
+    private void startPhotoChangeTimer() {
+        photoChangeRunnable = new Runnable() {
+            @Override
+            public void run() {
+                changePhoto(); // Method to change the photo
+                photoChangeHandler.postDelayed(this, intervals[currentIntervalIndex] * 1000L); // Schedule next change
+            }
+        };
+        photoChangeHandler.postDelayed(photoChangeRunnable, intervals[currentIntervalIndex] * 1000L);
+    }
+
+    private void stopPhotoChangeTimer() {
+        if (photoChangeRunnable != null) {
+            photoChangeHandler.removeCallbacks(photoChangeRunnable);
+        }
+    }
+
+    private void changePhoto() {
+        displayNextRandomPhoto();
+        // Toast.makeText(this, "Photo changed!", Toast.LENGTH_SHORT).show();
     }
 
     // Update the method call in initializeAppDirectories()
@@ -560,6 +695,66 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    private void adjustBrightness(float deltaY) {
+        ContentResolver contentResolver = getContentResolver();
+        try {
+            int currentBrightness = Settings.System.getInt(contentResolver, Settings.System.SCREEN_BRIGHTNESS);
+            int newBrightness = currentBrightness + (int) deltaY;
+            newBrightness = Math.max(0, Math.min(newBrightness, SCREEN_BRIGHTNESS_MAX)); // Clamp between 0 and max brightness
+
+            Settings.System.putInt(contentResolver, Settings.System.SCREEN_BRIGHTNESS, newBrightness);
+
+            WindowManager.LayoutParams layoutParams = getWindow().getAttributes();
+            layoutParams.screenBrightness = newBrightness / (float) SCREEN_BRIGHTNESS_MAX;
+            getWindow().setAttributes(layoutParams);
+
+            Toast.makeText(this, "Brightness: " + newBrightness, Toast.LENGTH_SHORT).show();
+        } catch (Settings.SettingNotFoundException e) {
+            Log.e("MainActivity", "Error adjusting brightness", e);
+        }
+    }
+
+    private void adjustVolume(float deltaY) {
+        AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+        if (audioManager != null) {
+            int direction = deltaY > 0 ? AudioManager.ADJUST_RAISE : AudioManager.ADJUST_LOWER;
+            audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, AudioManager.FLAG_SHOW_UI);
+        }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private void setupScrollGesture() {
+        GestureDetector gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+                if (e1 == null || e2 == null) return false;
+
+                float deltaY = e1.getY() - e2.getY(); // Positive for upward scroll, negative for downward scroll
+                float x = e1.getX();
+                float screenWidth = getResources().getDisplayMetrics().widthPixels;
+
+                if (x < screenWidth / 2) {
+                    // Left side: Adjust brightness
+                    adjustBrightness(deltaY);
+                } else {
+                    // Right side: Adjust volume
+                    adjustVolume(deltaY);
+                }
+
+                return true;
+            }
+
+            @Override
+            public boolean onDown(MotionEvent e) {
+                // Required to ensure other gesture events are processed
+                return true;
+            }
+        });
+
+        View rootView = findViewById(android.R.id.content);
+        rootView.setOnTouchListener((v, event) -> gestureDetector.onTouchEvent(event));
+    }
+
     private void hideViewsInitially() {
         if (randomImageView != null) randomImageView.setVisibility(View.INVISIBLE);
         if (videoView != null) videoView.setVisibility(View.INVISIBLE);
@@ -600,22 +795,43 @@ public class MainActivity extends AppCompatActivity {
         GestureDetector gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
             @Override
             public boolean onDoubleTap(@NonNull MotionEvent e) {
-                Log.d("MainActivity", "Double tap detected");
-                // Toggle between landscape and portrait
-                if (getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) {
-                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                    // Make video view full screen in landscape
-                    ViewGroup.LayoutParams params = videoView.getLayoutParams();
-                    params.width = ViewGroup.LayoutParams.MATCH_PARENT;
-                    params.height = ViewGroup.LayoutParams.MATCH_PARENT;
-                    videoView.setLayoutParams(params);
+                float x = e.getX();
+                float width = videoView.getWidth();
+
+                if (x < width / 3) {
+                    // Double-tap on the left portion: Seek backward by 5 seconds
+                    if (videoView.isPlaying()) {
+                        int currentPosition = videoView.getCurrentPosition();
+                        int newPosition = Math.max(currentPosition - 5000, 0); // Ensure it doesn't go below 0
+                        videoView.seekTo(newPosition);
+                        Toast.makeText(MainActivity.this, "Rewind 5 seconds", Toast.LENGTH_SHORT).show();
+                    }
+                } else if (x > 2 * width / 3) {
+                    // Double-tap on the right portion: Seek forward by 5 seconds
+                    if (videoView.isPlaying()) {
+                        int currentPosition = videoView.getCurrentPosition();
+                        int newPosition = Math.min(currentPosition + 5000, videoView.getDuration()); // Ensure it doesn't exceed duration
+                        videoView.seekTo(newPosition);
+                        Toast.makeText(MainActivity.this, "Forward 5 seconds", Toast.LENGTH_SHORT).show();
+                    }
                 } else {
-                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                    // Restore original video view size in portrait
-                    ViewGroup.LayoutParams params = videoView.getLayoutParams();
-                    params.width = ViewGroup.LayoutParams.MATCH_PARENT;
-                    params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                    videoView.setLayoutParams(params);
+                    // Double-tap on the center: Toggle between portrait and landscape
+                    Log.d("MainActivity", "Double tap detected in center");
+                    if (getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) {
+                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                        // Make video view full screen in landscape
+                        ViewGroup.LayoutParams params = videoView.getLayoutParams();
+                        params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                        params.height = ViewGroup.LayoutParams.MATCH_PARENT;
+                        videoView.setLayoutParams(params);
+                    } else {
+                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                        // Restore original video view size in portrait
+                        ViewGroup.LayoutParams params = videoView.getLayoutParams();
+                        params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                        params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                        videoView.setLayoutParams(params);
+                    }
                 }
                 return true;
             }
@@ -672,6 +888,7 @@ public class MainActivity extends AppCompatActivity {
         timerTextView = findViewById(R.id.timerTextView);
         clockTextView = findViewById(R.id.clockTextView);
         togglePoseButton = findViewById(R.id.togglePoseButton);
+        playbackSpeedButton = findViewById(R.id.playbackSpeedButton); // Initialize the playback speed button
         // Add this field
         FloatingActionButton switchCameraButton = findViewById(R.id.switchCameraButton); // Initialize the new button
 
@@ -689,6 +906,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Set up the switch camera button
         switchCameraButton.setOnClickListener(v -> switchCamera());
+
+        // Set up the playback speed button
+        playbackSpeedButton.setOnClickListener(v -> changePlaybackSpeed());
     }
 
     // Add this new method
@@ -900,21 +1120,18 @@ public class MainActivity extends AppCompatActivity {
         });
         autoRandomButton.setOnClickListener(v -> {
             stopVideo();
-            if (isAutoRandomRunning) {
-                handler.removeCallbacks(autoRandomRunnable);
-                isAutoRandomRunning = false;
-                autoRandomButton.setText("Auto Random");
-            } else {
-                autoRandomRunnable = new Runnable() {
-                    @Override
-                    public void run() {
-                        displayNextRandomPhoto();
-                        handler.postDelayed(this, 2000); // Change the delay as needed
-                    }
-                };
-                handler.post(autoRandomRunnable);
+            if (intervalButton.getVisibility() == View.GONE) {
+                // Enable Auto Random mode
+                intervalButton.setVisibility(View.VISIBLE); // Show the interval button
+                startPhotoChangeTimer(); // Start the photo change timer
                 isAutoRandomRunning = true;
                 autoRandomButton.setText("Stop Auto Random");
+            } else {
+                // Disable Auto Random mode
+                intervalButton.setVisibility(View.GONE); // Hide the interval button
+                stopPhotoChangeTimer(); // Stop the photo change timer
+                isAutoRandomRunning = false;
+                autoRandomButton.setText("Auto Random");
             }
         });
         scrollButton.setOnClickListener(v -> {
@@ -999,13 +1216,14 @@ public class MainActivity extends AppCompatActivity {
         Uri videoUri = Uri.parse(videoPath);
         videoView.setVideoURI(videoUri);
         videoView.setOnPreparedListener(mp -> {
+            mediaPlayer = mp; // Assign the MediaPlayer instance
             Log.d("MainActivity", "Video prepared: " + videoPath);
             videoView.start();
         });
         videoView.setOnCompletionListener(mp -> {
-                Log.d("MainActivity", "Video completed: " + videoPath);
-                playNextRandomVideo();
-            });
+            Log.d("MainActivity", "Video completed: " + videoPath);
+            playNextRandomVideo();
+        });
         videoView.setVisibility(View.VISIBLE);
         randomImageView.setVisibility(View.GONE);
 
@@ -1014,23 +1232,43 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void playPreviousRandomVideo() {
-        if (shuffledVideoPaths == null || shuffledVideoPaths.isEmpty()) {
-            Toast.makeText(this, "No videos found.", Toast.LENGTH_SHORT).show();
+        String currentFolderPath = isUsingDesiFolder ? DESI_DIR : FOREIGN_DIR;
+    
+        // Get the video paths from the current folder
+        List<String> videoPaths = getVideoPathsFromFolder(currentFolderPath);
+    
+        if (videoPaths == null || videoPaths.isEmpty()) {
+            Toast.makeText(this, "No videos found in " + (isUsingDesiFolder ? "Desi" : "Foreign") + " folder.", Toast.LENGTH_SHORT).show();
             return;
         }
-
+    
+        // Shuffle the video paths if needed
+        // Collections.shuffle(videoPaths);
+    
+        // Play the previous video
         currentVideoIndex--;
         if (currentVideoIndex < 0) {
-            currentVideoIndex = shuffledVideoPaths.size() - 1;
+            currentVideoIndex = videoPaths.size() - 1;
         }
-
-        String videoPath = (String) shuffledVideoPaths.get(currentVideoIndex);
-        Log.d("MainActivity", "Playing previous video: " + videoPath);
+    
+        String videoPath = videoPaths.get(currentVideoIndex);
+        Log.d("MainActivity", "Playing video: " + videoPath);
+    
         Uri videoUri = Uri.parse(videoPath);
         videoView.setVideoURI(videoUri);
-        videoView.start();
+        videoView.setOnPreparedListener(mp -> {
+            Log.d("MainActivity", "Video prepared: " + videoPath);
+            videoView.start();
+        });
+        videoView.setOnCompletionListener(mp -> {
+            Log.d("MainActivity", "Video completed: " + videoPath);
+            playNextRandomVideo(); // Automatically play the next video after completion
+        });
         videoView.setVisibility(View.VISIBLE);
         randomImageView.setVisibility(View.GONE);
+    
+        // Toggle the folder for the next click
+        isUsingDesiFolder = !isUsingDesiFolder;
     }
 
     private void stopVideo() {
@@ -1174,6 +1412,9 @@ public class MainActivity extends AppCompatActivity {
         timerHandler.removeCallbacks(timerRunnable);
         if (handler != null) {
             handler.removeCallbacksAndMessages(null);
+        }
+        if (mediaSession != null) {
+            mediaSession.release();
         }
     }
 
