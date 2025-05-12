@@ -163,3 +163,40 @@ def update_planet():
 - Ensure form data keys match expected fields; typos (e.g., `home_start` vs. `home_star`) cause errors.
 - PUT is the standard verb for updates, but some teams use POST; consider supporting both for flexibility.
 
+# API Delete Operation Notes
+
+## Deleting a Planet with a DELETE Method
+
+**Overview**: This section explains how to create a Flask route to delete a planet from the database using a DELETE request. The endpoint uses the planet’s `planet_id` to identify the record, checks for its existence, and requires JWT authentication.
+
+**Steps**:
+1. Define a Flask route `/remove_planet/<int:planet_id>` that accepts DELETE requests.
+2. Add the `@jwt_required` decorator to ensure authentication.
+3. Query the `Planet` model using SQLAlchemy, filtering by `planet_id`.
+4. If the planet exists, delete it using `db.session.delete()` and commit the change.
+5. Return a success message with a 202 Accepted status code.
+6. If the planet doesn’t exist, return a 404 Not Found message.
+7. Test the endpoint in Postman with a valid JWT and both existing and non-existing `planet_id` values.
+
+**Code Snippet**:
+```python
+@app.route('/remove_planet/<int:planet_id>', methods=['DELETE'])
+@jwt_required
+def remove_planet(planet_id):
+    planet = Planet.query.filter_by(planet_id=planet_id).first()
+    if planet:
+        db.session.delete(planet)
+        db.session.commit()
+        return jsonify({"message": "you deleted a planet"}), 202
+    return jsonify({"message": "that planet does not exist"}), 404
+```
+
+**Testing**:
+- Obtain a fresh JWT by sending a POST request to `http://localhost:5000/login` with valid credentials (e.g., `email=test@test.com`, `password=Password`).
+- DELETE `http://localhost:5000/remove_planet/1` with Bearer Token → Returns "you deleted a planet" (202 Accepted). Verify in DB Browser (refresh required) that the planet (e.g., Mercury) is removed.
+- DELETE `http://localhost:5000/remove_planet/999` (non-existing ID) with Bearer Token → Returns "that planet does not exist" (404 Not Found).
+
+**Notes**:
+- The endpoint performs a permanent deletion. Alternatively, some applications mark records as deleted using a flag field.
+- JWT protection ensures only authenticated users can delete planets.
+- Always refresh the database view in DB Browser to confirm changes.
