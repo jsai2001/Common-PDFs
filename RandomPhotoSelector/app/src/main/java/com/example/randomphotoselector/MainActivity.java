@@ -11,8 +11,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -34,6 +32,7 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
@@ -50,20 +49,19 @@ import androidx.camera.view.PreviewView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.documentfile.provider.DocumentFile;
+import androidx.lifecycle.Observer;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.mlkit.vision.common.InputImage;
-import com.google.mlkit.vision.pose.PoseDetection;
-import com.google.mlkit.vision.pose.PoseDetector;
-import com.google.mlkit.vision.pose.PoseLandmark;
-import com.google.mlkit.vision.pose.accurate.AccuratePoseDetectorOptions;
+//import com.google.mlkit.vision.common.InputImage;
+//import com.google.mlkit.vision.pose.PoseDetection;
+//import com.google.mlkit.vision.pose.PoseDetector;
+//import com.google.mlkit.vision.pose.PoseLandmark;
+//import com.google.mlkit.vision.pose.accurate.AccuratePoseDetectorOptions;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -71,12 +69,18 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import androidx.camera.core.ExperimentalGetImage;
 
 import android.view.ScaleGestureDetector;
+
+import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkInfo;
+import androidx.work.WorkManager;
 
 public class MainActivity extends AppCompatActivity {
     // Update the storage path constants
@@ -149,7 +153,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean isFrontCamera = true;
 
     // Update class fields
-    private PoseDetector poseDetector;
+//    private PoseDetector poseDetector;
 
     // Add these fields to your MainActivity class
     private int originalBrightness = -1;
@@ -187,36 +191,12 @@ public class MainActivity extends AppCompatActivity {
     private Handler photoChangeHandler = new Handler(); // Handler for changing photos
     private Runnable photoChangeRunnable;
 
-    // private void setupUninstallCleanup() {
-    //     String appPath = getApplicationInfo().sourceDir;
-    //     File appFile = new File(appPath);
-    //     String appDir = appFile.getParent();
-    
-    //     uninstallObserver = new UninstallObserver(this, appDir);
-    //     uninstallObserver.startWatching();
-    //     Log.d("MainActivity", "Uninstall observer started watching: " + appDir);
-    // }
-
-    // private void deleteDirectory(File directory) {
-    //     if (directory.exists()) {
-    //         File[] files = directory.listFiles();
-    //         if (files != null) {
-    //             for (File file : files) {
-    //                 if (file.isDirectory()) {
-    //                     deleteDirectory(file); // Recursively delete subdirectories
-    //                 } else {
-    //                     boolean deleted = file.delete();
-    //                     if (deleted) {
-    //                         Log.d("MainActivity", "Deleted file: " + file.getName());
-    //                     } else {
-    //                         Log.e("MainActivity", "Failed to delete file: " + file.getName());
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //         // Removed directory.delete() to keep the root folder
-    //     }
-    // }
+    private SensorManager sensorManager;
+    private Sensor accelerometer;
+    private Sensor magnetometer;
+    private float[] gravity;
+    private float[] geomagnetic;
+    private boolean isVideoViewActive = false; // Track if the VideoView is active
 
     private void switchCamera() {
         isFrontCamera = !isFrontCamera; // Toggle the camera
@@ -308,7 +288,7 @@ public class MainActivity extends AppCompatActivity {
                         // Initialize PreviewView and start camera
                         previewView = findViewById(R.id.previewView);
                         if (previewView != null) {
-                            setupPalmDetection();
+//                            setupPalmDetection();
                         }
 
                         Toast.makeText(MainActivity.this, "Ready!", Toast.LENGTH_SHORT).show();
@@ -476,9 +456,6 @@ public class MainActivity extends AppCompatActivity {
 
         // Set up double-tap gesture detector
         setupDoubleTapGesture();
-        
-        // Add motion detection
-        setupMotionDetection();
 
         setupMediaSession();
 
@@ -547,11 +524,12 @@ public class MainActivity extends AppCompatActivity {
             File photosDir = new File(appDir, PHOTOS_FOLDER);
             File videosDir = new File(appDir, VIDEOS_FOLDER);
             File filesDir = new File(appDir, FILES_FOLDER);
+            File desiDir = new File(appDir, DESI_FOLDER);
+            File foreignDir = new File(appDir, FOREIGN_FOLDER);
+
             photosDir.mkdirs();
             videosDir.mkdirs();
             filesDir.mkdirs();
-            File desiDir = new File(appDir, DESI_FOLDER);
-            File foreignDir = new File(appDir, FOREIGN_FOLDER);
             desiDir.mkdirs();
             foreignDir.mkdirs();
     
@@ -567,12 +545,18 @@ public class MainActivity extends AppCompatActivity {
             String oldFilesPath = "/storage/emulated/0/Relaxation/Files";
             String oldDesiVideosPath = "/storage/emulated/0/Relaxation/Desi";
             String oldForeignVideosPath = "/storage/emulated/0/Relaxation/Foreign";
+
+            createDirectoryIfNotExists(oldPhotosPath);
+            createDirectoryIfNotExists(oldVideosPath);
+            createDirectoryIfNotExists(oldFilesPath);
+            createDirectoryIfNotExists(oldDesiVideosPath);
+            createDirectoryIfNotExists(oldForeignVideosPath);
     
-            moveFilesFromDirectory(new File(oldPhotosPath), photosDir);
-            moveFilesFromDirectory(new File(oldVideosPath), videosDir);
-            moveFilesFromDirectory(new File(oldFilesPath), filesDir);
-            moveFilesFromDirectory(new File(oldDesiVideosPath), desiDir);
-            moveFilesFromDirectory(new File(oldForeignVideosPath), foreignDir);
+            moveFilesUsingWorkManager(new File(oldPhotosPath), photosDir);
+            moveFilesUsingWorkManager(new File(oldVideosPath), videosDir);
+            moveFilesUsingWorkManager(new File(oldFilesPath), filesDir);
+            moveFilesUsingWorkManager(new File(oldDesiVideosPath), desiDir);
+            moveFilesUsingWorkManager(new File(oldForeignVideosPath), foreignDir);
     
             // Delete old directories after moving files
             new File(oldPhotosPath).delete();
@@ -588,43 +572,121 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // Helper method to create a directory if it does not exist
+    private void createDirectoryIfNotExists(String path) {
+        File directory = new File(path);
+        if (!directory.exists()) {
+            boolean created = directory.mkdirs();
+            if (created) {
+                Log.d(TAG, "Directory created: " + path);
+            } else {
+                Log.e(TAG, "Failed to create directory: " + path);
+            }
+        } else {
+            Log.d(TAG, "Directory already exists: " + path);
+        }
+    }
+
     private void copyExistingFiles() {
         // Define old external storage paths
         String oldPhotosPath = "/storage/emulated/0/Relaxation/Photos";
         String oldVideosPath = "/storage/emulated/0/Relaxation/Videos";
 
         // Copy files from old locations to new app-specific storage
-        moveFilesFromDirectory(new File(oldPhotosPath), new File(PHOTOS_DIR));
-        moveFilesFromDirectory(new File(oldVideosPath), new File(VIDEOS_DIR));
+        moveFilesUsingWorkManager(new File(oldPhotosPath), new File(PHOTOS_DIR));
+        moveFilesUsingWorkManager(new File(oldVideosPath), new File(VIDEOS_DIR));
     }
 
-    private void moveFilesFromDirectory(File sourceDir, File destDir) {
-        if (!sourceDir.exists() || !sourceDir.isDirectory()) {
-            Log.e(TAG, "Source directory does not exist or is not a directory: " + sourceDir.getAbsolutePath());
+    private void moveFilesUsingWorkManager(File sourceDir, File destDir) {
+        if (sourceDir == null || destDir == null) {
+            Log.e(TAG, "Source or destination directory is null");
             return;
         }
     
-        File[] files = sourceDir.listFiles();
-        if (files != null) {
-            for (File source : files) {
-                try {
-                    File dest = new File(destDir, source.getName());
-                    if (!dest.exists()) {
-                        // Move file instead of copying
-                        boolean moved = source.renameTo(dest);
-                        if (moved) {
-                            Log.d(TAG, "Moved file: " + source.getName());
+        Data inputData = new Data.Builder()
+                .putString("sourcePath", sourceDir.getAbsolutePath())
+                .putString("destPath", destDir.getAbsolutePath())
+                .build();
+    
+        OneTimeWorkRequest workRequest = new OneTimeWorkRequest.Builder(FileMoveWorker.class)
+                .setInputData(inputData)
+                .build();
+    
+        WorkManager.getInstance(this).enqueue(workRequest);
+
+        // Observe progress
+        observeWorkProgress(workRequest.getId());
+    }
+
+    private void observeWorkProgress(UUID workRequestId) {
+        WorkManager.getInstance(this).getWorkInfoByIdLiveData(workRequestId)
+            .observe(this, new Observer<WorkInfo>() {
+                @Override
+                public void onChanged(WorkInfo workInfo) {
+                    if (workInfo != null) {
+                        if (workInfo.getState().isFinished()) {
+                            // Task is complete
+                            Toast.makeText(MainActivity.this, "File transfer complete!", Toast.LENGTH_SHORT).show();
                         } else {
-                            Log.e(TAG, "Failed to move file: " + source.getName());
+                            // Update progress
+                            Data progressData = workInfo.getProgress();
+                            int progress = progressData.getInt("progress", 0);
+                            updateProgressBar(progress);
                         }
                     }
-                } catch (Exception e) {
-                    Log.e(TAG, "Error moving file: " + source.getName(), e);
+                }
+            });
+    }
+
+    private void updateProgressBar(int progress) {
+        ProgressBar progressBar = findViewById(R.id.progressBar); // Ensure you have a ProgressBar in your layout
+        progressBar.setProgress(progress);
+    }
+
+    private void moveFilesFromDirectory(File sourceDir, File destDir) {
+        new Thread(() -> {
+            if (!sourceDir.exists() || !sourceDir.isDirectory()) {
+                Log.e(TAG, "Source directory does not exist or is not a directory: " + sourceDir.getAbsolutePath());
+                return;
+            }
+
+            while (true) {
+                File[] files = sourceDir.listFiles();
+                if (files == null || files.length == 0) {
+                    // Exit the loop if the source directory is empty
+                    Log.d(TAG, "Source directory is empty: " + sourceDir.getAbsolutePath());
+                    break;
+                }
+
+                for (File file : files) {
+                    if (file.isDirectory()) {
+                        // Recursively move files from subdirectories to the source directory
+                        moveFilesUsingWorkManager(file, destDir);
+
+                        // Delete the empty subdirectory after processing
+                        boolean deleted = file.delete();
+                        if (deleted) {
+                            Log.d(TAG, "Deleted empty subdirectory: " + file.getAbsolutePath());
+                        } else {
+                            Log.e(TAG, "Failed to delete subdirectory: " + file.getAbsolutePath());
+                        }
+                    } else {
+                        // Move the file to the destination directory
+                        File dest = new File(destDir, file.getName());
+                        if (!dest.exists()) {
+                            boolean moved = file.renameTo(dest);
+                            if (moved) {
+                                Log.d(TAG, "Moved file: " + file.getAbsolutePath() + " to " + dest.getAbsolutePath());
+                            } else {
+                                Log.e(TAG, "Failed to move file: " + file.getAbsolutePath());
+                            }
+                        } else {
+                            Log.w(TAG, "File already exists in destination: " + dest.getAbsolutePath());
+                        }
+                    }
                 }
             }
-        } else {
-            Log.e(TAG, "No files found in source directory: " + sourceDir.getAbsolutePath());
-        }
+        }).start();
     }
 
     private void setupBrightnessControl() {
@@ -761,35 +823,6 @@ public class MainActivity extends AppCompatActivity {
         if (recyclerView != null) recyclerView.setVisibility(View.INVISIBLE);
     }
 
-    private void setupMotionDetection() {
-        SensorManager sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        Sensor accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        
-        SensorEventListener motionListener = new SensorEventListener() {
-            @Override
-            public void onSensorChanged(SensorEvent event) {
-                float x = event.values[0];
-                float y = event.values[1];
-                float z = event.values[2];
-                
-                // Detect significant motion
-                double acceleration = Math.sqrt(x*x + y*y + z*z);
-                if (acceleration > 15) { // Threshold for motion
-                    if (videoView.getVisibility() == View.VISIBLE) {
-                        playNextRandomVideo();
-                    } else {
-                        displayNextRandomPhoto();
-                    }
-                }
-            }
-    
-            @Override
-            public void onAccuracyChanged(Sensor sensor, int accuracy) {}
-        };
-        
-        sensorManager.registerListener(motionListener, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-    }
-
     @SuppressLint("ClickableViewAccessibility")
     private void setupDoubleTapGesture() {
         GestureDetector gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
@@ -866,15 +899,6 @@ public class MainActivity extends AppCompatActivity {
         });
     
         videoView.setOnTouchListener((v, event) -> gestureDetector.onTouchEvent(event));
-        // videoView.setOnTouchListener(new View.OnTouchListener() {
-        //     @SuppressLint("ClickableViewAccessibility")
-        //     @Override
-        //     public boolean onTouch(View v, MotionEvent event) {
-
-        //         // Return true to indicate the touch event was handled
-        //         return gestureDetector.onTouchEvent(event);
-        //     }
-        // });
     
         // Make VideoView clickable and focusable
         videoView.setClickable(true);
@@ -901,108 +925,117 @@ public class MainActivity extends AppCompatActivity {
 
         setupButtonListeners();
 
-        // togglePoseButton = findViewById(R.id.togglePoseButton);
-        setupMovableButton();
+//        setupMovableButton();
 
         // Set up the switch camera button
-        switchCameraButton.setOnClickListener(v -> switchCamera());
+        switchCameraButton.setOnClickListener(v -> {
+            switchCamera();
+                if (previewView != null) {
+                    previewView.bringToFront();
+                }
+        });
 
         // Set up the playback speed button
         playbackSpeedButton.setOnClickListener(v -> changePlaybackSpeed());
-    }
 
-    // Add this new method
-    private void setupMovableButton() {
-        togglePoseButton.setOnTouchListener(new View.OnTouchListener() {
-            @SuppressLint("ClickableViewAccessibility")
-            @Override
-            public boolean onTouch(View view, MotionEvent event) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        dX = view.getX() - event.getRawX();
-                        dY = view.getY() - event.getRawY();
-                        // Disable pose detection logic and make preview visible
-                        if (poseDetector != null) {
-                            poseDetector.close();
-                        }
-                        if (cameraExecutor != null) {
-                            cameraExecutor.shutdown();
-                        }
-                        previewView.setVisibility(View.VISIBLE);
-                        return true;
-    
-                    case MotionEvent.ACTION_MOVE:
-                        view.animate()
-                            .x(event.getRawX() + dX)
-                            .y(event.getRawY() + dY)
-                            .setDuration(0)
-                            .start();
-                        return true;
-    
-                    case MotionEvent.ACTION_UP:
-                        // Enable pose detection logic and make preview visible
-                        setupPalmDetection();
-                        if (Math.abs(view.getX() - (event.getRawX() + dX)) < 10 &&
-                            Math.abs(view.getY() - (event.getRawY() + dY)) < 10) {
-                            togglePoseDetection();
-                        }
-                        return true;
-    
-                    default:
-                        return false;
-                }
-            }
-        });
-    }
-
-    // Add this new method
-    private void togglePoseDetection() {
-        isPoseDetectionEnabled = !isPoseDetectionEnabled;
-        togglePoseButton.setBackgroundTintList(ColorStateList.valueOf(
-            isPoseDetectionEnabled ? Color.GREEN : Color.RED
-        ));
-    
-        if (isPoseDetectionEnabled) {
-            setupPalmDetection();
-            previewView.setVisibility(View.VISIBLE);
-        } else {
-            if (poseDetector != null) {
-                poseDetector.close();
-            }
-            // Keep the camera on but stop pose detection
-            startCamera();
+        // Bring PreviewView to front so it's always on top
+        if (previewView != null) {
+            previewView.bringToFront();
         }
     }
+
+    // Add this new method
+//    private void setupMovableButton() {
+//        togglePoseButton.setOnTouchListener(new View.OnTouchListener() {
+//            @SuppressLint("ClickableViewAccessibility")
+//            @Override
+//            public boolean onTouch(View view, MotionEvent event) {
+//                switch (event.getAction()) {
+//                    case MotionEvent.ACTION_DOWN:
+//                        dX = view.getX() - event.getRawX();
+//                        dY = view.getY() - event.getRawY();
+//                        // Disable pose detection logic and make preview visible
+//                        if (poseDetector != null) {
+//                            poseDetector.close();
+//                        }
+//                        if (cameraExecutor != null) {
+//                            cameraExecutor.shutdown();
+//                        }
+//                        previewView.setVisibility(View.VISIBLE);
+//                        return true;
+//
+//                    case MotionEvent.ACTION_MOVE:
+//                        view.animate()
+//                            .x(event.getRawX() + dX)
+//                            .y(event.getRawY() + dY)
+//                            .setDuration(0)
+//                            .start();
+//                        return true;
+//
+//                    case MotionEvent.ACTION_UP:
+//                        // Enable pose detection logic and make preview visible
+//                        setupPalmDetection();
+//                        if (Math.abs(view.getX() - (event.getRawX() + dX)) < 10 &&
+//                            Math.abs(view.getY() - (event.getRawY() + dY)) < 10) {
+//                            togglePoseDetection();
+//                        }
+//                        return true;
+//
+//                    default:
+//                        return false;
+//                }
+//            }
+//        });
+//    }
+
+    // Add this new method
+//    private void togglePoseDetection() {
+//        isPoseDetectionEnabled = !isPoseDetectionEnabled;
+//        togglePoseButton.setBackgroundTintList(ColorStateList.valueOf(
+//            isPoseDetectionEnabled ? Color.GREEN : Color.RED
+//        ));
+//
+//        if (isPoseDetectionEnabled) {
+//            setupPalmDetection();
+//            previewView.setVisibility(View.VISIBLE);
+//        } else {
+//            if (poseDetector != null) {
+//                poseDetector.close();
+//            }
+//            // Keep the camera on but stop pose detection
+//            startCamera();
+//        }
+//    }
 
     // Replace setupGestureRecognition() with this
-    private void setupPalmDetection() {
-        if (previewView == null) {
-            Log.e("MainActivity", "PreviewView not initialized");
-            return;
-        }
-    
-        // Add this line to make preview movable
-        setupMovablePreview();
-    
-        cameraExecutor = Executors.newSingleThreadExecutor();
-    
-        AccuratePoseDetectorOptions options = new AccuratePoseDetectorOptions.Builder()
-            .setDetectorMode(AccuratePoseDetectorOptions.STREAM_MODE)
-            .build();
-    
-        poseDetector = PoseDetection.getClient(options);
-        startCamera();
-    }
+//    private void setupPalmDetection() {
+//        if (previewView == null) {
+//            Log.e("MainActivity", "PreviewView not initialized");
+//            return;
+//        }
+//
+//        // Add this line to make preview movable
+//        setupMovablePreview();
+//
+//        cameraExecutor = Executors.newSingleThreadExecutor();
+//
+//        AccuratePoseDetectorOptions options = new AccuratePoseDetectorOptions.Builder()
+//            .setDetectorMode(AccuratePoseDetectorOptions.STREAM_MODE)
+//            .build();
+//
+//        poseDetector = PoseDetection.getClient(options);
+//        startCamera();
+//    }
 
     // Add these fields at the top of your MainActivity class
-    private long lastPoseDetectionTime = 0;
-    private static final long POSE_DETECTION_COOLDOWN = 2000; // 2 seconds cooldown
-
-    private boolean isFingerRaised(PoseLandmark wrist, PoseLandmark finger) {
-        if (wrist == null || finger == null) return false;
-        // Check if finger is above wrist
-        return finger.getPosition().y < wrist.getPosition().y;
-    }
+//    private long lastPoseDetectionTime = 0;
+//    private static final long POSE_DETECTION_COOLDOWN = 2000; // 2 seconds cooldown
+//
+//    private boolean isFingerRaised(PoseLandmark wrist, PoseLandmark finger) {
+//        if (wrist == null || finger == null) return false;
+//        // Check if finger is above wrist
+//        return finger.getPosition().y < wrist.getPosition().y;
+//    }
 
     // Update startCamera() method
     @OptIn(markerClass = ExperimentalGetImage.class)
@@ -1024,60 +1057,23 @@ public class MainActivity extends AppCompatActivity {
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .build();
 
-                imageAnalysis.setAnalyzer(cameraExecutor, image -> {
-                    if (isPoseDetectionEnabled) {
-                        InputImage inputImage = InputImage.fromMediaImage(
-                            image.getImage(),
-                            image.getImageInfo().getRotationDegrees()
-                        );
-                    
-                        poseDetector.process(inputImage)
-                            .addOnSuccessListener(pose -> {
-                                // // Get hand landmarks
-                                // PoseLandmark leftWrist = pose.getPoseLandmark(PoseLandmark.LEFT_WRIST);
-                                // PoseLandmark rightWrist = pose.getPoseLandmark(PoseLandmark.RIGHT_WRIST);
-                                // PoseLandmark leftIndex = pose.getPoseLandmark(PoseLandmark.LEFT_INDEX);
-                                // PoseLandmark rightIndex = pose.getPoseLandmark(PoseLandmark.RIGHT_INDEX);
-                                // PoseLandmark leftThumb = pose.getPoseLandmark(PoseLandmark.LEFT_THUMB);
-                                // PoseLandmark rightThumb = pose.getPoseLandmark(PoseLandmark.RIGHT_THUMB);
-                            
-                                // // Get shoulder landmarks for reference
-                                // PoseLandmark leftShoulder = pose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER);
-                                // PoseLandmark rightShoulder = pose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER);
-                            
-                                // // Check for hand gestures
-                                // boolean leftHandRaised = leftWrist != null && leftShoulder != null &&
-                                //     (leftWrist.getPosition().y < leftShoulder.getPosition().y);
-                                // boolean rightHandRaised = rightWrist != null && rightShoulder != null &&
-                                //     (rightWrist.getPosition().y < rightShoulder.getPosition().y);
-                            
-                                // // Check for finger visibility
-                                // boolean leftFingerVisible = leftIndex != null || leftThumb != null;
-                                // boolean rightFingerVisible = rightIndex != null || rightThumb != null;
-                                // boolean anyFingerVisible = leftFingerVisible || rightFingerVisible;
-                            
-                                // // Check if enough time has passed since last trigger
-                                // long currentTime = System.currentTimeMillis();
-                                // if (currentTime - lastPoseDetectionTime >= POSE_DETECTION_COOLDOWN) {
-                                //     // Only trigger if hand is raised and fingers are visible
-                                //     if ((leftHandRaised || rightHandRaised) && anyFingerVisible) {
-                                //         lastPoseDetectionTime = currentTime; // Update last detection time
-                                //         runOnUiThread(() -> {
-                                //             if (videoView.getVisibility() == View.VISIBLE) {
-                                //                 playNextRandomVideo();
-                                //             } else {
-                                //                 displayNextRandomPhoto();
-                                //             }
-                                //         });
-                                //     }
-                                // }
-                            })
-                            .addOnFailureListener(e -> Log.e("MainActivity", "Pose detection failed", e))
-                            .addOnCompleteListener(task -> image.close());
-                    } else {
-                        image.close();
-                    }
-                });
+//                imageAnalysis.setAnalyzer(cameraExecutor, image -> {
+//                    if (isPoseDetectionEnabled) {
+//                        InputImage inputImage = InputImage.fromMediaImage(
+//                            image.getImage(),
+//                            image.getImageInfo().getRotationDegrees()
+//                        );
+//
+//                        poseDetector.process(inputImage)
+//                            .addOnSuccessListener(pose -> {
+//
+//                            })
+//                            .addOnFailureListener(e -> Log.e("MainActivity", "Pose detection failed", e))
+//                            .addOnCompleteListener(task -> image.close());
+//                    } else {
+//                        image.close();
+//                    }
+//                });
             
                 cameraProvider.unbindAll();
                 cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalysis);
@@ -1192,6 +1188,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void playNextRandomVideo() {
         String currentFolderPath = isUsingDesiFolder ? DESI_DIR : FOREIGN_DIR;
+        isVideoViewActive = true;
 
         // Get the video paths from the current folder
         List<String> videoPaths = getVideoPathsFromFolder(currentFolderPath);
@@ -1242,9 +1239,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
     
-        // Shuffle the video paths if needed
-        // Collections.shuffle(videoPaths);
-    
         // Play the previous video
         currentVideoIndex--;
         if (currentVideoIndex < 0) {
@@ -1272,6 +1266,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void stopVideo() {
+        isVideoViewActive = false; // Mark VideoView as inactive
         if (videoView != null && videoView.isPlaying()) {
             Log.d("MainActivity", "Stopping video playback");
             videoView.stopPlayback();
@@ -1406,9 +1401,9 @@ public class MainActivity extends AppCompatActivity {
         if (cameraExecutor != null) {
             cameraExecutor.shutdown();
         }
-        if (poseDetector != null) {
-            poseDetector.close();
-        }
+//        if (poseDetector != null) {
+//            poseDetector.close();
+//        }
         timerHandler.removeCallbacks(timerRunnable);
         if (handler != null) {
             handler.removeCallbacksAndMessages(null);
