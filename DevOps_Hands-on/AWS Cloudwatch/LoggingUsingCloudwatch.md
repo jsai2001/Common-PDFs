@@ -162,3 +162,273 @@
 - Add the metric to a CloudWatch dashboard for persistent monitoring.
 - Explore advanced filter patterns (e.g., matching multiple error types or status codes).
 - Use metrics in alarms to trigger notifications for high error rates.
+
+
+# CloudWatch Agent Notes
+
+## Overview
+- **Purpose**: Collect logs and system-level metrics from Amazon EC2 instances and on-premise servers.
+- **Use Cases**:
+  - Monitor cloud-based virtual machines (e.g., EC2 instances).
+  - Monitor on-premise servers in hybrid or non-AWS environments.
+
+## Key Features
+1. **System-Level Metrics Collection**:
+   - Collects detailed system metrics from EC2 instances and on-premise servers.
+   - Supports multiple operating systems (Linux and Windows Server).
+2. **Custom Metrics**:
+   - Retrieves custom metrics from applications/services using:
+     - **StatsD**: Supported on Linux and Windows Server.
+     - **CollectD**: Supported only on Linux servers.
+3. **Log Collection**:
+   - Collects logs from EC2 instances and on-premise servers (Linux or Windows Server).
+
+## Supported Environments
+- **Amazon EC2 Instances**: Collect logs and metrics from cloud-based virtual machines.
+- **On-Premise Servers**: Collect logs and metrics from servers in hybrid or non-AWS managed environments.
+- **Operating Systems**:
+  - Linux: Supports StatsD and CollectD.
+  - Windows Server: Supports StatsD only.
+
+## Implementation
+- **Installation and Configuration**:
+  - Install the CloudWatch agent on both Windows and Linux machines.
+  - Configure the agent to collect desired metrics and logs.
+- **Steps** (general outline, detailed configuration not provided in transcript):
+  1. Install the CloudWatch agent on the target server (EC2 or on-premise).
+  2. Configure the agent to use StatsD or CollectD for custom metrics (based on OS).
+  3. Specify log sources for collection.
+  4. Send collected data to CloudWatch for monitoring and analysis.
+
+## Key Points
+- **Flexibility**: Supports both cloud and on-premise environments, enabling hybrid monitoring.
+- **Protocol Limitations**:
+  - Use StatsD for cross-platform compatibility (Linux and Windows).
+  - Use CollectD for Linux-specific environments requiring advanced metric collection.
+- **Use Case**: Ideal for monitoring system performance and application logs in diverse infrastructures.
+
+## Next Steps
+- Review detailed installation guides for the CloudWatch agent on AWS documentation.
+- Configure StatsD or CollectD for custom metric collection based on server OS.
+- Integrate collected metrics and logs into CloudWatch dashboards for visualization.
+
+
+# Setting Up CloudWatch Agent on Linux Notes
+
+## Overview
+- **Purpose**: Install and configure the AWS CloudWatch Agent on a Linux machine to collect system metrics and logs and send them to CloudWatch.
+- **Environment**: Amazon EC2 instance running Linux, accessible via SSH.
+
+## Prerequisites
+1. **Linux Machine**:
+   - Ensure a Linux EC2 instance is running and accessible via SSH.
+2. **IAM Role**:
+   - Create an IAM role (e.g., `AgentDemo`) with necessary permissions:
+     - `CloudWatchFullAccess`: To send data to CloudWatch.
+     - `EC2FullAccess`: To retrieve instance metadata.
+     - `AmazonSSMFullAccess`: To store configuration in SSM Parameter Store.
+   - **Note**: In production, use fine-grained permissions instead of full access.
+   - Attach the role to the EC2 instance:
+     - Navigate to EC2 > Instances > Select instance > Actions > Security > Modify IAM Role > Choose `AgentDemo` > Update.
+
+## Installation and Configuration Steps
+1. **Connect to the EC2 Instance**:
+   - Use EC2 Instance Connect or SSH to access the Linux machine.
+2. **Install the CloudWatch Agent**:
+   - Run the installation command (available in exercise files):
+     ```bash
+     sudo yum install amazon-cloudwatch-agent
+     ```
+     - Confirm installation by selecting `yes`.
+3. **Run the Configuration Wizard**:
+   - Start the wizard:
+     ```bash
+     sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-config-wizard
+     ```
+   - **Wizard Options**:
+     - **OS**: Select `Linux`.
+     - **Environment**: Confirm instance is on EC2.
+     - **User**: Use default user.
+     - **StatsD**:
+       - Enable StatsD daemon: `yes`.
+       - Use default port.
+       - Set collect interval: e.g., `10 seconds` or `60 seconds` (adjust based on use case).
+     - **CollectD**:
+       - Enable CollectD: `yes` (requires separate installation).
+     - **Host Metrics**: Monitor host and CPU metrics: `yes`.
+     - **EC2 Dimensions**:
+       - Add EC2 dimensions: `yes`.
+       - Aggregate by instance ID: `yes`.
+     - **Metric Resolution**:
+       - Choose normal (60 seconds, default) or high resolution (more expensive).
+       - Use default for cost efficiency when starting.
+     - **Metric Configuration**: Use default configuration.
+     - **Log Monitoring**:
+       - Monitor log files: `no` (if no local app logs are generated).
+     - **SSM Parameter Store**:
+       - Store configuration in SSM: `yes`.
+       - Parameter name: `AmazonCloudWatch-linux` (default).
+       - Region: Confirm or set correct region (e.g., `us-east-1`).
+       - Use SDK to send configuration: Select first option.
+4. **Install CollectD** (if enabled):
+   - Install CollectD for Linux-specific metric collection:
+     ```bash
+     sudo yum install collectd
+     ```
+     - Confirm installation by selecting `yes`.
+5. **Start the CloudWatch Agent**:
+   - Start the agent with the SSM configuration:
+     ```bash
+     sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:AmazonCloudWatch-linux -s
+     ```
+     - Replace `AmazonCloudWatch-linux` with custom parameter name if changed.
+6. **Verify Agent Status**:
+   - Check if the agent is running:
+     ```bash
+     sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a status
+     ```
+     - Expected output: Agent is configured and running.
+7. **Verify Metrics in CloudWatch**:
+   - Navigate to CloudWatch > Metrics > Custom Namespaces > `CWAgent`.
+   - View collected metrics (e.g., CPU, host metrics) after a few minutes.
+
+## Key Points
+- **IAM Role**: Ensure the EC2 instance has a role with sufficient permissions for CloudWatch, EC2, and SSM.
+- **StatsD and CollectD**:
+  - StatsD: Enabled for custom metrics, configurable interval (e.g., 10 or 60 seconds).
+  - CollectD: Linux-only, requires separate installation.
+- **Metric Resolution**:
+  - Normal (60 seconds): Cost-effective, default choice.
+  - High resolution: More granular but more expensive.
+- **Log Monitoring**: Optional; specify log file paths if monitoring local app logs.
+- **SSM Parameter Store**:
+  - Stores agent configuration (e.g., `AmazonCloudWatch-linux`).
+  - Verify in AWS Systems Manager > Parameter Store.
+- **Cost Consideration**: Use normal resolution and avoid unnecessary log collection to minimize costs.
+
+## Practical Tips
+- **Exercise Files**: Use provided commands for installation and configuration.
+- **Region Check**: Ensure the correct AWS region is set in the configuration wizard.
+- **Production**: Fine-tune IAM permissions and collection intervals based on use case.
+- **Troubleshooting**:
+  - If no metrics appear, wait a few minutes or verify agent status.
+  - Ensure the IAM role is correctly attached and the configuration is stored in SSM.
+
+## Next Steps
+- Monitor collected metrics in CloudWatch dashboards.
+- Configure log collection for applications generating local logs.
+- Explore advanced StatsD/CollectD configurations for custom metrics.
+
+# Setting Up CloudWatch Agent on Windows Notes
+
+## Overview
+- **Purpose**: Install and configure the AWS CloudWatch Agent on a Windows Server EC2 instance to collect system metrics, logs, and Windows event logs, and send them to CloudWatch.
+- **Environment**: Windows Server EC2 instance, accessible via Remote Desktop Protocol (RDP).
+
+## Prerequisites
+1. **Windows EC2 Instance**:
+   - Launch a Windows Server instance in EC2.
+   - Ensure connectivity via RDP (download RDP file, provide password or retrieve using key pair).
+2. **IAM Role**:
+   - Create an IAM role (e.g., `agentdemo`) with the following permissions:
+     - `CloudWatchFullAccess`: To send data to CloudWatch.
+     - `AmazonEC2FullAccess`: To retrieve instance metadata for EC2 dimensions.
+     - `AmazonSSMFullAccess`: To store configuration in SSM Parameter Store.
+   - **Note**: Use fine-grained permissions in production instead of full access.
+   - Attach the role to the EC2 instance:
+     - Navigate to EC2 > Instances > Select instance > Actions > Security > Modify IAM Role > Select `agentdemo` > Update IAM Role.
+
+## Installation and Configuration Steps
+1. **Connect to the Windows EC2 Instance**:
+   - Use RDP client: Download the RDP file from EC2 > Instances > Connect > RDP Client.
+   - Log in with the instance password (retrieve via "Get Password" using the key pair if needed).
+2. **Download the CloudWatch Agent**:
+   - Run the following PowerShell command to download the agent installer to the user’s Downloads folder:
+     ```powershell
+     Invoke-WebRequest -Uri https://s3.amazonaws.com/amazoncloudwatch-agent/windows/amd64/latest/amazon-cloudwatch-agent.msi -OutFile $env:USERPROFILE\Downloads\amazon-cloudwatch-agent.msi
+     ```
+3. **Install the CloudWatch Agent**:
+   - Install the agent using the downloaded MSI file:
+     ```powershell
+     msiexec /i $env:USERPROFILE\Downloads\amazon-cloudwatch-agent.msi
+     ```
+4. **Run the Configuration Wizard**:
+   - Start the wizard to configure the agent:
+     ```powershell
+     & "C:\Program Files\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-config-wizard.exe"
+     ```
+   - **Wizard Options**:
+     - **Operating System**: Auto-detected as Windows.
+     - **Environment**: Confirm instance is on EC2.
+     - **StatsD Daemon**:
+       - Enable StatsD: `yes`.
+       - Use default port.
+       - Aggregation interval: `60 seconds` (default).
+     - **Existing Log Agent**: No migration needed (select `no`).
+     - **Host Metrics**: Collect host and CPU metrics per core: `yes`.
+     - **EC2 Dimensions**:
+       - Add EC2 dimensions: `yes` (requires `AmazonEC2FullAccess` permission).
+       - Aggregate by instance ID: `yes`.
+     - **Metric Resolution**:
+       - Choose standard metrics (60 seconds, default) over high-resolution (more expensive).
+     - **Configuration Level**: Use basic configuration (default).
+     - **Windows Event Logs**:
+       - Monitor event logs: `yes`.
+       - Log group name: `system`.
+       - Log stream name: Use instance ID.
+       - Log levels: Information, Warning, Error, Critical (verbose for demo; adjust for production).
+       - Log format: XML.
+       - Retention: Use default retention period.
+     - **Additional Logs**: No additional log files for demo (select `no`).
+     - **SSM Parameter Store**:
+       - Store configuration: `yes`.
+       - Parameter name: `AmazonCloudWatch-windows`.
+       - Region: Verify auto-detected region (e.g., `us-east-1`).
+       - Credentials: Use SDK (leverages instance role).
+5. **Verify Configuration in SSM**:
+   - Navigate to AWS Systems Manager > Parameter Store.
+   - Check for the `AmazonCloudWatch-windows` parameter containing the agent configuration.
+   - If missing, troubleshoot the wizard setup or IAM permissions.
+6. **Start the CloudWatch Agent**:
+   - Start the agent using the SSM configuration:
+     ```powershell
+     & "C:\Program Files\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1" -a fetch-config -m ec2 -c ssm:AmazonCloudWatch-windows -s
+     ```
+7. **Verify Agent Status**:
+   - Confirm the agent is running:
+     ```powershell
+     Get-Service -Name AmazonCloudWatchAgent
+     ```
+     - Expected output: Service status is `Running`.
+8. **Verify Data in CloudWatch**:
+   - Navigate to CloudWatch > Metrics > Custom Namespaces > `CWAgent`.
+   - Check for metrics (e.g., CPU, host metrics) and logs (e.g., Windows event logs in the `system` log group) after a few minutes.
+
+## Key Points
+- **IAM Role**: Essential for CloudWatch, EC2, and SSM access; ensure proper permissions.
+- **StatsD**: Enabled for custom metrics; CollectD is not supported on Windows.
+- **Metric Resolution**:
+  - Standard (60 seconds): Cost-effective, default choice.
+  - High-resolution: Avoid unless necessary due to higher costs.
+- **Windows Event Logs**:
+  - Configurable to monitor system logs (Information, Warning, Error, Critical).
+  - Stored in CloudWatch under the specified log group (e.g., `system`).
+- **SSM Parameter Store**:
+  - Stores configuration as `AmazonCloudWatch-windows`.
+  - Verify region and credentials match the instance setup.
+- **Cost Consideration**: Use standard metrics and limit log levels to reduce costs in production.
+
+## Practical Tips
+- **Exercise Files**: Use provided commands for downloading, installing, and configuring the agent.
+- **RDP Access**: Ensure the correct password is used; retrieve via EC2 console if needed.
+- **Production**:
+  - Use fine-grained IAM permissions.
+  - Limit event log levels to avoid excessive data collection.
+- **Troubleshooting**:
+  - If no configuration appears in SSM, verify IAM role permissions and region.
+  - If no metrics/logs appear in CloudWatch, check agent status and wait a few minutes.
+
+## Next Steps
+- Monitor collected metrics and logs in CloudWatch dashboards.
+- Customize log collection for application-specific logs if needed.
+- Explore StatsD for advanced custom metric collection on Windows.
