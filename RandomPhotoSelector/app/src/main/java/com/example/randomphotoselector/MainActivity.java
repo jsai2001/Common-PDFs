@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -31,6 +32,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -53,6 +55,10 @@ import androidx.lifecycle.Observer;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.MediaItem;
+import com.google.android.exoplayer2.PlaybackParameters;
+import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.common.util.concurrent.ListenableFuture;
 //import com.google.mlkit.vision.common.InputImage;
@@ -97,8 +103,12 @@ public class MainActivity extends AppCompatActivity {
     public static String VIDEOS_DIR;
     public static String FILES_DIR;
 
+    private TextView videoProgressLabel;
+    private Handler videoProgressHandler = new Handler();
+
     private boolean isUsingDesiFolder = true; // Start with Desi folder
 
+    private boolean isSeekInProgress = false;
 
     private static final int REQUEST_CODE_PERMISSIONS = 101;
     private static final String[] REQUIRED_PERMISSIONS;
@@ -124,11 +134,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private ImageView randomImageView;
-    private VideoView videoView;
+    private PlayerView playerView;
+    private ExoPlayer exoPlayer;
+    private RecyclerView recyclerView;
+    private ImageButton muteButton;
+
     private RandomVideoSelector randomVideoSelector;
     private RandomPhotoSelector randomPhotoSelector;
     private Random random;
-    private RecyclerView recyclerView;
     private Handler handler = new Handler();
     private Runnable autoRandomRunnable;
     private boolean isAutoRandomRunning = false;
@@ -181,11 +194,9 @@ public class MainActivity extends AppCompatActivity {
 
     private MediaSession mediaSession;
 
-    private float[] playbackSpeeds = {1.0f, 1.25f, 1.5f, 1.75f, 2.0f}; // Playback speed options
+    private float[] playbackSpeeds = {1.0f, 1.25f, 1.5f, 1.75f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f}; // Playback speed options
     private int currentSpeedIndex = 0; // Index to track the current speed
     private Button playbackSpeedButton; // Reference to the playback speed button
-
-    private MediaPlayer mediaPlayer; // MediaPlayer instance for controlling playback
 
     private Button intervalButton;
     private int[] intervals = {1, 2, 3, 4, 5}; // Available intervals in seconds
@@ -204,6 +215,9 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean isFavMode = false;
     private List<String> favVideoPaths = new ArrayList<>();
+
+    // Add to your class fields
+    private String pendingFavMovePath = null;
 
     private void switchCamera() {
         isFrontCamera = !isFrontCamera; // Toggle the camera
@@ -250,20 +264,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void changePlaybackSpeed() {
-        currentSpeedIndex = (currentSpeedIndex + 1) % playbackSpeeds.length; // Cycle through speeds
+        currentSpeedIndex = (currentSpeedIndex + 1) % playbackSpeeds.length;
         float newSpeed = playbackSpeeds[currentSpeedIndex];
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-                PlaybackParams params = mediaPlayer.getPlaybackParams();
-                params.setSpeed(newSpeed);
-                mediaPlayer.setPlaybackParams(params);
-            }
-        } else {
-            Toast.makeText(this, "Playback speed adjustment is not supported on this device.", Toast.LENGTH_SHORT).show();
+        if (exoPlayer != null) {
+            exoPlayer.setPlaybackParameters(new PlaybackParameters(newSpeed));
         }
-
-        // Update the button text to reflect the current speed
         playbackSpeedButton.setText(String.format(Locale.getDefault(), "%.2fx", newSpeed));
     }
 
@@ -287,15 +292,24 @@ public class MainActivity extends AppCompatActivity {
                         initializeSelectorsAndPaths(videoDirectoryPath, photoDirectoryPath, filesDirectoryPath);
                         setupButtonListeners();
 
-                        // Enable views after initialization
                         if (randomImageView != null) randomImageView.setVisibility(View.VISIBLE);
-                        if (videoView != null) videoView.setVisibility(View.GONE);
+                        if (playerView != null) playerView.setVisibility(View.GONE);
                         if (recyclerView != null) recyclerView.setVisibility(View.GONE);
 
                         // Initialize PreviewView and start camera
                         previewView = findViewById(R.id.previewView);
                         if (previewView != null) {
 //                            setupPalmDetection();
+                        }
+
+                        // Move this block here:
+                        if (currentlyPlayingVideoPath == null) {
+                            String folder = isUsingDesiFolder ? DESI_DIR : FOREIGN_DIR;
+                            List<String> videoPaths = getVideoPathsFromFolder(folder);
+                            if (videoPaths != null && !videoPaths.isEmpty()) {
+                                currentlyPlayingVideoPath = videoPaths.get(0);
+                                playVideoAfterOrientationChange();
+                            }
                         }
 
                         Toast.makeText(MainActivity.this, "Ready!", Toast.LENGTH_SHORT).show();
@@ -475,6 +489,16 @@ public class MainActivity extends AppCompatActivity {
         // Initialize the Auto Random button
         Button autoRandomButton = findViewById(R.id.autoRandomButton);
         autoRandomButton.setOnClickListener(v -> toggleAutoRandomMode());
+
+        if (savedInstanceState == null) {
+            // First launch or after orientation change
+            String folder = isUsingDesiFolder ? DESI_DIR : FOREIGN_DIR;
+            List<String> videoPaths = getVideoPathsFromFolder(folder);
+            if (videoPaths != null && !videoPaths.isEmpty()) {
+                currentlyPlayingVideoPath = videoPaths.get(0);
+                playVideoAfterOrientationChange();
+            }
+        }
     }
 
     private void changeInterval() {
@@ -829,9 +853,11 @@ public class MainActivity extends AppCompatActivity {
 
     private void hideViewsInitially() {
         if (randomImageView != null) randomImageView.setVisibility(View.INVISIBLE);
-        if (videoView != null) videoView.setVisibility(View.INVISIBLE);
+        if (playerView != null) playerView.setVisibility(View.INVISIBLE);
         if (recyclerView != null) recyclerView.setVisibility(View.INVISIBLE);
     }
+
+    private String pendingDeletePath = null;
 
     @SuppressLint("ClickableViewAccessibility")
     private void setupDoubleTapGesture() {
@@ -839,23 +865,33 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onDoubleTap(@NonNull MotionEvent e) {
                 float x = e.getX();
-                float width = videoView.getWidth();
+                float width = playerView.getWidth();
+                
+                if (isSeekInProgress) {
+                    Toast.makeText(MainActivity.this, "Please wait...", Toast.LENGTH_SHORT).show();
+                    return true;
+                }
 
                 if (x < width / 3) {
                     // Double-tap on the left portion: Seek backward by 5 seconds
-                    if (videoView.isPlaying()) {
-                        int currentPosition = videoView.getCurrentPosition();
-                        int newPosition = Math.max(currentPosition - 5000, 0); // Ensure it doesn't go below 0
-                        videoView.seekTo(newPosition);
-                        Toast.makeText(MainActivity.this, "Rewind 5 seconds", Toast.LENGTH_SHORT).show();
+                    if (exoPlayer != null && (exoPlayer.isPlaying() )) {
+                        int currentPosition = (int) exoPlayer.getCurrentPosition();
+                        int newPosition = Math.max(currentPosition - 5000, 0);
+                        isSeekInProgress = true;
+                        exoPlayer.seekTo(newPosition);
+                        playerView.postDelayed(() -> isSeekInProgress = false, 1000); // 1s delay, adjust as needed
+                        // Toast.makeText(MainActivity.this, "Rewind 5 seconds", Toast.LENGTH_SHORT).show();
                     }
                 } else if (x > 2 * width / 3) {
                     // Double-tap on the right portion: Seek forward by 5 seconds
-                    if (videoView.isPlaying()) {
-                        int currentPosition = videoView.getCurrentPosition();
-                        int newPosition = Math.min(currentPosition + 5000, videoView.getDuration()); // Ensure it doesn't exceed duration
-                        videoView.seekTo(newPosition);
-                        Toast.makeText(MainActivity.this, "Forward 5 seconds", Toast.LENGTH_SHORT).show();
+                    if (exoPlayer != null && (exoPlayer.isPlaying() )) {
+                        int currentPosition = (int) exoPlayer.getCurrentPosition();
+                        int duration = (int) exoPlayer.getDuration();;
+                        int newPosition = (duration > 0) ? Math.min(currentPosition + 5000, duration - 100) : currentPosition + 5000;
+                        isSeekInProgress = true;
+                        exoPlayer.seekTo(newPosition);
+                        playerView.postDelayed(() -> isSeekInProgress = false, 1000); // 1s delay, adjust as needed
+                        // Toast.makeText(MainActivity.this, "Forward 5 seconds", Toast.LENGTH_SHORT).show();
                     }
                 } else {
                     // Double-tap on the center: Toggle between portrait and landscape
@@ -863,20 +899,46 @@ public class MainActivity extends AppCompatActivity {
                     if (getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) {
                         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
                         // Make video view full screen in landscape
-                        ViewGroup.LayoutParams params = videoView.getLayoutParams();
+                        ViewGroup.LayoutParams params = playerView.getLayoutParams();
                         params.width = ViewGroup.LayoutParams.MATCH_PARENT;
                         params.height = ViewGroup.LayoutParams.MATCH_PARENT;
-                        videoView.setLayoutParams(params);
+                        playerView.setLayoutParams(params);
                     } else {
                         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
                         // Restore original video view size in portrait
-                        ViewGroup.LayoutParams params = videoView.getLayoutParams();
+                        ViewGroup.LayoutParams params = playerView.getLayoutParams();
                         params.width = ViewGroup.LayoutParams.MATCH_PARENT;
                         params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                        videoView.setLayoutParams(params);
+                        playerView.setLayoutParams(params);
                     }
                 }
                 return true;
+            }
+
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                float deltaX = e2.getX() - e1.getX();
+                float absDeltaX = Math.abs(deltaX);
+                float absDeltaY = Math.abs(e2.getY() - e1.getY());
+
+                // Only consider horizontal swipes
+                if (absDeltaX > 100 && absDeltaX > absDeltaY) {
+                    if (deltaX > 0) {
+                        // Swipe right: Favorite after playback
+                        if (currentlyPlayingVideoPath != null) {
+                            pendingFavMovePath = currentlyPlayingVideoPath;
+                            Toast.makeText(MainActivity.this, "Will move to Fav after playback.", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        // Swipe left: Delete after playback
+                        if (currentlyPlayingVideoPath != null) {
+                            pendingDeletePath = currentlyPlayingVideoPath;
+                            Toast.makeText(MainActivity.this, "Will delete after playback.", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                    return true;
+                }
+                return false;
             }
 
             @Override
@@ -908,23 +970,32 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     
-        videoView.setOnTouchListener((v, event) -> gestureDetector.onTouchEvent(event));
+        playerView.setOnTouchListener((v, event) -> gestureDetector.onTouchEvent(event));
     
         // Make VideoView clickable and focusable
-        videoView.setClickable(true);
-        videoView.setFocusable(true);
+        playerView.setClickable(true);
+        playerView.setFocusable(true);
     }
 
     private void initializeViews() {
         randomImageView = findViewById(R.id.randomImageView);
-        videoView = findViewById(R.id.videoView);
+        playerView = findViewById(R.id.playerView);
         recyclerView = findViewById(R.id.recyclerView);
         timerTextView = findViewById(R.id.timerTextView);
         clockTextView = findViewById(R.id.clockTextView);
-//        togglePoseButton = findViewById(R.id.togglePoseButton);
-        playbackSpeedButton = findViewById(R.id.playbackSpeedButton); // Initialize the playback speed button
-        // Add this field
-        FloatingActionButton switchCameraButton = findViewById(R.id.switchCameraButton); // Initialize the new button
+        videoProgressLabel = findViewById(R.id.videoProgressLabel);
+        playbackSpeedButton = findViewById(R.id.playbackSpeedButton);
+        FloatingActionButton switchCameraButton = findViewById(R.id.switchCameraButton);
+        muteButton = findViewById(R.id.muteButton);
+
+        // ExoPlayer setup
+        exoPlayer = new ExoPlayer.Builder(this).build();
+        playerView.setPlayer(exoPlayer);
+
+        // Mute by default
+        exoPlayer.setVolume(0f);
+        isMuted = true;
+        updateMuteIcon();
 
         // Start the timer
         startTime = System.currentTimeMillis();
@@ -952,6 +1023,9 @@ public class MainActivity extends AppCompatActivity {
         if (previewView != null) {
             previewView.bringToFront();
         }
+
+        muteButton.setOnClickListener(v -> toggleMute());
+        updateMuteIcon();
     }
 
     // Add this new method
@@ -1111,6 +1185,33 @@ public class MainActivity extends AppCompatActivity {
         initializeAppAfterPermissions();
     }
 
+    private void updateVideoProgressLabel() {
+        if (playerView != null && exoPlayer.isPlaying()) {
+            int current = (int) (exoPlayer.getCurrentPosition() / 1000);
+            int total = (int) exoPlayer.getDuration() / 1000;
+            String progress = String.format(Locale.getDefault(), "%02d:%02d / %02d:%02d",
+                    current / 60, current % 60, total / 60, total % 60);
+            videoProgressLabel.setText(progress);
+        }
+        videoProgressHandler.postDelayed(this::updateVideoProgressLabel, 500);
+    }
+
+    private void updateVideoProgressLabelExo() {
+        videoProgressHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (exoPlayer != null && exoPlayer.isPlaying()) {
+                    long current = exoPlayer.getCurrentPosition() / 1000;
+                    long total = exoPlayer.getDuration() / 1000;
+                    String progress = String.format(Locale.getDefault(), "%02d:%02d / %02d:%02d",
+                            current / 60, current % 60, total / 60, total % 60);
+                    videoProgressLabel.setText(progress);
+                }
+                videoProgressHandler.postDelayed(this, 500);
+            }
+        }, 500);
+    }
+
     private void setupButtonListeners() {
         Button videoButton = findViewById(R.id.videoButton);
         Button stopVideoButton = findViewById(R.id.stopVideoButton);
@@ -1120,7 +1221,11 @@ public class MainActivity extends AppCompatActivity {
         Button loveButton = findViewById(R.id.loveButton);
         Button favButton = findViewById(R.id.favButton);
 
-        videoButton.setOnClickListener(v -> playNextRandomVideo());
+        videoButton.setOnClickListener(v -> {
+            isFavMode = false; // Exit fav mode when switching to videos mode
+            isUsingDesiFolder = !isUsingDesiFolder; // Toggle folder ONLY here
+            playNextRandomVideo();
+        });
         stopVideoButton.setOnClickListener(v -> stopVideo());
         randomButton.setOnClickListener(v -> {
             stopVideo();
@@ -1175,7 +1280,7 @@ public class MainActivity extends AppCompatActivity {
         if (bitmap != null) {
             randomImageView.setImageBitmap(bitmap);
             randomImageView.setVisibility(View.VISIBLE);
-            videoView.setVisibility(View.GONE);
+            playerView.setVisibility(View.GONE);
         } else {
             Log.e("MainActivity", "Failed to decode image: " + photoPath);
             Toast.makeText(this, "Error loading image", Toast.LENGTH_SHORT).show();
@@ -1208,7 +1313,6 @@ public class MainActivity extends AppCompatActivity {
         String currentFolderPath = isUsingDesiFolder ? DESI_DIR : FOREIGN_DIR;
         isVideoViewActive = true;
 
-        // Get the video paths from the current folder
         List<String> videoPaths = getVideoPathsFromFolder(currentFolderPath);
 
         if (videoPaths == null || videoPaths.isEmpty()) {
@@ -1216,105 +1320,135 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // Shuffle the video paths if needed
         Collections.shuffle(videoPaths);
 
-        // Play the next video
         if (currentVideoIndex >= videoPaths.size()) {
             currentVideoIndex = 0;
         }
 
-        String videoPath = (String) videoPaths.get(currentVideoIndex);
+        String videoPath = videoPaths.get(currentVideoIndex);
         currentVideoIndex++;
         currentlyPlayingVideoPath = videoPath;
-        Log.d("MainActivity", "Playing video: " + videoPath);
-        
-        Uri videoUri = Uri.parse(videoPath);
-        videoView.setVideoURI(videoUri);
-        videoView.setOnPreparedListener(mp -> {
-            mediaPlayer = mp; // Assign the MediaPlayer instance
-            Log.d("MainActivity", "Video prepared: " + videoPath);
-            videoView.start();
-        });
-        videoView.setOnCompletionListener(mp -> {
-            Log.d("MainActivity", "Video completed: " + videoPath);
-            playNextRandomVideo();
-        });
-        videoView.setVisibility(View.VISIBLE);
+
+        // Set orientation/layout based on video dimensions
+        int[] dims = getVideoDimensions(videoPath);
+        if (dims != null && dims[0] > 0 && dims[1] > 0) {
+            if (dims[0] > dims[1]) {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                ViewGroup.LayoutParams params = playerView.getLayoutParams();
+                params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                params.height = ViewGroup.LayoutParams.MATCH_PARENT;
+                playerView.setLayoutParams(params);
+            } else {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                ViewGroup.LayoutParams params = playerView.getLayoutParams();
+                params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                playerView.setLayoutParams(params);
+            }
+        }
+
+        // Prepare and play video with ExoPlayer
+        playerView.setVisibility(View.VISIBLE);
         randomImageView.setVisibility(View.GONE);
 
-        // Toggle the folder for the next click
-        isUsingDesiFolder = !isUsingDesiFolder;
+        exoPlayer.setMediaItem(MediaItem.fromUri(Uri.parse(videoPath)));
+        exoPlayer.prepare();
+        exoPlayer.setPlayWhenReady(true);
+
+        // Set playback speed
+        float speed = playbackSpeeds[currentSpeedIndex];
+        exoPlayer.setPlaybackParameters(new PlaybackParameters(speed));
+
+        // Listen for video end
+        exoPlayer.addListener(new com.google.android.exoplayer2.Player.Listener() {
+            @Override
+            public void onPlaybackStateChanged(int state) {
+                if (state == com.google.android.exoplayer2.Player.STATE_ENDED) {
+                    playNextRandomVideo();
+                    movePendingFavIfNeeded();
+                }
+            }
+        });
+
+        updateVideoProgressLabelExo();
     }
 
     private void playPreviousRandomVideo() {
-        if (isFavMode) {
-            if (favVideoPaths == null || favVideoPaths.isEmpty()) {
-                Toast.makeText(this, "No Fav videos found.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            currentVideoIndex--;
-            if (currentVideoIndex < 0) {
-                currentVideoIndex = favVideoPaths.size() - 1;
-            }
-            String videoPath = favVideoPaths.get(currentVideoIndex);
-            currentlyPlayingVideoPath = videoPath;
+    if (isFavMode) {
+        playNextFavVideo(); // Or implement playPreviousFavVideo() if you want true previous in Fav mode
+        return;
+    }
+    String currentFolderPath = isUsingDesiFolder ? DESI_DIR : FOREIGN_DIR;
+    isVideoViewActive = true;
 
-            Uri videoUri = Uri.parse(videoPath);
-            videoView.setVideoURI(videoUri);
-            videoView.setOnPreparedListener(mp -> {
-                mediaPlayer = mp;
-                videoView.start();
-            });
-            videoView.setOnCompletionListener(mp -> playNextFavVideo());
-            videoView.setVisibility(View.VISIBLE);
-            randomImageView.setVisibility(View.GONE);
-            return;
-        }
-        String currentFolderPath = isUsingDesiFolder ? DESI_DIR : FOREIGN_DIR;
-    
-        // Get the video paths from the current folder
-        List<String> videoPaths = getVideoPathsFromFolder(currentFolderPath);
-    
-        if (videoPaths == null || videoPaths.isEmpty()) {
-            Toast.makeText(this, "No videos found in " + (isUsingDesiFolder ? "Desi" : "Foreign") + " folder.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-    
-        // Play the previous video
-        currentVideoIndex--;
-        if (currentVideoIndex < 0) {
-            currentVideoIndex = videoPaths.size() - 1;
-        }
-    
-        String videoPath = videoPaths.get(currentVideoIndex);
-        currentlyPlayingVideoPath = videoPath;
-        Log.d("MainActivity", "Playing video: " + videoPath);
-    
-        Uri videoUri = Uri.parse(videoPath);
-        videoView.setVideoURI(videoUri);
-        videoView.setOnPreparedListener(mp -> {
-            Log.d("MainActivity", "Video prepared: " + videoPath);
-            videoView.start();
-        });
-        videoView.setOnCompletionListener(mp -> {
-            Log.d("MainActivity", "Video completed: " + videoPath);
-            playNextRandomVideo(); // Automatically play the next video after completion
-        });
-        videoView.setVisibility(View.VISIBLE);
-        randomImageView.setVisibility(View.GONE);
-    
-        // Toggle the folder for the next click
-        isUsingDesiFolder = !isUsingDesiFolder;
+    List<String> videoPaths = getVideoPathsFromFolder(currentFolderPath);
+
+    if (videoPaths == null || videoPaths.isEmpty()) {
+        Toast.makeText(this, "No videos found in " + (isUsingDesiFolder ? "Desi" : "Foreign") + " folder.", Toast.LENGTH_SHORT).show();
+        return;
     }
 
-    private void stopVideo() {
-        isVideoViewActive = false; // Mark VideoView as inactive
-        if (videoView != null && videoView.isPlaying()) {
-            Log.d("MainActivity", "Stopping video playback");
-            videoView.stopPlayback();
+    currentVideoIndex--;
+    if (currentVideoIndex < 0) {
+        currentVideoIndex = videoPaths.size() - 1;
+    }
+
+    String videoPath = videoPaths.get(currentVideoIndex);
+    currentlyPlayingVideoPath = videoPath;
+
+    // Set orientation/layout based on video dimensions
+    int[] dims = getVideoDimensions(videoPath);
+    if (dims != null && dims[0] > 0 && dims[1] > 0) {
+        if (dims[0] > dims[1]) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+            ViewGroup.LayoutParams params = playerView.getLayoutParams();
+            params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            params.height = ViewGroup.LayoutParams.MATCH_PARENT;
+            playerView.setLayoutParams(params);
+        } else {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            ViewGroup.LayoutParams params = playerView.getLayoutParams();
+            params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+            playerView.setLayoutParams(params);
         }
-        if (videoView != null) videoView.setVisibility(View.GONE);
+    }
+
+    // Prepare and play video with ExoPlayer
+    playerView.setVisibility(View.VISIBLE);
+    randomImageView.setVisibility(View.GONE);
+
+    exoPlayer.setMediaItem(MediaItem.fromUri(Uri.parse(videoPath)));
+    exoPlayer.prepare();
+    exoPlayer.setPlayWhenReady(true);
+
+    // Set playback speed
+    float speed = playbackSpeeds[currentSpeedIndex];
+    exoPlayer.setPlaybackParameters(new PlaybackParameters(speed));
+
+    // Listen for video end
+    exoPlayer.addListener(new com.google.android.exoplayer2.Player.Listener() {
+        @Override
+        public void onPlaybackStateChanged(int state) {
+            if (state == com.google.android.exoplayer2.Player.STATE_ENDED) {
+                playNextRandomVideo();
+                movePendingFavIfNeeded();
+            }
+        }
+    });
+
+    updateVideoProgressLabelExo();
+    movePendingFavIfNeeded();
+}
+
+    private void stopVideo() {
+        isVideoViewActive = false;
+        if (exoPlayer != null) {
+            exoPlayer.setPlayWhenReady(false); // Pause playback
+            exoPlayer.stop(); // Optionally reset playback state
+        }
+        if (playerView != null) playerView.setVisibility(View.GONE);
         if (randomImageView != null) randomImageView.setVisibility(View.VISIBLE);
     }
 
@@ -1416,9 +1550,10 @@ public class MainActivity extends AppCompatActivity {
         if (isAutoRandomRunning) {
             handler.removeCallbacks(autoRandomRunnable);
         }
-        if (videoView != null && videoView.isPlaying()) {
-            videoView.pause();
+        if (exoPlayer != null) {
+            exoPlayer.setPlayWhenReady(false); // Pause playback
         }
+        videoProgressHandler.removeCallbacksAndMessages(null);
     }
 
     @Override
@@ -1428,14 +1563,24 @@ public class MainActivity extends AppCompatActivity {
             handler.removeCallbacks(autoRandomRunnable);
             isAutoRandomRunning = false;
         }
-        if (videoView != null && videoView.isPlaying()) {
-            videoView.stopPlayback();
+        if (exoPlayer != null) {
+            exoPlayer.setPlayWhenReady(false); // Pause playback
+            exoPlayer.stop();                  // Stop playback and reset state
         }
+        if (playerView != null) {
+            playerView.setVisibility(View.GONE); // Hide the player view
+            playerView.setPlayer(null);          // Detach player from view
+        }
+        videoProgressHandler.removeCallbacksAndMessages(null);
         hideFiles(); // Call hideFiles here
     }
 
     @Override
     protected void onDestroy() {
+        if (exoPlayer != null) {
+            exoPlayer.release();
+            exoPlayer = null;
+        }
         if (uninstallObserver != null) {
             uninstallObserver.stopWatching();
         }
@@ -1534,21 +1679,8 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "No video to save.", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        File srcFile = new File(currentlyPlayingVideoPath);
-        File destFile = new File(FAV_DIR, srcFile.getName());
-
-        if (destFile.exists()) {
-            Toast.makeText(this, "Already in Fav.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        try {
-            java.nio.file.Files.copy(srcFile.toPath(), destFile.toPath());
-            Toast.makeText(this, "Saved to Fav!", Toast.LENGTH_SHORT).show();
-        } catch (Exception e) {
-            Toast.makeText(this, "Failed to save: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
+        pendingFavMovePath = currentlyPlayingVideoPath;
+        Toast.makeText(this, "Will move to Fav after playback.", Toast.LENGTH_SHORT).show();
     }
 
     private void playFavVideos() {
@@ -1569,27 +1701,177 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void playNextFavVideo() {
-        if (favVideoPaths == null || favVideoPaths.isEmpty()) {
-            Toast.makeText(this, "No Fav videos found.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (currentVideoIndex >= favVideoPaths.size()) {
-            currentVideoIndex = 0;
-        }
-        String videoPath = favVideoPaths.get(currentVideoIndex);
-        currentVideoIndex++;
-        currentlyPlayingVideoPath = videoPath;
+    if (favVideoPaths == null || favVideoPaths.isEmpty()) {
+        Toast.makeText(this, "No Fav videos found.", Toast.LENGTH_SHORT).show();
+        return;
+    }
+    if (currentVideoIndex >= favVideoPaths.size()) {
+        currentVideoIndex = 0;
+    }
+    String videoPath = favVideoPaths.get(currentVideoIndex);
+    currentVideoIndex++;
+    currentlyPlayingVideoPath = videoPath;
 
-        Uri videoUri = Uri.parse(videoPath);
-        videoView.setVideoURI(videoUri);
-        videoView.setOnPreparedListener(mp -> {
-            mediaPlayer = mp;
-            videoView.start();
-        });
-        videoView.setOnCompletionListener(mp -> playNextFavVideo());
-        videoView.setVisibility(View.VISIBLE);
-        randomImageView.setVisibility(View.GONE);
+    // Set orientation/layout based on video dimensions
+    int[] dims = getVideoDimensions(videoPath);
+    if (dims != null && dims[0] > 0 && dims[1] > 0) {
+        if (dims[0] > dims[1]) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+            ViewGroup.LayoutParams params = playerView.getLayoutParams();
+            params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            params.height = ViewGroup.LayoutParams.MATCH_PARENT;
+            playerView.setLayoutParams(params);
+        } else {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            ViewGroup.LayoutParams params = playerView.getLayoutParams();
+            params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+            playerView.setLayoutParams(params);
+        }
     }
 
-    
+    // Prepare and play video with ExoPlayer
+    playerView.setVisibility(View.VISIBLE);
+    randomImageView.setVisibility(View.GONE);
+
+    exoPlayer.setMediaItem(MediaItem.fromUri(Uri.parse(videoPath)));
+    exoPlayer.prepare();
+    exoPlayer.setPlayWhenReady(true);
+
+    // Set playback speed
+    float speed = playbackSpeeds[currentSpeedIndex];
+    exoPlayer.setPlaybackParameters(new PlaybackParameters(speed));
+
+    // Listen for video end
+    exoPlayer.addListener(new com.google.android.exoplayer2.Player.Listener() {
+        @Override
+        public void onPlaybackStateChanged(int state) {
+            if (state == com.google.android.exoplayer2.Player.STATE_ENDED) {
+                playNextFavVideo();
+                movePendingFavIfNeeded();
+            }
+        }
+    });
+
+    updateVideoProgressLabelExo();
+    movePendingFavIfNeeded();
+}
+
+    private void movePendingFavIfNeeded() {
+        if (pendingFavMovePath != null) {
+            File srcFile = new File(pendingFavMovePath);
+            File destFile = new File(FAV_DIR, srcFile.getName());
+            if (!destFile.exists()) {
+                boolean moved = srcFile.renameTo(destFile);
+                if (moved) {
+                    Toast.makeText(this, "Moved to Fav!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Failed to move to Fav.", Toast.LENGTH_SHORT).show();
+                }
+            }
+            pendingFavMovePath = null;
+        }
+        // Delete if needed
+        if (pendingDeletePath != null) {
+            File file = new File(pendingDeletePath);
+            boolean deleted = file.delete();
+            if (deleted) {
+                Toast.makeText(this, "Deleted video!", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Failed to delete video.", Toast.LENGTH_SHORT).show();
+            }
+            pendingDeletePath = null;
+        }
+    }    
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // Re-apply layout changes if needed, but your activity won't be recreated
+    }
+
+    private void playVideoAfterOrientationChange() {
+    String videoPath = currentlyPlayingVideoPath;
+    if (videoPath == null) return;
+
+    // Set orientation/layout based on video dimensions
+    int[] dims = getVideoDimensions(videoPath);
+    if (dims != null && dims[0] > 0 && dims[1] > 0) {
+        if (dims[0] > dims[1]) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+            ViewGroup.LayoutParams params = playerView.getLayoutParams();
+            params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            params.height = ViewGroup.LayoutParams.MATCH_PARENT;
+            playerView.setLayoutParams(params);
+        } else {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            ViewGroup.LayoutParams params = playerView.getLayoutParams();
+            params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+            playerView.setLayoutParams(params);
+        }
+    }
+
+    // Prepare and play video with ExoPlayer
+    playerView.setVisibility(View.VISIBLE);
+    randomImageView.setVisibility(View.GONE);
+
+    exoPlayer.setMediaItem(MediaItem.fromUri(Uri.parse(videoPath)));
+    exoPlayer.prepare();
+    exoPlayer.setPlayWhenReady(true);
+
+    // Set playback speed
+    float speed = playbackSpeeds[currentSpeedIndex];
+    exoPlayer.setPlaybackParameters(new PlaybackParameters(speed));
+
+    // Listen for video end
+    exoPlayer.addListener(new com.google.android.exoplayer2.Player.Listener() {
+        @Override
+        public void onPlaybackStateChanged(int state) {
+            if (state == com.google.android.exoplayer2.Player.STATE_ENDED) {
+                if (isFavMode) playNextFavVideo();
+                else playNextRandomVideo();
+                movePendingFavIfNeeded();
+            }
+        }
+    });
+
+    updateVideoProgressLabelExo();
+    movePendingFavIfNeeded();
+}
+
+    private int[] getVideoDimensions(String videoPath) {
+        android.media.MediaMetadataRetriever retriever = new android.media.MediaMetadataRetriever();
+        try {
+            retriever.setDataSource(videoPath);
+            int width = Integer.parseInt(retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH));
+            int height = Integer.parseInt(retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT));
+            return new int[]{width, height};
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to get video dimensions: " + e.getMessage());
+            return null;
+        } finally {
+            try {
+                retriever.release();
+            } catch (Exception e) {
+                Log.e(TAG, "Error releasing MediaMetadataRetriever: " + e.getMessage());
+            }
+        }
+    }
+
+    private boolean isMuted = true;
+
+    private void toggleMute() {
+        isMuted = !isMuted;
+        if (exoPlayer != null) {
+            exoPlayer.setVolume(isMuted ? 0f : 1f);
+        }
+        updateMuteIcon();
+    }
+
+    private void updateMuteIcon() {
+        if (muteButton != null) {
+            muteButton.setImageResource(isMuted ? R.drawable.ic_volume_off : R.drawable.ic_volume_up);
+        }
+    }
 }

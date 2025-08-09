@@ -18,13 +18,14 @@ def group_files_by_size(directory):
     return {size: paths for size, paths in size_dict.items() if len(paths) > 1}
 
 # Example usage
-directory = "D:\Street Fight\Street Fight"
-duplicates = group_files_by_size(directory)
-for size, files in duplicates.items():
-    print(f"Files with size {size} bytes:")
-    for file in files:
-        print(f"  - {file}")
+# directory = "D:\Street Fight - Copy"
+# duplicates = group_files_by_size(directory)
+# for size, files in duplicates.items():
+#     print(f"Files with size {size} bytes:")
+#     for file in files:
+#         print(f"  - {file}")
 
+"""
 def delete_duplicates(duplicates):
     for size, file_paths in duplicates.items():
         if len(file_paths) > 1:
@@ -38,12 +39,14 @@ def delete_duplicates(duplicates):
                     else:
                         hashes[file_hash] = path
 
-# Assuming 'duplicates' is from the previous step
-delete_duplicates(duplicates)
-for size in duplicates:
-    if(len(duplicates[size])>1):
-        for item in duplicates[size][1:]:
-            os.remove(item)
+# # Assuming 'duplicates' is from the previous step
+# delete_duplicates(duplicates)
+"""
+
+# for size in duplicates:
+#     if(len(duplicates[size])>1):
+#         for item in duplicates[size][1:]:
+#             os.remove(item)
 
 def remove_low_res_videos(directory):
     for root, _, files in os.walk(directory):
@@ -56,16 +59,16 @@ def remove_low_res_videos(directory):
                     video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
                     if video_stream:
                         height = int(video_stream['height'])
-                        if height < 720:
-                            print(f"Removing {full_path} because its resolution is less than 720p")
+                        if height < 480:
+                            print(f"Removing {full_path} because its resolution is less than 480p")
                             os.remove(full_path)
                         else:
-                            print(f"Keeping {full_path} as its resolution is 720p or higher")
+                            print(f"Keeping {full_path} as its resolution is 480p or higher")
                     else:
                         print(f"Could not find video stream in {full_path}")
                 except Exception as e:
                     print(f"Error processing {full_path}: {e}")
 
 # Example usage
-directory = '/path/to/your/video/folder'
+directory = 'D:\Street Fight - Copy'
 remove_low_res_videos(directory)

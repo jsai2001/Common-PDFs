@@ -58,7 +58,7 @@
 
         <activity
             android:name=".MainActivity"
-            android:screenOrientation="portrait"
+            android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="false"
             android:theme="@style/Theme.RandomPhotoSelector.Fullscreen">
         </activity>
