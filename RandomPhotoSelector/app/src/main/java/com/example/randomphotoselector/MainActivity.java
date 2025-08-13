@@ -3,6 +3,7 @@ package com.example.randomphotoselector;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
@@ -12,6 +13,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -26,14 +29,17 @@ import android.os.Handler;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.GestureDetector;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -206,9 +212,9 @@ public class MainActivity extends AppCompatActivity {
 
     private SensorManager sensorManager;
     private Sensor accelerometer;
-    private Sensor magnetometer;
-    private float[] gravity;
-    private float[] geomagnetic;
+    private SensorEventListener motionListener;
+    private static final float MOTION_THRESHOLD = 2.0f; // Adjust as needed
+    private long lastMotionTime = 0;
     private boolean isVideoViewActive = false; // Track if the VideoView is active
 
     private String currentlyPlayingVideoPath = null;
@@ -295,6 +301,10 @@ public class MainActivity extends AppCompatActivity {
                         if (randomImageView != null) randomImageView.setVisibility(View.VISIBLE);
                         if (playerView != null) playerView.setVisibility(View.GONE);
                         if (recyclerView != null) recyclerView.setVisibility(View.GONE);
+
+                        // Hide the progress bar after initialization
+                        ProgressBar progressBar = findViewById(R.id.progressBar);
+                        if (progressBar != null) progressBar.setVisibility(View.GONE);
 
                         // Initialize PreviewView and start camera
                         previewView = findViewById(R.id.previewView);
@@ -482,6 +492,33 @@ public class MainActivity extends AppCompatActivity {
 
         setupScrollGesture();
 
+        setupPlayerViewTouch();
+
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
+        motionListener = new SensorEventListener() {
+            private float[] lastValues = new float[3];
+        
+            @Override
+            public void onSensorChanged(SensorEvent event) {
+                float dx = Math.abs(event.values[0] - lastValues[0]);
+                float dy = Math.abs(event.values[1] - lastValues[1]);
+                float dz = Math.abs(event.values[2] - lastValues[2]);
+                if (dx > MOTION_THRESHOLD || dy > MOTION_THRESHOLD || dz > MOTION_THRESHOLD) {
+                    showBottomBarAndMute();
+                    scheduleHideUi();
+                    lastMotionTime = System.currentTimeMillis();
+                }
+                System.arraycopy(event.values, 0, lastValues, 0, event.values.length);
+            }
+        
+            @Override
+            public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+        };
+
+        sensorManager.registerListener(motionListener, accelerometer, SensorManager.SENSOR_DELAY_UI);
+
         // Initialize the interval button
         intervalButton = findViewById(R.id.intervalButton);
         intervalButton.setOnClickListener(v -> changeInterval());
@@ -499,6 +536,39 @@ public class MainActivity extends AppCompatActivity {
                 playVideoAfterOrientationChange();
             }
         }
+    }
+
+    private Handler uiHideHandler = new Handler();
+    private Runnable hideUiRunnable;
+
+    private void showBottomBarAndMute() {
+        LinearLayout bottomBar = findViewById(R.id.bottomBar);
+        ImageButton muteButton = findViewById(R.id.muteButton);
+        FloatingActionButton switchCameraButton = findViewById(R.id.switchCameraButton);
+        Button playbackSpeedButton = findViewById(R.id.playbackSpeedButton);
+
+        if (bottomBar != null) bottomBar.setVisibility(View.VISIBLE);
+        if (muteButton != null) muteButton.setVisibility(View.VISIBLE);
+        if (switchCameraButton != null) switchCameraButton.setVisibility(View.VISIBLE);
+        if (playbackSpeedButton != null) playbackSpeedButton.setVisibility(View.VISIBLE);
+    }
+
+    private void hideBottomBarAndMute() {
+        LinearLayout bottomBar = findViewById(R.id.bottomBar);
+        ImageButton muteButton = findViewById(R.id.muteButton);
+        FloatingActionButton switchCameraButton = findViewById(R.id.switchCameraButton);
+        Button playbackSpeedButton = findViewById(R.id.playbackSpeedButton);
+
+        if (bottomBar != null) bottomBar.setVisibility(View.GONE);
+        if (muteButton != null) muteButton.setVisibility(View.GONE);
+        if (switchCameraButton != null) switchCameraButton.setVisibility(View.GONE);
+        if (playbackSpeedButton != null) playbackSpeedButton.setVisibility(View.GONE);
+    }
+
+    private void scheduleHideUi() {
+        if (hideUiRunnable != null) uiHideHandler.removeCallbacks(hideUiRunnable);
+        hideUiRunnable = this::hideBottomBarAndMute;
+        uiHideHandler.postDelayed(hideUiRunnable, 3000); // 3 seconds
     }
 
     private void changeInterval() {
@@ -970,12 +1040,117 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     
-        playerView.setOnTouchListener((v, event) -> gestureDetector.onTouchEvent(event));
-    
         // Make VideoView clickable and focusable
         playerView.setClickable(true);
         playerView.setFocusable(true);
     }
+
+    @SuppressLint("ClickableViewAccessibility")
+private void setupPlayerViewTouch() {
+    GestureDetector gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+        @Override
+        public boolean onDoubleTap(@NonNull MotionEvent e) {
+            float x = e.getX();
+            float width = playerView.getWidth();
+
+            if (isSeekInProgress) {
+                Toast.makeText(MainActivity.this, "Please wait...", Toast.LENGTH_SHORT).show();
+                return true;
+            }
+
+            if (x < width / 3) {
+                // Double-tap on the left portion: Seek backward by 5 seconds
+                if (exoPlayer != null && (exoPlayer.isPlaying() )) {
+                    int currentPosition = (int) exoPlayer.getCurrentPosition();
+                    int newPosition = Math.max(currentPosition - 5000, 0);
+                    isSeekInProgress = true;
+                    exoPlayer.seekTo(newPosition);
+                    playerView.postDelayed(() -> isSeekInProgress = false, 1000); // 1s delay, adjust as needed
+                }
+            } else if (x > 2 * width / 3) {
+                // Double-tap on the right portion: Seek forward by 5 seconds
+                if (exoPlayer != null && (exoPlayer.isPlaying() )) {
+                    int currentPosition = (int) exoPlayer.getCurrentPosition();
+                    int duration = (int) exoPlayer.getDuration();
+                    int newPosition = (duration > 0) ? Math.min(currentPosition + 5000, duration - 100) : currentPosition + 5000;
+                    isSeekInProgress = true;
+                    exoPlayer.seekTo(newPosition);
+                    playerView.postDelayed(() -> isSeekInProgress = false, 1000); // 1s delay, adjust as needed
+                }
+            } else {
+                // Double-tap on the center: Toggle between portrait and landscape
+                Log.d("MainActivity", "Double tap detected in center");
+                if (getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) {
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                    ViewGroup.LayoutParams params = playerView.getLayoutParams();
+                    params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                    params.height = ViewGroup.LayoutParams.MATCH_PARENT;
+                    playerView.setLayoutParams(params);
+                } else {
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                    ViewGroup.LayoutParams params = playerView.getLayoutParams();
+                    params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                    params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                    playerView.setLayoutParams(params);
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+            float deltaX = e2.getX() - e1.getX();
+            float absDeltaX = Math.abs(deltaX);
+            float absDeltaY = Math.abs(e2.getY() - e1.getY());
+
+            // Only consider horizontal swipes
+            if (absDeltaX > 100 && absDeltaX > absDeltaY) {
+                if (deltaX > 0) {
+                    // Swipe right: Favorite after playback
+                    if (currentlyPlayingVideoPath != null) {
+                        pendingFavMovePath = currentlyPlayingVideoPath;
+                        Toast.makeText(MainActivity.this, "Will move to Fav after playback.", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    // Swipe left: Delete after playback
+                    if (currentlyPlayingVideoPath != null) {
+                        pendingDeletePath = currentlyPlayingVideoPath;
+                        Toast.makeText(MainActivity.this, "Will delete after playback.", Toast.LENGTH_SHORT).show();
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean onScroll(@Nullable MotionEvent e1, @NonNull MotionEvent e2, float distanceX, float distanceY) {
+            if (e1 != null) {
+                if (initialY == 0) {
+                    initialY = e1.getY();
+                }
+            }
+
+            if (e2.getY() - initialY > scrollThreshold) {
+                playPreviousRandomVideo();
+                initialY = 0;
+            } else if (initialY - e2.getY() > scrollThreshold) {
+                playNextRandomVideo();
+                initialY = 0;
+            }
+            return true;
+        }
+
+        @Override
+        public boolean onDown(MotionEvent e) {
+            return true;
+        }
+    });
+
+    playerView.setOnTouchListener((v, event) -> gestureDetector.onTouchEvent(event));
+    playerView.setClickable(true);
+    playerView.setFocusable(true);
+}
 
     private void initializeViews() {
         randomImageView = findViewById(R.id.randomImageView);
@@ -1011,9 +1186,9 @@ public class MainActivity extends AppCompatActivity {
         // Set up the switch camera button
         switchCameraButton.setOnClickListener(v -> {
             switchCamera();
-                if (previewView != null) {
-                    previewView.bringToFront();
-                }
+            if (previewView != null) {
+                previewView.bringToFront();
+            }
         });
 
         // Set up the playback speed button
@@ -1333,18 +1508,31 @@ public class MainActivity extends AppCompatActivity {
         // Set orientation/layout based on video dimensions
         int[] dims = getVideoDimensions(videoPath);
         if (dims != null && dims[0] > 0 && dims[1] > 0) {
-            if (dims[0] > dims[1]) {
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                ViewGroup.LayoutParams params = playerView.getLayoutParams();
-                params.width = ViewGroup.LayoutParams.MATCH_PARENT;
-                params.height = ViewGroup.LayoutParams.MATCH_PARENT;
-                playerView.setLayoutParams(params);
+            int videoWidth = dims[0];
+            int videoHeight = dims[1];
+
+            int screenWidth = getResources().getDisplayMetrics().widthPixels;
+            int screenHeight = getResources().getDisplayMetrics().heightPixels;
+
+            ViewGroup.LayoutParams params = playerView.getLayoutParams();
+
+            if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                // In landscape, fit to screen height
+                params.height = screenHeight;
+                params.width = (int) ((float) screenHeight * videoWidth / videoHeight);
             } else {
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                ViewGroup.LayoutParams params = playerView.getLayoutParams();
-                params.width = ViewGroup.LayoutParams.MATCH_PARENT;
-                params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                playerView.setLayoutParams(params);
+                // In portrait, fit to screen width
+                params.width = screenWidth;
+                params.height = (int) ((float) screenWidth * videoHeight / videoWidth);
+            }
+
+            playerView.setLayoutParams(params);
+
+            // Center vertically/horizontally in FrameLayout
+            if (playerView.getParent() instanceof FrameLayout) {
+                FrameLayout.LayoutParams flParams = (FrameLayout.LayoutParams) playerView.getLayoutParams();
+                flParams.gravity = Gravity.CENTER;
+                playerView.setLayoutParams(flParams);
             }
         }
 
@@ -1400,18 +1588,31 @@ public class MainActivity extends AppCompatActivity {
     // Set orientation/layout based on video dimensions
     int[] dims = getVideoDimensions(videoPath);
     if (dims != null && dims[0] > 0 && dims[1] > 0) {
-        if (dims[0] > dims[1]) {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-            ViewGroup.LayoutParams params = playerView.getLayoutParams();
-            params.width = ViewGroup.LayoutParams.MATCH_PARENT;
-            params.height = ViewGroup.LayoutParams.MATCH_PARENT;
-            playerView.setLayoutParams(params);
+        int videoWidth = dims[0];
+        int videoHeight = dims[1];
+
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int screenHeight = getResources().getDisplayMetrics().heightPixels;
+
+        ViewGroup.LayoutParams params = playerView.getLayoutParams();
+
+        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            // In landscape, fit to screen height
+            params.height = screenHeight;
+            params.width = (int) ((float) screenHeight * videoWidth / videoHeight);
         } else {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-            ViewGroup.LayoutParams params = playerView.getLayoutParams();
-            params.width = ViewGroup.LayoutParams.MATCH_PARENT;
-            params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-            playerView.setLayoutParams(params);
+            // In portrait, fit to screen width
+            params.width = screenWidth;
+            params.height = (int) ((float) screenWidth * videoHeight / videoWidth);
+        }
+
+        playerView.setLayoutParams(params);
+
+        // Center vertically/horizontally in FrameLayout
+        if (playerView.getParent() instanceof FrameLayout) {
+            FrameLayout.LayoutParams flParams = (FrameLayout.LayoutParams) playerView.getLayoutParams();
+            flParams.gravity = Gravity.CENTER;
+            playerView.setLayoutParams(flParams);
         }
     }
 
@@ -1547,6 +1748,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         timerHandler.removeCallbacks(timerRunnable);
+        if (sensorManager != null && motionListener != null) {
+            sensorManager.unregisterListener(motionListener);
+        }
         if (isAutoRandomRunning) {
             handler.removeCallbacks(autoRandomRunnable);
         }
@@ -1715,18 +1919,31 @@ public class MainActivity extends AppCompatActivity {
     // Set orientation/layout based on video dimensions
     int[] dims = getVideoDimensions(videoPath);
     if (dims != null && dims[0] > 0 && dims[1] > 0) {
-        if (dims[0] > dims[1]) {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-            ViewGroup.LayoutParams params = playerView.getLayoutParams();
-            params.width = ViewGroup.LayoutParams.MATCH_PARENT;
-            params.height = ViewGroup.LayoutParams.MATCH_PARENT;
-            playerView.setLayoutParams(params);
+        int videoWidth = dims[0];
+        int videoHeight = dims[1];
+
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int screenHeight = getResources().getDisplayMetrics().heightPixels;
+
+        ViewGroup.LayoutParams params = playerView.getLayoutParams();
+
+        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            // In landscape, fit to screen height
+            params.height = screenHeight;
+            params.width = (int) ((float) screenHeight * videoWidth / videoHeight);
         } else {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-            ViewGroup.LayoutParams params = playerView.getLayoutParams();
-            params.width = ViewGroup.LayoutParams.MATCH_PARENT;
-            params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-            playerView.setLayoutParams(params);
+            // In portrait, fit to screen width
+            params.width = screenWidth;
+            params.height = (int) ((float) screenWidth * videoHeight / videoWidth);
+        }
+
+        playerView.setLayoutParams(params);
+
+        // Center vertically/horizontally in FrameLayout
+        if (playerView.getParent() instanceof FrameLayout) {
+            FrameLayout.LayoutParams flParams = (FrameLayout.LayoutParams) playerView.getLayoutParams();
+            flParams.gravity = Gravity.CENTER;
+            playerView.setLayoutParams(flParams);
         }
     }
 
@@ -1785,9 +2002,10 @@ public class MainActivity extends AppCompatActivity {
     }    
 
     @Override
-    public void onConfigurationChanged(Configuration newConfig) {
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        // Re-apply layout changes if needed, but your activity won't be recreated
+        // Re-apply video layout for the current video
+        playVideoAfterOrientationChange();
     }
 
     private void playVideoAfterOrientationChange() {
@@ -1797,18 +2015,31 @@ public class MainActivity extends AppCompatActivity {
     // Set orientation/layout based on video dimensions
     int[] dims = getVideoDimensions(videoPath);
     if (dims != null && dims[0] > 0 && dims[1] > 0) {
-        if (dims[0] > dims[1]) {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-            ViewGroup.LayoutParams params = playerView.getLayoutParams();
-            params.width = ViewGroup.LayoutParams.MATCH_PARENT;
-            params.height = ViewGroup.LayoutParams.MATCH_PARENT;
-            playerView.setLayoutParams(params);
+        int videoWidth = dims[0];
+        int videoHeight = dims[1];
+
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int screenHeight = getResources().getDisplayMetrics().heightPixels;
+
+        ViewGroup.LayoutParams params = playerView.getLayoutParams();
+
+        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            // In landscape, fit to screen height
+            params.height = screenHeight;
+            params.width = (int) ((float) screenHeight * videoWidth / videoHeight);
         } else {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-            ViewGroup.LayoutParams params = playerView.getLayoutParams();
-            params.width = ViewGroup.LayoutParams.MATCH_PARENT;
-            params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-            playerView.setLayoutParams(params);
+            // In portrait, fit to screen width
+            params.width = screenWidth;
+            params.height = (int) ((float) screenWidth * videoHeight / videoWidth);
+        }
+
+        playerView.setLayoutParams(params);
+
+        // Center vertically/horizontally in FrameLayout
+        if (playerView.getParent() instanceof FrameLayout) {
+            FrameLayout.LayoutParams flParams = (FrameLayout.LayoutParams) playerView.getLayoutParams();
+            flParams.gravity = Gravity.CENTER;
+            playerView.setLayoutParams(flParams);
         }
     }
 
